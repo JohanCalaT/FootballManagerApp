@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/1. Orchestrator/">
+    <Project Path="FootballManagerApp.AppHost.Tests/FootballManagerApp.AppHost.Tests.csproj" />
+    <Project Path="FootballManagerApp.AppHost/FootballManagerApp.AppHost.csproj" />
+    <Project Path="FootballManagerApp.ServiceDefaults/FootballManagerApp.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/2. Gateway/">
+    <Project Path="FootballManagerApp.Gateway.Tests/FootballManagerApp.Gateway.Tests.csproj" />
+    <Project Path="FootballManagerApp.Gateway/FootballManagerApp.Gateway.csproj" />
+  </Folder>
+  <Folder Name="/3. Services/" />
+  <Folder Name="/3. Services/Comments/">
+    <Project Path="FootballManagerApp.Comments.API/FootballManagerApp.Comments.API.csproj" />
+    <Project Path="FootballManagerApp.Comments.Tests/FootballManagerApp.Comments.Tests.csproj" />
+  </Folder>
+  <Folder Name="/3. Services/Players/">
+    <Project Path="FootballManagerApp.Players.API/FootballManagerApp.Players.API.csproj" />
+    <Project Path="FootballManagerApp.Players.Tests/FootballManagerApp.Players.Tests.csproj" />
+  </Folder>
+</Solution>
