@@ -44,3 +44,13 @@ TestResults/
 # --- OS Specific ---
 .DS_Store
 Thumbs.db
+.azure
+
+# --- Firebase service account (si se descarga, nunca al repo) ---
+**/firebase-adminsdk*.json
+**/serviceAccountKey.json
+**/google-services.json
+
+# --- Capacitor / Android / iOS (generados por Ionic build) ---
+android/
+ios/
