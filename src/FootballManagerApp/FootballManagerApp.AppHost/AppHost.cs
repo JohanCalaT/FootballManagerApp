@@ -18,7 +18,7 @@ var nodeBackend = builder.AddNpmApp("node-backend", "../../../backend-node", scr
 
 var frontend = builder.AddNpmApp("ionic-app", "../../../frontend", scriptName: "start")
     .WithReference(gateway)
-    .WithHttpEndpoint(env: "PORT")
+    .WithHttpEndpoint(targetPort: 80)
     .WithExternalHttpEndpoints()
     .WaitFor(gateway)
     .PublishAsDockerFile();
