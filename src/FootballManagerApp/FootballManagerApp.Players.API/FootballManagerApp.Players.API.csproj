@@ -8,11 +8,15 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.*" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\FootballManagerApp.ServiceDefaults\FootballManagerApp.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\FootballManagerApp.Players.Application\FootballManagerApp.Players.Application.csproj" />
+    <ProjectReference Include="..\FootballManagerApp.Players.Infrastructure\FootballManagerApp.Players.Infrastructure.csproj" />
+    <ProjectReference Include="..\FootballManagerApp.Shared\FootballManagerApp.Shared.csproj" />
   </ItemGroup>
 
 </Project>

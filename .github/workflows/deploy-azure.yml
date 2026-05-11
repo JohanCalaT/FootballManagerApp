@@ -1,0 +1,198 @@
+name: Deploy · Azure (manual)
+
+# ─────────────────────────────────────────────────────────────
+# Workflow PAUSADO de auto-deploy para ahorrar costos Azure.
+# Solo se dispara manualmente desde la pestaña Actions de GitHub.
+#
+# Cómo ejecutarlo:
+#   1. Ve a Actions → "Deploy · Azure (manual)" → Run workflow
+#   2. Elige rama (develop = staging, main = production)
+#   3. Elige `target` (qué desplegar)
+#   4. Elige `skip_provision` (true si la infra ya existe)
+#
+# Para reactivar el auto-deploy en push: descomenta el bloque
+# `push:` debajo.
+# ─────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Qué desplegar'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all              # provision (si toca) + deploy de todo
+          - dotnet-only      # solo Aspire AppHost (players-api, comments-api, gateway)
+          - frontend-only    # solo Ionic/Angular Container App
+          - node-only        # solo backend Express
+          - infra-only       # solo azd provision (Bicep / azure.yaml)
+      skip_provision:
+        description: '¿Saltar provision? (true si los recursos ya existen)'
+        required: true
+        default: 'true'
+        type: boolean
+
+  # === BLOQUE AUTO-DEPLOY DESACTIVADO PARA AHORRAR COSTOS ===
+  # Cuando quieras reactivarlo, descomenta y ajusta paths:
+  #
+  # push:
+  #   branches: [develop, main]
+  #   paths:
+  #     - 'src/FootballManagerApp/**'
+  #     - 'frontend/**'
+  #     - 'backend-node/**'
+  #     - 'azure.yaml'
+  #     - 'infra/**'
+  # ============================================================
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ${{ github.event.inputs.target }} → ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_ENV_NAME: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      # Habilita que Docker buildkit embeba metadata de caché en las
+      # imágenes que sube a ACR. Permite que el siguiente build
+      # reuse capas remotas via --cache-from.
+      DOCKER_BUILDKIT: 1
+      BUILDKIT_INLINE_CACHE: 1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show deploy plan
+        run: |
+          echo "════════════════════════════════════════"
+          echo "  Target:         ${{ github.event.inputs.target }}"
+          echo "  Skip provision: ${{ github.event.inputs.skip_provision }}"
+          echo "  Environment:    $AZURE_ENV_NAME"
+          echo "  Ref:            ${{ github.ref }}"
+          echo "════════════════════════════════════════"
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.x
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+
+      - name: Azure login (federated)
+        run: |
+          azd auth login \
+            --client-id "$AZURE_CLIENT_ID" \
+            --federated-credential-provider "github" \
+            --tenant-id "$AZURE_TENANT_ID"
+
+      # ── DOCKER BUILDX + ACR CACHE WARMUP ─────────────────────
+      # Activa buildx (necesario para BUILDKIT_INLINE_CACHE) y
+      # pre-descarga las imágenes existentes de ACR para sembrar
+      # la caché Docker local del runner. Sin esto, cada deploy
+      # arranca con caché vacía y reconstruye todo desde cero.
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker         # usar el daemon local en vez de un contenedor builder, para que azd vea el caché
+
+      - name: Azure CLI login (para az acr login)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Discover ACR endpoint (si los recursos existen)
+        id: acr
+        continue-on-error: true
+        run: |
+          ENDPOINT=$(azd env get-value AZURE_CONTAINER_REGISTRY_ENDPOINT 2>/dev/null || echo "")
+          echo "endpoint=$ENDPOINT" >> "$GITHUB_OUTPUT"
+          if [ -n "$ENDPOINT" ]; then
+            REGISTRY_NAME=$(echo "$ENDPOINT" | cut -d'.' -f1)
+            echo "registry=$REGISTRY_NAME" >> "$GITHUB_OUTPUT"
+            echo "::notice title=ACR detectado::$ENDPOINT"
+          else
+            echo "::notice title=ACR no encontrado::Primer deploy o infra no provisionada — sin caché previa"
+          fi
+
+      - name: Login a ACR
+        if: steps.acr.outputs.registry != ''
+        run: az acr login --name ${{ steps.acr.outputs.registry }}
+
+      - name: Pre-pull imágenes anteriores (warm cache)
+        if: steps.acr.outputs.endpoint != ''
+        continue-on-error: true
+        run: |
+          # Si una imagen no existe (primer deploy), continuamos.
+          # Cuantas más imágenes podamos pre-pull, más layers reusará buildx.
+          for svc in players-api comments-api gateway ionic-app node-backend; do
+            IMAGE="${{ steps.acr.outputs.endpoint }}/$svc:latest"
+            echo "→ Pulling $IMAGE para sembrar caché..."
+            docker pull "$IMAGE" 2>/dev/null \
+              && echo "  ✓ $svc en caché local" \
+              || echo "  ⚠ $svc no existe aún (primer deploy de este servicio)"
+          done
+
+      # ── PROVISION ────────────────────────────────────────────
+      - name: Provision infrastructure
+        if: ${{ github.event.inputs.skip_provision == 'false' || github.event.inputs.target == 'infra-only' || github.event.inputs.target == 'all' }}
+        run: azd provision --no-prompt
+        env:
+          AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
+
+      # ── DEPLOY ───────────────────────────────────────────────
+      # Aspire AppHost = 1 service "app" en azure.yaml → azd deploy
+      # despliega todos los contenedores (players-api, comments-api,
+      # gateway, ionic-app, node-backend) y Docker layer cache hace
+      # builds incrementales en los que no cambiaron.
+      - name: Deploy all (Aspire AppHost completo)
+        if: ${{ github.event.inputs.target == 'all' }}
+        run: azd deploy --no-prompt
+
+      - name: Deploy .NET services only (players-api, comments-api, gateway)
+        if: ${{ github.event.inputs.target == 'dotnet-only' }}
+        run: |
+          # Aspire empaqueta los .NET juntos. azd deploy de la
+          # service "app" reconstruye solo lo que cambió (Docker cache).
+          azd deploy app --no-prompt
+
+      - name: Deploy frontend only (ionic-app)
+        if: ${{ github.event.inputs.target == 'frontend-only' }}
+        run: |
+          # Cuando azd 1.x no permite filtrar sub-recursos de Aspire,
+          # el deploy completo es la opción soportada. La caché Docker
+          # de los demás contenedores hace que solo el frontend se
+          # reconstruya/empuje realmente.
+          azd deploy app --no-prompt
+
+      - name: Deploy backend-node only
+        if: ${{ github.event.inputs.target == 'node-only' }}
+        run: |
+          azd deploy app --no-prompt
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "::notice title=Deploy finalizado::Target=${{ github.event.inputs.target }} · Env=$AZURE_ENV_NAME"

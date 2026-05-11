@@ -8,13 +8,42 @@
     <Project Path="FootballManagerApp.Gateway.Tests/FootballManagerApp.Gateway.Tests.csproj" />
     <Project Path="FootballManagerApp.Gateway/FootballManagerApp.Gateway.csproj" />
   </Folder>
-  <Folder Name="/3. Services/" />
-  <Folder Name="/3. Services/Comments/">
-    <Project Path="FootballManagerApp.Comments.API/FootballManagerApp.Comments.API.csproj" />
-    <Project Path="FootballManagerApp.Comments.Tests/FootballManagerApp.Comments.Tests.csproj" />
+  <Folder Name="/3. Shared/">
+    <Project Path="FootballManagerApp.Shared/FootballManagerApp.Shared.csproj" />
   </Folder>
-  <Folder Name="/3. Services/Players/">
+  <Folder Name="/4. Services/" />
+  <Folder Name="/4. Services/Comments/" />
+  <Folder Name="/4. Services/Comments/1. Domain/">
+    <Project Path="FootballManagerApp.Comments.Domain/FootballManagerApp.Comments.Domain.csproj" />
+  </Folder>
+  <Folder Name="/4. Services/Comments/2. Application/">
+    <Project Path="FootballManagerApp.Comments.Application/FootballManagerApp.Comments.Application.csproj" />
+  </Folder>
+  <Folder Name="/4. Services/Comments/3. Infrastructure/">
+    <Project Path="FootballManagerApp.Comments.Infrastructure/FootballManagerApp.Comments.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/4. Services/Comments/4. Presentation/">
+    <Project Path="FootballManagerApp.Comments.API/FootballManagerApp.Comments.API.csproj" />
+  </Folder>
+  <Folder Name="/4. Services/Comments/5. Tests/">
+    <Project Path="FootballManagerApp.Comments.Application.Tests/FootballManagerApp.Comments.Application.Tests.csproj" />
+    <Project Path="FootballManagerApp.Comments.Infrastructure.Tests/FootballManagerApp.Comments.Infrastructure.Tests.csproj" />
+  </Folder>
+  <Folder Name="/4. Services/Players/" />
+  <Folder Name="/4. Services/Players/1. Domain/">
+    <Project Path="FootballManagerApp.Players.Domain/FootballManagerApp.Players.Domain.csproj" />
+  </Folder>
+  <Folder Name="/4. Services/Players/2. Application/">
+    <Project Path="FootballManagerApp.Players.Application/FootballManagerApp.Players.Application.csproj" />
+  </Folder>
+  <Folder Name="/4. Services/Players/3. Infrastructure/">
+    <Project Path="FootballManagerApp.Players.Infrastructure/FootballManagerApp.Players.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/4. Services/Players/4. Presentation/">
     <Project Path="FootballManagerApp.Players.API/FootballManagerApp.Players.API.csproj" />
-    <Project Path="FootballManagerApp.Players.Tests/FootballManagerApp.Players.Tests.csproj" />
+  </Folder>
+  <Folder Name="/4. Services/Players/5. Tests/">
+    <Project Path="FootballManagerApp.Players.Application.Tests/FootballManagerApp.Players.Application.Tests.csproj" />
+    <Project Path="FootballManagerApp.Players.Infrastructure.Tests/FootballManagerApp.Players.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>

@@ -1,0 +1,73 @@
+name: CI · Backend Node (Express/TS)
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'backend-node/**'
+      - '.github/workflows/ci-backend-node.yml'
+  pull_request:
+    paths:
+      - 'backend-node/**'
+      - '.github/workflows/ci-backend-node.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-backend-node-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend-node
+
+jobs:
+  build-test-lint:
+    name: Build · Lint · Test · Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend-node/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Test + coverage (Jest)
+        run: npx jest --coverage --ci --reporters=default --reporters=jest-junit
+        env:
+          JEST_JUNIT_OUTPUT_DIR: ./reports
+          JEST_JUNIT_OUTPUT_NAME: junit.xml
+
+      - name: Build (tsc)
+        run: npm run build
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-node-coverage
+          path: backend-node/coverage/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-node-junit
+          path: backend-node/reports/
+          retention-days: 14
+          if-no-files-found: ignore

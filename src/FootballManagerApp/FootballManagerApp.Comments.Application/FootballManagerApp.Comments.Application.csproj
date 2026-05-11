@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FootballManagerApp.Comments.Domain\FootballManagerApp.Comments.Domain.csproj" />
+    <ProjectReference Include="..\FootballManagerApp.Shared\FootballManagerApp.Shared.csproj" />
+  </ItemGroup>
+
+</Project>
