@@ -1,5 +1,6 @@
 # --- General ---
 CLAUDE.md
+.claude/
 .gemini/
 .idea/
 .vscode/
