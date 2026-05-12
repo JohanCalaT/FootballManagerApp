@@ -228,6 +228,18 @@ script level (quota, timeout, oversized diff), the script — not the
 model — writes a payload with `skipped_reason` populated and empty
 `findings`.
 
+**Formatting rules for the `suggestion` field** (the script renders it
+inside a collapsible block on the PR comment):
+
+- Prefer plain text or **at most one** fenced code block using
+  ` ```csharp `, ` ```typescript `, ` ```diff `, etc.
+- **Do not nest fenced code blocks.** Never wrap text that already
+  contains ` ``` ` inside another fence.
+- Do not include the literal words "Suggestion:" or any heading — the
+  script adds that wrapper itself.
+- Keep it focused: a minimal diff or replacement snippet is better than
+  a long prose explanation.
+
 ---
 
 ## 7. What the reviewer must NOT do

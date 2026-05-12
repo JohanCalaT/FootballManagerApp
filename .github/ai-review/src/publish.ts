@@ -62,7 +62,7 @@ export function renderBody(args: {
 
   for (const sev of ["critical", "major", "minor", "info"] as Severity[]) {
     const items = grouped[sev];
-    lines.push(`### ${LABELS[sev]} (${items.length})`);
+    lines.push(`### ${LABELS[sev]} (${items.length})`, "");
     if (!items.length) {
       lines.push("_None_", "");
       continue;
@@ -73,15 +73,27 @@ export function renderBody(args: {
           ? `${f.line_start}`
           : `${f.line_start}-${f.line_end}`;
       lines.push(
-        `- **\`${f.rule_id}\`** — ${f.title}`,
-        `  - File: \`${f.file}:${range}\``,
-        `  - ${f.explanation}`,
+        `#### \`${f.rule_id}\` — ${f.title}`,
+        "",
+        `**File:** \`${f.file}:${range}\``,
+        "",
+        f.explanation,
+        "",
       );
       if (f.suggestion?.trim()) {
-        lines.push("", "    Suggestion:", "    ```", f.suggestion, "    ```");
+        const sug = f.suggestion.trim();
+        const alreadyFenced = /^```[\s\S]*```$/m.test(sug);
+        lines.push("<details><summary>Suggestion</summary>", "");
+        if (alreadyFenced) {
+          lines.push(sug);
+        } else if (sug.includes("```")) {
+          lines.push(sug);
+        } else {
+          lines.push("```", sug, "```");
+        }
+        lines.push("", "</details>", "");
       }
     }
-    lines.push("");
   }
 
   lines.push(
