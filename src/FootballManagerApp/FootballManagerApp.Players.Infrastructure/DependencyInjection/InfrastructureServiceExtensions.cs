@@ -3,7 +3,6 @@ using FootballManagerApp.Players.Application.IdealTeam.Handlers;
 using FootballManagerApp.Players.Application.Players.Handlers;
 using FootballManagerApp.Players.Infrastructure.Cache;
 using FootballManagerApp.Players.Infrastructure.ExternalServices.ApiFootball;
-using FootballManagerApp.Players.Infrastructure.ExternalServices.BlobStorage;
 using FootballManagerApp.Players.Infrastructure.ExternalServices.Gemini;
 using FootballManagerApp.Players.Infrastructure.Http;
 using FootballManagerApp.Players.Infrastructure.Persistence.Repositories;
@@ -20,7 +19,6 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IPlayerStatisticsRepository, PlayerStatisticsRepository>();
 
         // Servicios externos
-        services.AddScoped<IBlobStorageService, BlobStorageService>();
         services.AddScoped<ICacheService, RedisCacheService>();
         services.AddHttpClient<IApiFootballService, ApiFootballService>();
         services.AddHttpClient<IGeminiService, GeminiService>();

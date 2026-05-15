@@ -1,5 +1,6 @@
 using FootballManagerApp.Players.Application.Common.Interfaces;
 using FootballManagerApp.Players.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace FootballManagerApp.Players.Infrastructure.Persistence.Repositories;
 
@@ -9,11 +10,18 @@ public class PlayerStatisticsRepository : IPlayerStatisticsRepository
 
     public PlayerStatisticsRepository(PlayersDbContext db) => _db = db;
 
-    public Task<IEnumerable<PlayerStatistics>> GetByPlayerIdAsync(
+    public async Task<IEnumerable<PlayerStatistics>> GetByPlayerIdAsync(
         Guid playerId, CancellationToken ct) =>
-        throw new NotImplementedException("TODO Fase 2");
+        await _db.PlayerStatistics
+            .AsNoTracking()
+            .Where(s => s.PlayerId == playerId)
+            .OrderByDescending(s => s.Season)
+            .ToListAsync(ct);
 
-    public Task AddRangeAsync(
-        IEnumerable<PlayerStatistics> stats, CancellationToken ct) =>
-        throw new NotImplementedException("TODO Fase 2");
+    public async Task AddRangeAsync(
+        IEnumerable<PlayerStatistics> stats, CancellationToken ct)
+    {
+        await _db.PlayerStatistics.AddRangeAsync(stats, ct);
+        await _db.SaveChangesAsync(ct);
+    }
 }

@@ -63,4 +63,80 @@ public class Player
             RegisteredAt = DateTime.UtcNow,
         };
     }
+
+    public void SetApiFootballId(int apiFootballId) => ApiFootballId = apiFootballId;
+
+    public void SetPersonalInfo(
+        string? firstName,
+        string? lastName,
+        string? nationality,
+        DateTime? birthDate,
+        string? birthPlace,
+        string? birthCountry,
+        string? height,
+        string? weight)
+    {
+        FirstName = firstName;
+        LastName = lastName;
+        Nationality = nationality;
+        BirthDate = birthDate;
+        BirthPlace = birthPlace;
+        BirthCountry = birthCountry;
+        Height = height;
+        Weight = weight;
+    }
+
+    public void SetFootballInfo(string? position, int? shirtNumber)
+    {
+        Position = position;
+        ShirtNumber = shirtNumber;
+    }
+
+    public void UpdateTeamAndLeague(string team, string league)
+    {
+        if (string.IsNullOrWhiteSpace(team))
+            throw new DomainException("El equipo es obligatorio");
+        if (string.IsNullOrWhiteSpace(league))
+            throw new DomainException("La liga es obligatoria");
+        Team = team.Trim();
+        League = league.Trim();
+    }
+
+    public void Rename(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("El nombre del jugador es obligatorio");
+        Name = name.Trim();
+    }
+
+    public void MarkInjured(bool injured) => Injured = injured;
+
+    public void SetImage(string? url, string? source)
+    {
+        if (source is not null
+            && source is not "blob" and not "api" and not "url")
+            throw new DomainException("ImageSource debe ser 'blob', 'api' o 'url'");
+        ImageUrl = url;
+        ImageSource = source;
+    }
+
+    public void SetClientGeolocation(Geolocation? geolocation) =>
+        ClientGeolocation = geolocation;
+
+    public void SetPlayerGeolocation(Geolocation? geolocation) =>
+        PlayerGeolocation = geolocation;
+
+    public void AddStatistics(PlayerStatistics stats)
+    {
+        if (stats.PlayerId != Id)
+            throw new DomainException("Las estadísticas pertenecen a otro jugador");
+        _statistics.Add(stats);
+    }
+
+    public void ReplaceStatistics(IEnumerable<PlayerStatistics> stats)
+    {
+        _statistics.Clear();
+        foreach (var s in stats)
+            AddStatistics(s);
+    }
 }
