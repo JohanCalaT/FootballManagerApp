@@ -1,7 +1,31 @@
 import { Request, Response, NextFunction } from 'express';
 import * as playerService from '../services/player.service';
-import { ok, paged } from '../utils/apiResponse';
+import { created, ok, paged } from '../utils/apiResponse';
 import { buildPagedLinks, buildPlayerLinks } from '../utils/hateoas';
+import { parseClientGeo } from '../utils/clientGeo';
+import { ImageSource, PlayerPosition } from '../models/player.model';
+
+// Body de POST /api/players — el validator ya garantizó las restricciones
+// cuando llega aquí, así que tipamos la forma esperada.
+interface CreatePlayerBody {
+  name:           string;
+  team:           string;
+  league:         string;
+  firstName?:     string;
+  lastName?:      string;
+  nationality?:   string;
+  birthDate?:     string;        // ISO
+  birthPlace?:    string;
+  birthCountry?:  string;
+  height?:        string;
+  weight?:        string;
+  injured?:       boolean;
+  position?:      PlayerPosition;
+  shirtNumber?:   number;
+  imageUrl?:      string;
+  imageSource?:   ImageSource;
+  apiFootballId?: number;
+}
 
 export const getAll = async (
   req: Request,
@@ -57,6 +81,49 @@ export const search = async (
     const message = result.total === 0 ? 'Sin resultados' : 'OK';
     const resp = paged(result.items, result.page, result.limit, result.total, message, links);
 
+    res.status(resp.status).json(resp);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const create = async (
+  req: Request<Record<string, never>, unknown, CreatePlayerBody>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const body = req.body;
+    const input: playerService.CreatePlayerInput = {
+      name:            body.name,
+      team:            body.team,
+      league:          body.league,
+      createdByUserId: req.userId!, // requireUser garantiza que existe
+    };
+
+    if (body.firstName    !== undefined) input.firstName    = body.firstName;
+    if (body.lastName     !== undefined) input.lastName     = body.lastName;
+    if (body.nationality  !== undefined) input.nationality  = body.nationality;
+    if (body.birthDate    !== undefined) input.birthDate    = new Date(body.birthDate);
+    if (body.birthPlace   !== undefined) input.birthPlace   = body.birthPlace;
+    if (body.birthCountry !== undefined) input.birthCountry = body.birthCountry;
+    if (body.height       !== undefined) input.height       = body.height;
+    if (body.weight       !== undefined) input.weight       = body.weight;
+    if (body.injured      !== undefined) input.injured      = body.injured;
+    if (body.position     !== undefined) input.position     = body.position;
+    if (body.shirtNumber  !== undefined) input.shirtNumber  = body.shirtNumber;
+    if (body.imageUrl     !== undefined) input.imageUrl     = body.imageUrl;
+    if (body.imageSource  !== undefined) input.imageSource  = body.imageSource;
+    if (body.apiFootballId !== undefined) input.apiFootballId = body.apiFootballId;
+
+    const geo = parseClientGeo(req.headers);
+    if (geo) input.clientGeolocation = geo;
+
+    const dto   = await playerService.create(input);
+    const links = buildPlayerLinks(dto.id, req.isAdmin);
+    const resp  = created(dto, 'Jugador creado', links);
+
+    res.setHeader('Location', `/api/players/${dto.id}`);
     res.status(resp.status).json(resp);
   } catch (err) {
     next(err);

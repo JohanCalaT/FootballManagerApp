@@ -1,10 +1,13 @@
 import * as repo from '../repositories/player.repository';
-import { PlayerNotFoundError } from '../errors/domain.errors';
+import { DuplicatePlayerError, PlayerNotFoundError } from '../errors/domain.errors';
 import {
   PlayerDetailDto, PlayerListItemDto,
   toDetailDto, toListItemDto,
 } from '../dtos/player.dto';
 import { escapeRegex } from '../utils/escapeRegex';
+import {
+  IGeolocation, ImageSource, PlayerPosition,
+} from '../models/player.model';
 
 const MIN_PAGE = 1;
 const MIN_LIMIT = 1;
@@ -100,6 +103,61 @@ const buildFilter = (c: SearchCriteria): repo.PlayerFilter => {
     filter.registeredAt = range;
   }
   return filter;
+};
+
+// ─────────────── Create (manual) ───────────────
+
+export interface CreatePlayerInput {
+  // requeridos
+  name:            string;
+  team:            string;
+  league:          string;
+  createdByUserId: string; // de X-User-Id, no del body
+
+  // opcionales
+  firstName?:    string;
+  lastName?:     string;
+  nationality?:  string;
+  birthDate?:    Date;
+  birthPlace?:   string;
+  birthCountry?: string;
+  height?:       string;
+  weight?:       string;
+  injured?:      boolean;
+  position?:     PlayerPosition;
+  shirtNumber?:  number;
+  imageUrl?:     string;
+  imageSource?:  ImageSource;
+  apiFootballId?: number;
+
+  clientGeolocation?: IGeolocation;
+}
+
+export const create = async (input: CreatePlayerInput): Promise<PlayerDetailDto> => {
+  // Soft-uniqueness solo para jugadores manuales (sin apiFootballId).
+  // Los importados desde API-Football se protegen con el UNIQUE filtrado.
+  if (input.apiFootballId === undefined) {
+    const existingId = await repo.findIdByNameAndTeam(
+      input.name.trim(),
+      input.team.trim(),
+    );
+    if (existingId) {
+      throw new DuplicatePlayerError(
+        `Ya existe un jugador '${input.name}' en '${input.team}' (id=${existingId}). ` +
+        `Modifícalo o créalo en otro equipo.`,
+      );
+    }
+  }
+
+  // Mongoose ignora `undefined` y aplica defaults — pasamos el input tal cual
+  // tras un trim de strings críticos.
+  const doc = await repo.create({
+    ...input,
+    name:   input.name.trim(),
+    team:   input.team.trim(),
+    league: input.league.trim(),
+  });
+  return toDetailDto(doc);
 };
 
 export const search = async (

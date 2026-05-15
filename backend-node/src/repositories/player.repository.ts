@@ -37,3 +37,32 @@ export const findById = async (id: string): Promise<IPlayer | null> => {
   if (!Types.ObjectId.isValid(id)) return null;
   return PlayerModel.findById(id).lean<IPlayer>().exec();
 };
+
+/**
+ * Soft uniqueness lookup para jugadores manuales (sin `apiFootballId`).
+ * Compara `name + team` con collation `strength: 1` — primary level:
+ * ignora MAYÚSCULAS y acentos. Así "Pedri González" colisiona con
+ * "pedri gonzalez" o "PEDRI GONZÁLEZ", que es lo que el usuario espera.
+ */
+export const findIdByNameAndTeam = async (
+  name: string,
+  team: string,
+): Promise<string | null> => {
+  const doc = await PlayerModel.findOne({ name, team })
+    .collation({ locale: 'en', strength: 1 })
+    .select('_id')
+    .lean<{ _id: Types.ObjectId }>()
+    .exec();
+  return doc ? doc._id.toString() : null;
+};
+
+/**
+ * Crea el documento. Mongoose aplica defaults y validators del schema.
+ * No comprueba soft-uniqueness — eso lo hace el service antes de llamar.
+ */
+export const create = async (
+  input: Record<string, unknown>,
+): Promise<IPlayer> => {
+  const doc = await PlayerModel.create(input);
+  return doc.toObject() as IPlayer;
+};
