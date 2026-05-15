@@ -29,6 +29,9 @@
     <Project Path="FootballManagerApp.Comments.Application.Tests/FootballManagerApp.Comments.Application.Tests.csproj" />
     <Project Path="FootballManagerApp.Comments.Infrastructure.Tests/FootballManagerApp.Comments.Infrastructure.Tests.csproj" />
   </Folder>
+  <Folder Name="/4. Services/Comments/6. Migrations/">
+    <Project Path="FootballManagerApp.Comments.MigrationService/FootballManagerApp.Comments.MigrationService.csproj" />
+  </Folder>
   <Folder Name="/4. Services/Players/" />
   <Folder Name="/4. Services/Players/1. Domain/">
     <Project Path="FootballManagerApp.Players.Domain/FootballManagerApp.Players.Domain.csproj" />
@@ -45,5 +48,8 @@
   <Folder Name="/4. Services/Players/5. Tests/">
     <Project Path="FootballManagerApp.Players.Application.Tests/FootballManagerApp.Players.Application.Tests.csproj" />
     <Project Path="FootballManagerApp.Players.Infrastructure.Tests/FootballManagerApp.Players.Infrastructure.Tests.csproj" />
+  </Folder>
+  <Folder Name="/4. Services/Players/6. Migrations/">
+    <Project Path="FootballManagerApp.Players.MigrationService/FootballManagerApp.Players.MigrationService.csproj" />
   </Folder>
 </Solution>

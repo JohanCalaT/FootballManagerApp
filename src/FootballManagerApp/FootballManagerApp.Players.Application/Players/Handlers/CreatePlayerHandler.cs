@@ -5,7 +5,7 @@ namespace FootballManagerApp.Players.Application.Players.Handlers;
 
 public class CreatePlayerHandler
 {
-    // TODO Fase 2: inyectar IPlayerRepository, IBlobStorageService, ICacheService
+    // TODO Fase 2: inyectar IPlayerRepository, ICacheService
 
     public Task<ApiResponse<PlayerDetailDto>> HandleAsync(
         CreatePlayerDto dto,

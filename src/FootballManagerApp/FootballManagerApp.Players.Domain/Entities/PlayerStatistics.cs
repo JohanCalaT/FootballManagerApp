@@ -75,4 +75,106 @@ public class PlayerStatistics
             LeagueName = leagueName,
         };
     }
+
+    public void SetLeague(int? id, string? name, string? country, string? logo)
+    {
+        LeagueId = id;
+        LeagueName = name;
+        LeagueCountry = country;
+        LeagueLogo = logo;
+    }
+
+    public void SetTeam(int? id, string? name, string? logo)
+    {
+        TeamId = id;
+        TeamName = name;
+        TeamLogo = logo;
+    }
+
+    public void SetGames(
+        int appearances,
+        int lineups,
+        int minutesPlayed,
+        string? position,
+        decimal? rating,
+        bool captain)
+    {
+        Appearances = appearances;
+        Lineups = lineups;
+        MinutesPlayed = minutesPlayed;
+        Position = position;
+        Rating = rating;
+        Captain = captain;
+    }
+
+    public void SetSubstitutes(int inCount, int outCount, int bench)
+    {
+        SubstitutesIn = inCount;
+        SubstitutesOut = outCount;
+        SubstitutesBench = bench;
+    }
+
+    public void SetOffensive(
+        int shotsTotal,
+        int shotsOnTarget,
+        int goals,
+        int assists,
+        int penaltyScored,
+        int penaltyMissed)
+    {
+        ShotsTotal = shotsTotal;
+        ShotsOnTarget = shotsOnTarget;
+        Goals = goals;
+        Assists = assists;
+        PenaltyScored = penaltyScored;
+        PenaltyMissed = penaltyMissed;
+    }
+
+    public void SetDefensive(
+        int goalsConceded,
+        int goalsSaved,
+        int penaltySaved,
+        int tacklesTotal,
+        int tacklesBlocks,
+        int interceptions)
+    {
+        GoalsConceded = goalsConceded;
+        GoalsSaved = goalsSaved;
+        PenaltySaved = penaltySaved;
+        TacklesTotal = tacklesTotal;
+        TacklesBlocks = tacklesBlocks;
+        Interceptions = interceptions;
+    }
+
+    public void SetPassingAndDribbling(
+        int passesTotal,
+        int passesKey,
+        int passesAccuracy,
+        int duelsTotal,
+        int duelsWon,
+        int dribblesAttempts,
+        int dribblesSuccess)
+    {
+        PassesTotal = passesTotal;
+        PassesKey = passesKey;
+        PassesAccuracy = passesAccuracy;
+        DuelsTotal = duelsTotal;
+        DuelsWon = duelsWon;
+        DribblesAttempts = dribblesAttempts;
+        DribblesSuccess = dribblesSuccess;
+    }
+
+    public void SetDiscipline(
+        int foulsDrawn,
+        int foulsCommitted,
+        int yellowCards,
+        int yellowRedCards,
+        int redCards)
+    {
+        FoulsDrawn = foulsDrawn;
+        FoulsCommitted = foulsCommitted;
+        YellowCards = yellowCards;
+        YellowRedCards = yellowRedCards;
+        RedCards = redCards;
+    }
 }

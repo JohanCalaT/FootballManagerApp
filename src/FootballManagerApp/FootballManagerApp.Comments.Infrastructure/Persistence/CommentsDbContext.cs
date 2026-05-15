@@ -12,8 +12,7 @@ public class CommentsDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // TODO Fase 2: aplicar configuraciones con
-        // modelBuilder.ApplyConfigurationsFromAssembly(...)
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(CommentsDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
     }
 }

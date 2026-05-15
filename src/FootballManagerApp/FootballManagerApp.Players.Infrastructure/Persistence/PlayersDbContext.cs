@@ -13,8 +13,7 @@ public class PlayersDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // TODO Fase 2: aplicar configuraciones con
-        // modelBuilder.ApplyConfigurationsFromAssembly(...)
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(PlayersDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
     }
 }
