@@ -1,4 +1,7 @@
 using FootballManagerApp.Players.API.Hateoas;
+using FootballManagerApp.Players.Application.Common.ApiFootball;
+using FootballManagerApp.Players.Application.Common.DTOs;
+using FootballManagerApp.Players.Application.Common.Interfaces;
 using FootballManagerApp.Players.Application.Players.DTOs;
 using FootballManagerApp.Players.Application.Players.Handlers;
 using FootballManagerApp.Shared.Responses;
@@ -17,6 +20,7 @@ public class PlayersController : ControllerBase
     private readonly ImportPlayersHandler _importHandler;
     private readonly UpdatePlayerHandler _updateHandler;
     private readonly DeletePlayerHandler _deleteHandler;
+    private readonly IApiFootballService _apiFootball;
 
     public PlayersController(
         GetAllPlayersHandler getAllHandler,
@@ -25,7 +29,8 @@ public class PlayersController : ControllerBase
         CreatePlayerHandler createHandler,
         ImportPlayersHandler importHandler,
         UpdatePlayerHandler updateHandler,
-        DeletePlayerHandler deleteHandler)
+        DeletePlayerHandler deleteHandler,
+        IApiFootballService apiFootball)
     {
         _getAllHandler = getAllHandler;
         _getByIdHandler = getByIdHandler;
@@ -34,6 +39,7 @@ public class PlayersController : ControllerBase
         _importHandler = importHandler;
         _updateHandler = updateHandler;
         _deleteHandler = deleteHandler;
+        _apiFootball = apiFootball;
     }
 
     private string? CurrentUserId =>
@@ -115,14 +121,96 @@ public class PlayersController : ControllerBase
     }
 
     [HttpPost("import", Name = "ImportPlayers")]
-    public IActionResult Import(
+    public async Task<IActionResult> Import(
         [FromBody] IEnumerable<ImportPlayerItemDto> items,
         CancellationToken ct)
     {
-        // Fase 2B: requiere API-Football externa.
-        var resp = ApiResponse<IEnumerable<PlayerListItemDto>>.NotImplemented(
-            "Import quedará disponible en Fase 2B con API-Football");
-        return StatusCode(resp.Status, resp);
+        if (string.IsNullOrWhiteSpace(CurrentUserId))
+            return StatusCode(401, ApiResponse<ImportResultDto>.Unauthorized());
+
+        var result = await _importHandler.HandleAsync(
+            items, CurrentUserId, Lat(), Lng(), City(), Country(), ct);
+        return StatusCode(result.Status, result);
+    }
+
+    // ─────────────────── API-Football proxy endpoints (Fase 2B) ───────────────────
+    // Públicos — el usuario no registrado puede buscar antes de decidir si crea cuenta.
+
+    [HttpGet("search-external", Name = "SearchExternalPlayers")]
+    public async Task<IActionResult> SearchExternal(
+        [FromQuery] string query,
+        [FromQuery] int page = 1,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var pageResult = await _apiFootball.SearchProfilesAsync(query, page, ct);
+
+            // Cada página API-Football = 20 items. Lo exponemos como PagedResponse
+            // para que el frontend (móvil) pinte scroll infinito de 20 en 20.
+            var paged = PagedResponse<ApiFootballProfileSummary>.Success(
+                data:    pageResult.Items,
+                page:    pageResult.Page,
+                limit:   20,
+                total:   pageResult.TotalResults);
+
+            var links = new Dictionary<string, HateoasLink>
+            {
+                ["self"]  = new(Url.Link("SearchExternalPlayers",
+                    new { query, page = pageResult.Page })!, "self", "GET"),
+                ["first"] = new(Url.Link("SearchExternalPlayers",
+                    new { query, page = 1 })!, "first", "GET"),
+                ["last"]  = new(Url.Link("SearchExternalPlayers",
+                    new { query, page = Math.Max(pageResult.TotalPages, 1) })!, "last", "GET"),
+            };
+            if (pageResult.Page > 1)
+                links["prev"] = new(Url.Link("SearchExternalPlayers",
+                    new { query, page = pageResult.Page - 1 })!, "prev", "GET");
+            if (pageResult.Page < pageResult.TotalPages)
+                links["next"] = new(Url.Link("SearchExternalPlayers",
+                    new { query, page = pageResult.Page + 1 })!, "next", "GET");
+
+            return Ok(paged.WithLinks(links));
+        }
+        catch (ApiFootballException ex)
+        {
+            return MapApiFootballError<IReadOnlyList<ApiFootballProfileSummary>>(ex.Error);
+        }
+    }
+
+    [HttpGet("external/{apiFootballId:int}/seasons", Name = "GetExternalSeasons")]
+    public async Task<IActionResult> ExternalSeasons(
+        int apiFootballId, CancellationToken ct)
+    {
+        try
+        {
+            var seasons = await _apiFootball.GetSeasonsAsync(apiFootballId, ct);
+            return Ok(ApiResponse<IReadOnlyList<int>>.Success(seasons));
+        }
+        catch (ApiFootballException ex)
+        {
+            return MapApiFootballError<IReadOnlyList<int>>(ex.Error);
+        }
+    }
+
+    private IActionResult MapApiFootballError<T>(ApiFootballError error)
+    {
+        int status = error switch
+        {
+            ApiFootballError.NotFound              => 404,
+            ApiFootballError.InvalidParameter      => 400,
+            ApiFootballError.SeasonNotAvailable    => 422,
+            ApiFootballError.AuthenticationFailed  => 500,
+            ApiFootballError.RateLimited           => 503,
+            ApiFootballError.DailyQuotaExceeded    => 503,
+            ApiFootballError.Timeout               => 504,
+            _                                      => 502,
+        };
+        return StatusCode(status, new ApiResponse<T>
+        {
+            Status = status,
+            Message = error.Message,
+        });
     }
 
     [HttpPut("{id:guid}", Name = "UpdatePlayer")]

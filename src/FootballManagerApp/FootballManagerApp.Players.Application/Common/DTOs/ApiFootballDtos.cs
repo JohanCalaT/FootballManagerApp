@@ -1,21 +1,73 @@
 namespace FootballManagerApp.Players.Application.Common.DTOs;
 
-public record PlayerSearchResult(
+// DTOs de salida del IApiFootballService — los consume el Handler.
+// Los DTOs crudos del HTTP (envelope, [JsonPropertyName], etc.) viven en
+// Players.Infrastructure/ExternalServices/ApiFootball/Dtos/.
+
+public record ApiFootballProfileSummary(
     int ApiFootballId,
     string Name,
-    string? Photo,
+    string? FirstName,
+    string? LastName,
+    string? Nationality,
+    string? BirthDate,
+    string? BirthPlace,
+    string? BirthCountry,
+    string? Height,
+    string? Weight,
+    int? ShirtNumber,
     string? Position,
-    string? Nationality);
+    string? Photo);
 
-public record ApiFootballStatistics(
+public record ApiFootballSearchPage(
+    IReadOnlyList<ApiFootballProfileSummary> Items,
+    int Page,
+    int TotalPages,
+    int TotalResults);
+
+public record ApiFootballImportData(
+    ApiFootballProfileSummary Profile,
+    IReadOnlyList<ApiFootballStatLine> Statistics);
+
+public record ApiFootballStatLine(
     int Season,
-    string TeamName,
+    int? LeagueId,
     string LeagueName,
-    int Appearances,
-    int Goals,
-    int Assists,
-    decimal? Rating);
-
-public record ApiFootballPlayerData(
-    PlayerSearchResult Player,
-    IEnumerable<ApiFootballStatistics> Statistics);
+    string? LeagueCountry,
+    string? LeagueLogo,
+    int? TeamId,
+    string TeamName,
+    string? TeamLogo,
+    int? Appearances,
+    int? Lineups,
+    int? Minutes,
+    string? Position,
+    decimal? Rating,
+    bool Captain,
+    int? SubstitutesIn,
+    int? SubstitutesOut,
+    int? SubstitutesBench,
+    int? ShotsTotal,
+    int? ShotsOn,
+    int? Goals,
+    int? GoalsConceded,
+    int? GoalsSaves,
+    int? Assists,
+    int? PassesTotal,
+    int? PassesKey,
+    int? PassesAccuracy,
+    int? TacklesTotal,
+    int? TacklesBlocks,
+    int? Interceptions,
+    int? DuelsTotal,
+    int? DuelsWon,
+    int? DribblesAttempts,
+    int? DribblesSuccess,
+    int? FoulsDrawn,
+    int? FoulsCommitted,
+    int? CardsYellow,
+    int? CardsYellowRed,
+    int? CardsRed,
+    int? PenaltyScored,
+    int? PenaltyMissed,
+    int? PenaltySaved);

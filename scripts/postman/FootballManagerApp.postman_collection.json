@@ -13,7 +13,8 @@
     { "key": "pedriVersion","value": "0",                    "type": "string" },
     { "key": "viniciusId",  "value": "",                     "type": "string" },
     { "key": "bellinghamId","value": "",                     "type": "string" },
-    { "key": "commentId",   "value": "",                     "type": "string" }
+    { "key": "commentId",       "value": "",                     "type": "string" },
+    { "key": "externalPlayerId","value": "154",                  "type": "string" }
   ],
   "item": [
     {
@@ -557,12 +558,108 @@
       ]
     },
     {
-      "name": "7. Fase 2B (esperan 501)",
+      "name": "7. API-Football (Fase 2B)",
+      "description": "Estos requests consumen tu cuota de API-Football real (10/min, 100/día).\nEjecuta con moderación.",
       "item": [
         {
-          "name": "POST import → 501",
+          "name": "GET search-external Messi page=1",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('501 Not Implemented', () => pm.response.to.have.status(501));"
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('respuesta paginada', () => {",
+            "  pm.expect(body.page).to.equal(1);",
+            "  pm.expect(body.limit).to.equal(20);",
+            "  pm.expect(body._links).to.have.property('self');",
+            "});",
+            "if (body.data && body.data.length > 0) {",
+            "  pm.collectionVariables.set('externalPlayerId', body.data[0].apiFootballId);",
+            "}"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{playersUrl}}/api/players/search-external?query=Messi&page=1",
+              "host": ["{{playersUrl}}"],
+              "path": ["api","players","search-external"],
+              "query": [
+                { "key": "query", "value": "Messi" },
+                { "key": "page", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET search-external Messi page=2",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('página = 2', () => pm.expect(pm.response.json().page).to.equal(2));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{playersUrl}}/api/players/search-external?query=Messi&page=2",
+              "host": ["{{playersUrl}}"],
+              "path": ["api","players","search-external"],
+              "query": [
+                { "key": "query", "value": "Messi" },
+                { "key": "page", "value": "2" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET search-external (query corta) → 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request (query < 3 chars)', () => pm.response.to.have.status(400));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{playersUrl}}/api/players/search-external?query=ab",
+              "host": ["{{playersUrl}}"],
+              "path": ["api","players","search-external"],
+              "query": [{ "key": "query", "value": "ab" }]
+            }
+          }
+        },
+        {
+          "name": "GET external/{id}/seasons (Messi)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('solo 2022-2024', () => {",
+            "  const seasons = pm.response.json().data;",
+            "  seasons.forEach(s => pm.expect([2022,2023,2024]).to.include(s));",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{playersUrl}}/api/players/external/{{externalPlayerId}}/seasons"
+          }
+        },
+        {
+          "name": "POST import Messi 2022 → 201",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.test('1 jugador importado', () => pm.expect(pm.response.json().data.length).to.equal(1));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-Client-Lat", "value": "36.834" },
+              { "key": "X-Client-Lng", "value": "-2.464" },
+              { "key": "X-Client-City", "value": "Almería" },
+              { "key": "X-Client-Country", "value": "España" }
+            ],
+            "body": { "mode": "raw", "raw": "[{ \"apiFootballId\": {{externalPlayerId}}, \"season\": 2022 }]" },
+            "url": "{{playersUrl}}/api/players/import"
+          }
+        },
+        {
+          "name": "POST import duplicado → 409",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('409 Conflict (ya importado)', () => pm.response.to.have.status(409));"
           ]}}],
           "request": {
             "method": "POST",
@@ -570,12 +667,27 @@
               { "key": "Content-Type", "value": "application/json" },
               { "key": "X-User-Id", "value": "{{userId}}" }
             ],
-            "body": { "mode": "raw", "raw": "[{ \"apiFootballId\": 909, \"season\": 2024 }]" },
+            "body": { "mode": "raw", "raw": "[{ \"apiFootballId\": {{externalPlayerId}}, \"season\": 2022 }]" },
             "url": "{{playersUrl}}/api/players/import"
           }
         },
         {
-          "name": "POST ideal-team → 501",
+          "name": "POST import season inválida → 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request (season 2019)', () => pm.response.to.have.status(400));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "[{ \"apiFootballId\": 154, \"season\": 2019 }]" },
+            "url": "{{playersUrl}}/api/players/import"
+          }
+        },
+        {
+          "name": "POST ideal-team → 501 (Gemini pendiente)",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('501 Not Implemented', () => pm.response.to.have.status(501));"
           ]}}],

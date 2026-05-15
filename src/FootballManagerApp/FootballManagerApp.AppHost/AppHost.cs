@@ -20,7 +20,16 @@ var postgres = builder.AddAzurePostgresFlexibleServer("postgres")
 var playersDb = postgres.AddDatabase("playersdb");
 var commentsDb = postgres.AddDatabase("commentsdb");
 
-// Redis se añadirá en Fase 2B junto con API-Football y el cache-aside.
+// Redis: local = Docker container fixed port + persistent volume,
+// cloud = Azure Managed Redis. Cache-aside lo usan Players.API y Comments.API.
+var redis = builder.AddAzureManagedRedis("redis")
+    .RunAsContainer(c => c
+        .WithDataVolume()
+        .WithHostPort(6379));
+
+// External API secrets — user-secrets del AppHost en local, Key Vault en cloud.
+var apiFootballKey = builder.AddParameter("ApiFootballKey", secret: true);
+var geminiApiKey   = builder.AddParameter("GeminiApiKey",   secret: true);
 
 // Migration workers — run once per deploy, exit, gate the APIs via WaitForCompletion.
 var playersMigrations = builder
@@ -35,12 +44,18 @@ var commentsMigrations = builder
 
 var commentsApi = builder.AddProject<Projects.FootballManagerApp_Comments_API>("comments-api")
     .WithReference(commentsDb)
-    .WaitForCompletion(commentsMigrations);
+    .WithReference(redis)
+    .WaitForCompletion(commentsMigrations)
+    .WaitFor(redis);
 
 var playersApi = builder.AddProject<Projects.FootballManagerApp_Players_API>("players-api")
     .WithReference(playersDb)
+    .WithReference(redis)
     .WithReference(commentsApi)
-    .WaitForCompletion(playersMigrations);
+    .WithEnvironment("ApiFootball__ApiKey", apiFootballKey)
+    .WithEnvironment("Gemini__ApiKey",     geminiApiKey)
+    .WaitForCompletion(playersMigrations)
+    .WaitFor(redis);
 
 var gateway = builder.AddProject<Projects.FootballManagerApp_Gateway>("gateway")
     .WithReference(playersApi)

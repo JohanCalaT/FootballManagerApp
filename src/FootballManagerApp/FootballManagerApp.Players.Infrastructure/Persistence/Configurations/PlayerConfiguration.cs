@@ -12,9 +12,11 @@ public class PlayerConfiguration : IEntityTypeConfiguration<Player>
         builder.HasKey(p => p.Id);
 
         builder.Property(p => p.ApiFootballId);
+        // Unique entre jugadores ACTIVOS — los soft-deleted (DeletedAt != null)
+        // no participan, así puedes re-importar el mismo apiFootballId tras borrar.
         builder.HasIndex(p => p.ApiFootballId)
             .IsUnique()
-            .HasFilter("\"ApiFootballId\" IS NOT NULL");
+            .HasFilter("\"ApiFootballId\" IS NOT NULL AND \"DeletedAt\" IS NULL");
 
         builder.Property(p => p.Name).IsRequired().HasMaxLength(100);
         builder.Property(p => p.FirstName).HasMaxLength(100);
