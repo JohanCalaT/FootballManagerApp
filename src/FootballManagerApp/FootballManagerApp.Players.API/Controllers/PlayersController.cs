@@ -1,3 +1,4 @@
+using FootballManagerApp.Players.API.Hateoas;
 using FootballManagerApp.Players.Application.Players.DTOs;
 using FootballManagerApp.Players.Application.Players.Handlers;
 using FootballManagerApp.Shared.Responses;
@@ -41,20 +42,30 @@ public class PlayersController : ControllerBase
     private bool IsAdmin =>
         string.Equals(
             Request.Headers["X-User-Admin"].FirstOrDefault(),
-            "true",
-            StringComparison.OrdinalIgnoreCase);
+            "true", StringComparison.OrdinalIgnoreCase);
+
+    private decimal? Lat() =>
+        decimal.TryParse(Request.Headers["X-Client-Lat"].FirstOrDefault(),
+            System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : null;
+    private decimal? Lng() =>
+        decimal.TryParse(Request.Headers["X-Client-Lng"].FirstOrDefault(),
+            System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : null;
+    private string? City() => Request.Headers["X-Client-City"].FirstOrDefault();
+    private string? Country() => Request.Headers["X-Client-Country"].FirstOrDefault();
 
     [HttpGet(Name = "GetAllPlayers")]
-    public IActionResult GetAll(
+    public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int limit = 10,
         CancellationToken ct = default)
     {
-        return Ok(ApiResponse<string>.Success("Ready — TODO Fase 2"));
+        var result = await _getAllHandler.HandleAsync(page, limit, ct);
+        var withLinks = result.WithLinks(PlayerLinks.ForList(Url, page, limit, result.Total));
+        return StatusCode(result.Status, withLinks);
     }
 
     [HttpGet("search", Name = "SearchPlayers")]
-    public IActionResult Search(
+    public async Task<IActionResult> Search(
         [FromQuery] string? name,
         [FromQuery] string? team,
         [FromQuery] string? league,
@@ -64,21 +75,39 @@ public class PlayersController : ControllerBase
         [FromQuery] int limit = 10,
         CancellationToken ct = default)
     {
-        return Ok(ApiResponse<string>.Success("Ready — TODO Fase 2"));
+        var result = await _searchHandler.HandleAsync(
+            name, team, league, from, to, page, limit, ct);
+        var withLinks = result.WithLinks(PlayerLinks.ForList(Url, page, limit, result.Total));
+        return StatusCode(result.Status, withLinks);
     }
 
     [HttpGet("{id:guid}", Name = "GetPlayerById")]
-    public IActionResult GetById(Guid id, CancellationToken ct)
+    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        return Ok(ApiResponse<string>.Success("Ready — TODO Fase 2"));
+        var result = await _getByIdHandler.HandleAsync(id, ct);
+        if (result.Status == 200)
+            result = result.WithLinks(PlayerLinks.ForDetail(Url, id, commentsBase: null, IsAdmin));
+        return StatusCode(result.Status, result);
     }
 
     [HttpPost(Name = "CreatePlayer")]
-    public IActionResult Create(
+    public async Task<IActionResult> Create(
         [FromBody] CreatePlayerDto dto,
         CancellationToken ct)
     {
-        return Ok(ApiResponse<string>.Success("Ready — TODO Fase 2"));
+        if (string.IsNullOrWhiteSpace(CurrentUserId))
+            return StatusCode(401, ApiResponse<PlayerDetailDto>.Unauthorized());
+
+        var result = await _createHandler.HandleAsync(
+            dto, CurrentUserId, Lat(), Lng(), City(), Country(), ct);
+
+        if (result.Status == 201 && result.Data is not null)
+        {
+            var id = result.Data.Id;
+            result = result.WithLinks(PlayerLinks.ForDetail(Url, id, commentsBase: null, IsAdmin));
+            Response.Headers.Location = Url.Link("GetPlayerById", new { id });
+        }
+        return StatusCode(result.Status, result);
     }
 
     [HttpPost("import", Name = "ImportPlayers")]
@@ -86,21 +115,36 @@ public class PlayersController : ControllerBase
         [FromBody] IEnumerable<ImportPlayerItemDto> items,
         CancellationToken ct)
     {
-        return Ok(ApiResponse<string>.Success("Ready — TODO Fase 2"));
+        // Fase 2B: requiere API-Football externa.
+        var resp = ApiResponse<IEnumerable<PlayerListItemDto>>.NotImplemented(
+            "Import quedará disponible en Fase 2B con API-Football");
+        return StatusCode(resp.Status, resp);
     }
 
     [HttpPut("{id:guid}", Name = "UpdatePlayer")]
-    public IActionResult Update(
+    public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdatePlayerDto dto,
         CancellationToken ct)
     {
-        return Ok(ApiResponse<string>.Success("Ready — TODO Fase 2"));
+        if (!IsAdmin)
+            return StatusCode(403, ApiResponse<PlayerDetailDto>.Forbidden());
+
+        var result = await _updateHandler.HandleAsync(id, dto, ct);
+        if (result.Status == 200)
+            result = result.WithLinks(PlayerLinks.ForDetail(Url, id, commentsBase: null, IsAdmin));
+        return StatusCode(result.Status, result);
     }
 
     [HttpDelete("{id:guid}", Name = "DeletePlayer")]
-    public IActionResult Delete(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        return Ok(ApiResponse<string>.Success("Ready — TODO Fase 2"));
+        if (!IsAdmin)
+            return StatusCode(403, ApiResponse<object>.Forbidden());
+
+        var result = await _deleteHandler.HandleAsync(id, ct);
+        return result.Status == 204
+            ? NoContent()
+            : StatusCode(result.Status, result);
     }
 }

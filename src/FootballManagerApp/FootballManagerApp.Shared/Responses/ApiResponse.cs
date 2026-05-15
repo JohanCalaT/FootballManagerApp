@@ -39,6 +39,17 @@ public record ApiResponse<T>
         string message = "Error interno del servidor") =>
         new() { Status = 500, Message = message, Data = default };
 
+    public static ApiResponse<T> NotImplemented(
+        string message = "Funcionalidad no disponible") =>
+        new() { Status = 501, Message = message, Data = default };
+
+    public static ApiResponse<T> Conflict(
+        string message = "Conflicto") =>
+        new() { Status = 409, Message = message, Data = default };
+
+    public static ApiResponse<T> NoContent() =>
+        new() { Status = 204, Message = "Sin contenido", Data = default };
+
     public ApiResponse<T> WithLinks(Dictionary<string, HateoasLink> links) =>
         this with { Links = links };
 }

@@ -1,3 +1,4 @@
+using FootballManagerApp.Players.Application.IdealTeam.DTOs;
 using FootballManagerApp.Players.Application.IdealTeam.Handlers;
 using FootballManagerApp.Players.Application.Players.DTOs;
 using FootballManagerApp.Shared.Responses;
@@ -14,14 +15,14 @@ public class IdealTeamController : ControllerBase
     public IdealTeamController(GenerateIdealTeamHandler handler) =>
         _handler = handler;
 
-    private string? CurrentUserId =>
-        Request.Headers["X-User-Id"].FirstOrDefault();
-
     [HttpPost(Name = "GenerateIdealTeam")]
     public IActionResult Generate(
         [FromBody] GenerateIdealTeamDto dto,
         CancellationToken ct)
     {
-        return Ok(ApiResponse<string>.Success("Ready — TODO Fase 2"));
+        // Fase 2B: requiere Gemini.
+        var resp = ApiResponse<IdealTeamResponseDto>.NotImplemented(
+            "GenerateIdealTeam disponible en Fase 2B con Gemini");
+        return StatusCode(resp.Status, resp);
     }
 }

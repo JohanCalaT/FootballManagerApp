@@ -1,18 +1,81 @@
+using System.Net.Http.Json;
 using FootballManagerApp.Players.Application.Common.DTOs;
 using FootballManagerApp.Players.Application.Common.Interfaces;
+using Microsoft.Extensions.Logging;
+using Polly.CircuitBreaker;
 
 namespace FootballManagerApp.Players.Infrastructure.Http;
 
 public class CommentsClient : ICommentsClient
 {
     private readonly HttpClient _http;
+    private readonly ILogger<CommentsClient> _logger;
 
-    public CommentsClient(HttpClient http) => _http = http;
+    public CommentsClient(HttpClient http, ILogger<CommentsClient> logger)
+    {
+        _http = http;
+        _logger = logger;
+    }
 
-    public Task<IEnumerable<CommentDto>> GetByPlayerIdAsync(
-        Guid playerId, CancellationToken ct) =>
-        throw new NotImplementedException("TODO Fase 2");
+    public async Task<IEnumerable<CommentDto>> GetByPlayerIdAsync(
+        Guid playerId, CancellationToken ct)
+    {
+        try
+        {
+            var dtos = await _http.GetFromJsonAsync<IEnumerable<CommentDto>>(
+                $"api/comments/player/{playerId}", ct);
+            return dtos ?? Array.Empty<CommentDto>();
+        }
+        catch (BrokenCircuitException ex)
+        {
+            _logger.LogWarning(ex,
+                "Comments circuit open while fetching player {PlayerId}; returning empty list",
+                playerId);
+            return Array.Empty<CommentDto>();
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning(ex,
+                "Comments service unreachable for player {PlayerId}; returning empty list",
+                playerId);
+            return Array.Empty<CommentDto>();
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            _logger.LogWarning(ex,
+                "Comments service timed out for player {PlayerId}; returning empty list",
+                playerId);
+            return Array.Empty<CommentDto>();
+        }
+    }
 
-    public Task<bool> DeleteAsync(Guid commentId, CancellationToken ct) =>
-        throw new NotImplementedException("TODO Fase 2");
+    public async Task<bool> DeleteAsync(Guid commentId, CancellationToken ct)
+    {
+        try
+        {
+            var response = await _http.DeleteAsync($"api/comments/{commentId}", ct);
+            return response.IsSuccessStatusCode;
+        }
+        catch (BrokenCircuitException ex)
+        {
+            _logger.LogWarning(ex,
+                "Comments circuit open while deleting comment {CommentId}",
+                commentId);
+            return false;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning(ex,
+                "Comments service unreachable while deleting comment {CommentId}",
+                commentId);
+            return false;
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            _logger.LogWarning(ex,
+                "Comments service timed out while deleting comment {CommentId}",
+                commentId);
+            return false;
+        }
+    }
 }

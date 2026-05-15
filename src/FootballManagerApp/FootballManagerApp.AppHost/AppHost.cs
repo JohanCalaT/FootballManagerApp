@@ -20,12 +20,7 @@ var postgres = builder.AddAzurePostgresFlexibleServer("postgres")
 var playersDb = postgres.AddDatabase("playersdb");
 var commentsDb = postgres.AddDatabase("commentsdb");
 
-// Redis: local = Docker container fixed port + persistent volume,
-// cloud = Azure Managed Redis.
-var redis = builder.AddAzureManagedRedis("redis")
-    .RunAsContainer(c => c
-        .WithDataVolume()
-        .WithHostPort(6379));
+// Redis se añadirá en Fase 2B junto con API-Football y el cache-aside.
 
 // Migration workers — run once per deploy, exit, gate the APIs via WaitForCompletion.
 var playersMigrations = builder
@@ -38,17 +33,14 @@ var commentsMigrations = builder
     .WithReference(commentsDb)
     .WaitFor(commentsDb);
 
-var playersApi = builder.AddProject<Projects.FootballManagerApp_Players_API>("players-api")
-    .WithReference(playersDb)
-    .WithReference(redis)
-    .WaitForCompletion(playersMigrations)
-    .WaitFor(redis);
-
 var commentsApi = builder.AddProject<Projects.FootballManagerApp_Comments_API>("comments-api")
     .WithReference(commentsDb)
-    .WithReference(redis)
-    .WaitForCompletion(commentsMigrations)
-    .WaitFor(redis);
+    .WaitForCompletion(commentsMigrations);
+
+var playersApi = builder.AddProject<Projects.FootballManagerApp_Players_API>("players-api")
+    .WithReference(playersDb)
+    .WithReference(commentsApi)
+    .WaitForCompletion(playersMigrations);
 
 var gateway = builder.AddProject<Projects.FootballManagerApp_Gateway>("gateway")
     .WithReference(playersApi)

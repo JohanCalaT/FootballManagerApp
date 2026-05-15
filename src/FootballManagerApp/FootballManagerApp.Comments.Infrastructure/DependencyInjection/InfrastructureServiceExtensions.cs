@@ -1,6 +1,7 @@
+using FluentValidation;
 using FootballManagerApp.Comments.Application.Common.Interfaces;
 using FootballManagerApp.Comments.Application.Comments.Handlers;
-using FootballManagerApp.Comments.Infrastructure.Cache;
+using FootballManagerApp.Comments.Application.Comments.Validators;
 using FootballManagerApp.Comments.Infrastructure.Persistence.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,8 +14,10 @@ public static class InfrastructureServiceExtensions
         // Repositorio
         services.AddScoped<ICommentRepository, CommentRepository>();
 
-        // Cache
-        services.AddScoped<ICacheService, RedisCacheService>();
+        // ICacheService → se registra en Fase 2B con Redis.
+
+        // Validators (FluentValidation)
+        services.AddValidatorsFromAssemblyContaining<CreateCommentValidator>();
 
         // Handlers
         services.AddScoped<GetCommentsByPlayerHandler>();

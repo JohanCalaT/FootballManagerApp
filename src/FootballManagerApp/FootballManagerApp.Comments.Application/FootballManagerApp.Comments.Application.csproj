@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FootballManagerApp.Comments.Domain\FootballManagerApp.Comments.Domain.csproj" />
     <ProjectReference Include="..\FootballManagerApp.Shared\FootballManagerApp.Shared.csproj" />
   </ItemGroup>

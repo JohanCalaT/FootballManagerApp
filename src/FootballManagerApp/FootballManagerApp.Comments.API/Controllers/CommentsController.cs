@@ -1,3 +1,4 @@
+using FootballManagerApp.Comments.API.Hateoas;
 using FootballManagerApp.Comments.Application.Comments.DTOs;
 using FootballManagerApp.Comments.Application.Comments.Handlers;
 using FootballManagerApp.Shared.Responses;
@@ -29,27 +30,43 @@ public class CommentsController : ControllerBase
     private bool IsAdmin =>
         string.Equals(
             Request.Headers["X-User-Admin"].FirstOrDefault(),
-            "true",
-            StringComparison.OrdinalIgnoreCase);
+            "true", StringComparison.OrdinalIgnoreCase);
 
     [HttpGet("player/{playerId:guid}", Name = "GetCommentsByPlayer")]
-    public IActionResult GetByPlayer(Guid playerId, CancellationToken ct)
+    public async Task<IActionResult> GetByPlayer(Guid playerId, CancellationToken ct)
     {
-        return Ok(ApiResponse<string>.Success("Ready — TODO Fase 2"));
+        var result = await _getByPlayerHandler.HandleAsync(playerId, ct);
+        if (result.Status == 200)
+            result = result.WithLinks(CommentLinks.ForList(Url, playerId));
+        return StatusCode(result.Status, result);
     }
 
     [HttpPost("player/{playerId:guid}", Name = "CreateCommentForPlayer")]
-    public IActionResult Create(
+    public async Task<IActionResult> Create(
         Guid playerId,
         [FromBody] CreateCommentDto dto,
         CancellationToken ct)
     {
-        return Ok(ApiResponse<string>.Success("Ready — TODO Fase 2"));
+        var result = await _createHandler.HandleAsync(
+            playerId, dto, CurrentUserId, ct);
+
+        if (result.Status == 201 && result.Data is not null)
+        {
+            result = result.WithLinks(
+                CommentLinks.ForDetail(Url, playerId, result.Data.Id, IsAdmin));
+        }
+        return StatusCode(result.Status, result);
     }
 
     [HttpDelete("{id:guid}", Name = "DeleteComment")]
-    public IActionResult Delete(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        return Ok(ApiResponse<string>.Success("Ready — TODO Fase 2"));
+        if (!IsAdmin)
+            return StatusCode(403, ApiResponse<object>.Forbidden());
+
+        var result = await _deleteHandler.HandleAsync(id, ct);
+        return result.Status == 204
+            ? NoContent()
+            : StatusCode(result.Status, result);
     }
 }
