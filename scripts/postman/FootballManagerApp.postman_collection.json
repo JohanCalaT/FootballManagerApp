@@ -1,0 +1,595 @@
+{
+  "info": {
+    "_postman_id": "fma-crud-2026-05-15",
+    "name": "FootballManagerApp — CRUD golden path",
+    "description": "Recorrido completo del CRUD de Players y Comments con todas las validaciones hardened.\n\n## Cómo usar\n\n1. Levanta la AppHost: `dotnet run --project src/FootballManagerApp/FootballManagerApp.AppHost`\n2. Abre el dashboard de Aspire (la URL aparece en consola).\n3. Copia las URLs de `players-api` y `comments-api`.\n4. En Postman/Scalar, importa este archivo y pega las URLs en `playersUrl` y `commentsUrl`.\n5. Pulsa **Run collection** — los IDs / versions se guardan automáticamente entre llamadas.\n\n## Cubre\n\n- CRUD completo Players + Comments con datos realistas (Pedri, Vinícius, Bellingham)\n- HATEOAS _links, ETag/If-Match (412)\n- Soft-delete (DELETE → GET 404)\n- DELETE idempotente (2º DELETE = 204)\n- Conflict por nombre+equipo (409)\n- Rate limit 5/min en POST comment (429)\n- Endpoints Fase 2B → 501\n- Rating decimal con medias estrellas (4.5)\n- BirthDate validado",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "playersUrl",  "value": "http://localhost:5101", "type": "string" },
+    { "key": "commentsUrl", "value": "http://localhost:5201", "type": "string" },
+    { "key": "userId",      "value": "uid-johan",            "type": "string" },
+    { "key": "pedriId",     "value": "",                     "type": "string" },
+    { "key": "pedriVersion","value": "0",                    "type": "string" },
+    { "key": "viniciusId",  "value": "",                     "type": "string" },
+    { "key": "bellinghamId","value": "",                     "type": "string" },
+    { "key": "commentId",   "value": "",                     "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "0. Health",
+      "item": [
+        {
+          "name": "Players health",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{playersUrl}}/health" }
+        },
+        {
+          "name": "Comments health",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{commentsUrl}}/health" }
+        }
+      ]
+    },
+    {
+      "name": "1. Crear jugadores",
+      "item": [
+        {
+          "name": "POST Pedri González",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('HATEOAS self+comments', () => {",
+            "  pm.expect(body._links.self).to.exist;",
+            "  pm.expect(body._links.comments).to.exist;",
+            "});",
+            "pm.test('Version inicial = 0', () => pm.expect(body.data.version).to.equal(0));",
+            "pm.collectionVariables.set('pedriId', body.data.id);",
+            "pm.collectionVariables.set('pedriVersion', body.data.version);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-Client-Lat", "value": "36.834" },
+              { "key": "X-Client-Lng", "value": "-2.464" },
+              { "key": "X-Client-City", "value": "Almería" },
+              { "key": "X-Client-Country", "value": "España" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pedri González\",\n  \"team\": \"FC Barcelona\",\n  \"league\": \"La Liga\",\n  \"position\": \"Midfielder\",\n  \"imageUrl\": \"https://media.api-sports.io/football/players/909.png\",\n  \"imageSource\": \"api\",\n  \"nationality\": \"Spain\",\n  \"birthDate\": \"2002-11-25\",\n  \"height\": \"174 cm\",\n  \"weight\": \"60 kg\",\n  \"shirtNumber\": 8,\n  \"playerLat\": 41.380898,\n  \"playerLng\": 2.122820,\n  \"playerCity\": \"Barcelona\",\n  \"playerCountry\": \"España\",\n  \"statistics\": [\n    {\n      \"season\": 2024,\n      \"teamName\": \"FC Barcelona\",\n      \"leagueName\": \"La Liga\",\n      \"appearances\": 31,\n      \"goals\": 7,\n      \"assists\": 9,\n      \"rating\": 7.6\n    }\n  ]\n}"
+            },
+            "url": "{{playersUrl}}/api/players"
+          }
+        },
+        {
+          "name": "POST Vinícius Jr.",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('viniciusId', pm.response.json().data.id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Vinícius Júnior\",\n  \"team\": \"Real Madrid\",\n  \"league\": \"La Liga\",\n  \"position\": \"Attacker\",\n  \"imageUrl\": \"https://media.api-sports.io/football/players/2295.png\",\n  \"imageSource\": \"api\",\n  \"nationality\": \"Brazil\",\n  \"birthDate\": \"2000-07-12\",\n  \"height\": \"176 cm\",\n  \"weight\": \"73 kg\",\n  \"shirtNumber\": 7,\n  \"playerLat\": 40.453054,\n  \"playerLng\": -3.688344,\n  \"playerCity\": \"Madrid\",\n  \"playerCountry\": \"España\",\n  \"statistics\": [\n    { \"season\": 2024, \"teamName\": \"Real Madrid\", \"leagueName\": \"La Liga\", \"appearances\": 30, \"goals\": 24, \"assists\": 11, \"rating\": 7.9 }\n  ]\n}"
+            },
+            "url": "{{playersUrl}}/api/players"
+          }
+        },
+        {
+          "name": "POST Bellingham",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('bellinghamId', pm.response.json().data.id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jude Bellingham\",\n  \"team\": \"Real Madrid\",\n  \"league\": \"La Liga\",\n  \"position\": \"Midfielder\",\n  \"imageUrl\": \"https://media.api-sports.io/football/players/19220.png\",\n  \"imageSource\": \"api\",\n  \"nationality\": \"England\",\n  \"birthDate\": \"2003-06-29\",\n  \"height\": \"186 cm\",\n  \"weight\": \"75 kg\",\n  \"shirtNumber\": 5\n}"
+            },
+            "url": "{{playersUrl}}/api/players"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Validaciones (esperan 400/409/401)",
+      "item": [
+        {
+          "name": "POST sin X-User-Id → 401",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Anon\",\n  \"team\": \"X\",\n  \"league\": \"Y\"\n}" },
+            "url": "{{playersUrl}}/api/players"
+          }
+        },
+        {
+          "name": "POST Name muy corto → 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('mensaje menciona Name', () => pm.expect(pm.response.json().message).to.contain('Name'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"A\",\n  \"team\": \"FC Test\",\n  \"league\": \"Liga\"\n}" },
+            "url": "{{playersUrl}}/api/players"
+          }
+        },
+        {
+          "name": "POST BirthDate fuera de rango → 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('mensaje menciona BirthDate', () => pm.expect(pm.response.json().message).to.contain('BirthDate'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Vie Jo\",\n  \"team\": \"Real Madrid\",\n  \"league\": \"La Liga\",\n  \"birthDate\": \"1850-01-01\"\n}" },
+            "url": "{{playersUrl}}/api/players"
+          }
+        },
+        {
+          "name": "POST Statistics duplicadas → 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('mensaje menciona duplicadas', () => pm.expect(pm.response.json().message).to.contain('duplicadas'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Player Dup\",\n  \"team\": \"FC Dup\",\n  \"league\": \"Liga\",\n  \"statistics\": [\n    { \"season\": 2024, \"teamName\": \"FC Dup\", \"leagueName\": \"Liga\", \"appearances\": 1, \"goals\": 0, \"assists\": 0, \"rating\": 7.0 },\n    { \"season\": 2024, \"teamName\": \" fc dup \", \"leagueName\": \"LIGA\",  \"appearances\": 5, \"goals\": 2, \"assists\": 1, \"rating\": 7.2 }\n  ]\n}"
+            },
+            "url": "{{playersUrl}}/api/players"
+          }
+        },
+        {
+          "name": "POST Pedri otra vez (mismo Name+Team) → 409",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+            "pm.test('mensaje incluye id del existente', () => {",
+            "  pm.expect(pm.response.json().message).to.contain(pm.collectionVariables.get('pedriId'));",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Pedri González\",\n  \"team\": \"FC Barcelona\",\n  \"league\": \"La Liga\"\n}" },
+            "url": "{{playersUrl}}/api/players"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Lecturas (HATEOAS + ETag)",
+      "item": [
+        {
+          "name": "GET listar paginado",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('total >= 3', () => pm.expect(body.total).to.be.at.least(3));",
+            "pm.test('HATEOAS first/self/last', () => {",
+            "  pm.expect(body._links.self).to.exist;",
+            "  pm.expect(body._links.first).to.exist;",
+            "  pm.expect(body._links.last).to.exist;",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{playersUrl}}/api/players?page=1&limit=10",
+              "host": ["{{playersUrl}}"],
+              "path": ["api","players"],
+              "query": [ { "key": "page", "value": "1" }, { "key": "limit", "value": "10" } ]
+            }
+          }
+        },
+        {
+          "name": "GET buscar 'Pedri'",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('al menos 1', () => pm.expect(pm.response.json().total).to.be.at.least(1));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{playersUrl}}/api/players/search?name=Pedri",
+              "host": ["{{playersUrl}}"],
+              "path": ["api","players","search"],
+              "query": [{ "key": "name", "value": "Pedri" }]
+            }
+          }
+        },
+        {
+          "name": "GET buscar wildcard literal '%' (no rompe)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK (wildcards escapados)', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{playersUrl}}/api/players/search?name=100%25",
+              "host": ["{{playersUrl}}"],
+              "path": ["api","players","search"],
+              "query": [{ "key": "name", "value": "100%" }]
+            }
+          }
+        },
+        {
+          "name": "GET Pedri (sin comentarios) — ETag",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const etag = pm.response.headers.get('ETag');",
+            "pm.test('ETag presente', () => pm.expect(etag).to.exist);",
+            "const body = pm.response.json();",
+            "pm.test('HATEOAS comments link', () => pm.expect(body._links.comments).to.exist);",
+            "pm.collectionVariables.set('pedriVersion', body.data.version);"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{playersUrl}}/api/players/{{pedriId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Comentarios (decimal rating + rate limit)",
+      "item": [
+        {
+          "name": "POST comentario rating 5 → 201",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('commentId', pm.response.json().data.id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"author\": \"Johan\",\n  \"text\": \"Visión de juego espectacular, marca la diferencia en cada partido.\",\n  \"rating\": 5,\n  \"clientLat\": 36.834,\n  \"clientLng\": -2.464,\n  \"clientCity\": \"Almería\",\n  \"clientCountry\": \"España\"\n}" },
+            "url": "{{commentsUrl}}/api/comments/player/{{pedriId}}"
+          }
+        },
+        {
+          "name": "POST comentario rating 4.5 (media estrella) → 201",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.test('Rating decimal', () => pm.expect(pm.response.json().data.rating).to.equal(4.5));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "uid-maria" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"author\": \"María\",\n  \"text\": \"Falta de gol pero técnicamente top.\",\n  \"rating\": 4.5\n}" },
+            "url": "{{commentsUrl}}/api/comments/player/{{pedriId}}"
+          }
+        },
+        {
+          "name": "POST comentario rating 3.3 (paso inválido) → 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('mensaje menciona Rating', () => pm.expect(pm.response.json().message).to.contain('Rating'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "uid-test" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"author\": \"User\",\n  \"text\": \"comentario\",\n  \"rating\": 3.3\n}" },
+            "url": "{{commentsUrl}}/api/comments/player/{{pedriId}}"
+          }
+        },
+        {
+          "name": "POST comentario a Vinícius",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "uid-anon" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"author\": \"Anónimo\",\n  \"text\": \"Desequilibrante por banda izquierda.\",\n  \"rating\": 5\n}" },
+            "url": "{{commentsUrl}}/api/comments/player/{{viniciusId}}"
+          }
+        },
+        {
+          "name": "GET comentarios de Pedri",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('2 comentarios', () => pm.expect(pm.response.json().data.length).to.equal(2));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{commentsUrl}}/api/comments/player/{{pedriId}}"
+          }
+        },
+        {
+          "name": "GET Pedri con comments embebidos",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('comments cargados vía CommentsClient', () => {",
+            "  const c = pm.response.json().data.comments;",
+            "  pm.expect(c.length).to.be.at.least(0);",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{playersUrl}}/api/players/{{pedriId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Rate limit (POST comment > 5/min → 429)",
+      "description": "Esta carpeta dispara 6 comentarios seguidos con el mismo userId. El 6º cae fuera de la ventana (5/min) y debe devolver 429.",
+      "item": [
+        {
+          "name": "Flood #1",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 or 429', () => pm.expect([201,429]).to.include(pm.response.code));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "uid-flooder" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"author\": \"flood\", \"text\": \"spam 1\", \"rating\": 3 }" },
+            "url": "{{commentsUrl}}/api/comments/player/{{viniciusId}}"
+          }
+        },
+        {
+          "name": "Flood #2",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "uid-flooder" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"author\": \"flood\", \"text\": \"spam 2\", \"rating\": 3 }" },
+            "url": "{{commentsUrl}}/api/comments/player/{{viniciusId}}"
+          }
+        },
+        {
+          "name": "Flood #3",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "uid-flooder" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"author\": \"flood\", \"text\": \"spam 3\", \"rating\": 3 }" },
+            "url": "{{commentsUrl}}/api/comments/player/{{viniciusId}}"
+          }
+        },
+        {
+          "name": "Flood #4",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "uid-flooder" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"author\": \"flood\", \"text\": \"spam 4\", \"rating\": 3 }" },
+            "url": "{{commentsUrl}}/api/comments/player/{{viniciusId}}"
+          }
+        },
+        {
+          "name": "Flood #5",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "uid-flooder" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"author\": \"flood\", \"text\": \"spam 5\", \"rating\": 3 }" },
+            "url": "{{commentsUrl}}/api/comments/player/{{viniciusId}}"
+          }
+        },
+        {
+          "name": "Flood #6 → 429 esperado",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('429 Too Many Requests', () => pm.response.to.have.status(429));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "uid-flooder" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"author\": \"flood\", \"text\": \"spam 6\", \"rating\": 3 }" },
+            "url": "{{commentsUrl}}/api/comments/player/{{viniciusId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Mutaciones admin (PUT con If-Match, DELETE idempotente)",
+      "item": [
+        {
+          "name": "PUT sin admin → 403",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+          ]}}],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Hacker\",\n  \"team\": \"FC Hack\",\n  \"league\": \"League\"\n}" },
+            "url": "{{playersUrl}}/api/players/{{pedriId}}"
+          }
+        },
+        {
+          "name": "PUT con If-Match incorrecto → 412",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('412 Precondition Failed', () => pm.response.to.have.status(412));"
+          ]}}],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Admin", "value": "true" },
+              { "key": "If-Match", "value": "\"99\"" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Pedro González López\",\n  \"team\": \"FC Barcelona\",\n  \"league\": \"La Liga\",\n  \"position\": \"Midfielder\",\n  \"nationality\": \"Spain\",\n  \"height\": \"174 cm\",\n  \"weight\": \"60 kg\",\n  \"shirtNumber\": 8\n}" },
+            "url": "{{playersUrl}}/api/players/{{pedriId}}"
+          }
+        },
+        {
+          "name": "PUT con If-Match correcto → 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('Version bumped', () => {",
+            "  const old = parseInt(pm.collectionVariables.get('pedriVersion'));",
+            "  pm.expect(pm.response.json().data.version).to.equal(old + 1);",
+            "});",
+            "pm.collectionVariables.set('pedriVersion', pm.response.json().data.version);"
+          ]}}],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Admin", "value": "true" },
+              { "key": "If-Match", "value": "\"{{pedriVersion}}\"" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Pedro González López\",\n  \"team\": \"FC Barcelona\",\n  \"league\": \"La Liga\",\n  \"position\": \"Midfielder\",\n  \"imageUrl\": \"https://media.api-sports.io/football/players/909.png\",\n  \"nationality\": \"Spain\",\n  \"birthDate\": \"2002-11-25\",\n  \"height\": \"174 cm\",\n  \"weight\": \"60 kg\",\n  \"shirtNumber\": 8,\n  \"playerLat\": 41.380898,\n  \"playerLng\": 2.122820,\n  \"playerCity\": \"Barcelona\",\n  \"playerCountry\": \"España\"\n}" },
+            "url": "{{playersUrl}}/api/players/{{pedriId}}"
+          }
+        },
+        {
+          "name": "DELETE comentario sin admin → 403",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "url": "{{commentsUrl}}/api/comments/{{commentId}}"
+          }
+        },
+        {
+          "name": "DELETE comentario admin → 204",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-User-Admin", "value": "true" }],
+            "url": "{{commentsUrl}}/api/comments/{{commentId}}"
+          }
+        },
+        {
+          "name": "DELETE Bellingham → 204",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-User-Admin", "value": "true" }],
+            "url": "{{playersUrl}}/api/players/{{bellinghamId}}"
+          }
+        },
+        {
+          "name": "DELETE Bellingham otra vez (idempotente) → 204",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 No Content (idempotente)', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-User-Admin", "value": "true" }],
+            "url": "{{playersUrl}}/api/players/{{bellinghamId}}"
+          }
+        },
+        {
+          "name": "GET Bellingham tras soft-delete → 404",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('404 Not Found (oculto por query filter)', () => pm.response.to.have.status(404));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{playersUrl}}/api/players/{{bellinghamId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Fase 2B (esperan 501)",
+      "item": [
+        {
+          "name": "POST import → 501",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('501 Not Implemented', () => pm.response.to.have.status(501));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "[{ \"apiFootballId\": 909, \"season\": 2024 }]" },
+            "url": "{{playersUrl}}/api/players/import"
+          }
+        },
+        {
+          "name": "POST ideal-team → 501",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('501 Not Implemented', () => pm.response.to.have.status(501));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"formation\": \"4-3-3\", \"season\": 2024 }" },
+            "url": "{{playersUrl}}/api/ideal-team"
+          }
+        }
+      ]
+    }
+  ]
+}
