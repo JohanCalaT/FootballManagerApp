@@ -31,6 +31,10 @@ var redis = builder.AddAzureManagedRedis("redis")
 var apiFootballKey = builder.AddParameter("ApiFootballKey", secret: true);
 var geminiApiKey   = builder.AddParameter("GeminiApiKey",   secret: true);
 
+// MongoDB Atlas — usado por backend-node (TRWM). El secret guarda la URI completa
+// con credenciales (Atlas admin) y nombre de BD `football-manager`.
+var mongoDbUri = builder.AddParameter("MongoDbUri", secret: true);
+
 // Migration workers — run once per deploy, exit, gate the APIs via WaitForCompletion.
 var playersMigrations = builder
     .AddProject<Projects.FootballManagerApp_Players_MigrationService>("players-migrations")
@@ -64,6 +68,8 @@ var gateway = builder.AddProject<Projects.FootballManagerApp_Gateway>("gateway")
 
 var nodeBackend = builder.AddNpmApp("node-backend", "../../../backend-node", scriptName: "dev")
     .WithHttpEndpoint(env: "PORT")
+    .WithEnvironment("MONGODB_URI",      mongoDbUri)
+    .WithEnvironment("API_FOOTBALL_KEY", apiFootballKey)
     .WithExternalHttpEndpoints()
     .PublishAsDockerFile();
 
