@@ -6,10 +6,7 @@ import { connectDB } from './config/database';
 
 const PORT = process.env.PORT ?? 3000;
 
-// Init DB stub
-connectDB();
-
-// ✅ Redirect raíz → Swagger
+// Redirect raíz → Swagger
 app.get('/', (_req, res) => {
   res.redirect('/api-docs');
 });
@@ -17,6 +14,14 @@ app.get('/', (_req, res) => {
 app.get('/health', (_req, res) =>
   res.json({ status: 'ok', service: 'node-backend' }));
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const start = async (): Promise<void> => {
+  await connectDB();
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
+
+start().catch((err) => {
+  console.error('[server] failed to start', err);
+  process.exit(1);
 });
