@@ -8,13 +8,17 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
 {
     public void Configure(EntityTypeBuilder<Comment> builder)
     {
-        builder.ToTable("Comments", b => b.HasCheckConstraint("CK_Comments_Rating", "\"Rating\" BETWEEN 0 AND 5"));
+        // Rating ∈ {0, 0.5, 1, …, 5} se garantiza en Comment.Create (domain)
+        // y CreateCommentValidator (FluentValidation 400). No usamos check
+        // constraint en BD porque Microsoft.Data.Sqlite serializa decimal
+        // como TEXT en los tests y rompería la comparación numérica.
+        builder.ToTable("Comments");
         builder.HasKey(c => c.Id);
 
         builder.Property(c => c.PlayerId).IsRequired();
         builder.Property(c => c.Author).IsRequired().HasMaxLength(100);
         builder.Property(c => c.Text).IsRequired().HasMaxLength(1000);
-        builder.Property(c => c.Rating).IsRequired().HasColumnType("smallint");
+        builder.Property(c => c.Rating).IsRequired().HasPrecision(2, 1);
         builder.Property(c => c.CreatedAt).IsRequired();
         builder.Property(c => c.CreatedByUserId).HasMaxLength(100);
 
@@ -28,5 +32,9 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
 
         builder.HasIndex(c => c.PlayerId);
         builder.HasIndex(c => c.CreatedAt);
+
+        builder.Property(c => c.DeletedAt);
+        builder.HasIndex(c => c.DeletedAt);
+        builder.HasQueryFilter(c => c.DeletedAt == null);
     }
 }

@@ -5,13 +5,13 @@ public record CommentDto(
     Guid PlayerId,
     string Author,
     string Text,
-    int Rating,
+    decimal Rating,
     DateTime CreatedAt);
 
 public record CreateCommentDto(
     string Author,
     string Text,
-    int Rating,
+    decimal Rating,
     decimal? ClientLat,
     decimal? ClientLng,
     string? ClientCity,

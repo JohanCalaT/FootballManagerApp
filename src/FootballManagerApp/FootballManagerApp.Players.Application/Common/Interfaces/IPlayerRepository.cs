@@ -24,4 +24,10 @@ public interface IPlayerRepository
     Task DeleteAsync(Guid id, CancellationToken ct);
 
     Task<bool> ExistsAsync(int apiFootballId, int season, CancellationToken ct);
+
+    // Soft-uniqueness check: el mismo nombre + equipo (case-insensitive)
+    // identifica probablemente al mismo jugador manual. Devuelve el id del
+    // existente para que el cliente pueda redirigir o forzar.
+    Task<Guid?> FindIdByNameAndTeamAsync(
+        string name, string team, CancellationToken ct);
 }

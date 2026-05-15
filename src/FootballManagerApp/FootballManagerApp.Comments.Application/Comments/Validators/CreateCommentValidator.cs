@@ -9,7 +9,11 @@ public class CreateCommentValidator : AbstractValidator<CreateCommentDto>
     {
         RuleFor(x => x.Author).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Text).NotEmpty().MaximumLength(1000);
-        RuleFor(x => x.Rating).InclusiveBetween(0, 5);
+
+        RuleFor(x => x.Rating)
+            .InclusiveBetween(0m, 5m)
+            .Must(r => (r * 2m) == decimal.Floor(r * 2m))
+            .WithMessage("Rating debe ser un múltiplo de 0.5 entre 0 y 5");
 
         RuleFor(x => x.ClientLat).InclusiveBetween(-90m, 90m).When(x => x.ClientLat.HasValue);
         RuleFor(x => x.ClientLng).InclusiveBetween(-180m, 180m).When(x => x.ClientLng.HasValue);

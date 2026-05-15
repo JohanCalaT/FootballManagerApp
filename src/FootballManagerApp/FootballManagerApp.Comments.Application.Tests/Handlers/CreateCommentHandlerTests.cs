@@ -31,7 +31,7 @@ public class CreateCommentHandlerTests
     public async Task Returns_400_when_rating_out_of_range()
     {
         var repo = new Mock<ICommentRepository>();
-        var dto = new CreateCommentDto("Johan", "ok", 10, null, null, null, null);
+        var dto = new CreateCommentDto("Johan", "ok", 10m, null, null, null, null);
 
         var result = await Build(repo).HandleAsync(Guid.NewGuid(), dto, "u1", default);
 
@@ -43,7 +43,7 @@ public class CreateCommentHandlerTests
     public async Task Returns_400_when_text_empty()
     {
         var repo = new Mock<ICommentRepository>();
-        var dto = new CreateCommentDto("Johan", "", 3, null, null, null, null);
+        var dto = new CreateCommentDto("Johan", "", 3m, null, null, null, null);
 
         var result = await Build(repo).HandleAsync(Guid.NewGuid(), dto, "u1", default);
 
@@ -57,7 +57,7 @@ public class CreateCommentHandlerTests
         repo.Setup(r => r.CreateAsync(It.IsAny<Comment>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Comment c, CancellationToken _) => c);
 
-        var dto = new CreateCommentDto("Johan", "Crack absoluto", 5,
+        var dto = new CreateCommentDto("Johan", "Crack absoluto", 4.5m,
             36.84m, -2.46m, "Almería", "Spain");
         var playerId = Guid.NewGuid();
 

@@ -23,6 +23,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<GetCommentsByPlayerHandler>();
         services.AddScoped<CreateCommentHandler>();
         services.AddScoped<DeleteCommentHandler>();
+        services.AddScoped<DeleteCommentsByPlayerHandler>();
 
         return services;
     }

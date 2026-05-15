@@ -4,5 +4,5 @@ public record CommentDto(
     Guid Id,
     string Author,
     string Text,
-    int Rating,
+    decimal Rating,
     DateTime CreatedAt);

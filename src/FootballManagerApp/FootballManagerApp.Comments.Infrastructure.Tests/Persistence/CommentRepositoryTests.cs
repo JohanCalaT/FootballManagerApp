@@ -11,7 +11,7 @@ public class CommentRepositoryTests : IDisposable
 
     public void Dispose() => _factory.Dispose();
 
-    private static Comment NewComment(Guid playerId, string author = "Johan", int rating = 5) =>
+    private static Comment NewComment(Guid playerId, string author = "Johan", decimal rating = 5m) =>
         Comment.Create(
             playerId,
             author,
@@ -113,5 +113,42 @@ public class CommentRepositoryTests : IDisposable
         var act = async () =>
             await new CommentRepository(ctx).DeleteAsync(Guid.NewGuid(), default);
         await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task DeleteByPlayerIdAsync_removes_only_target_player_comments()
+    {
+        var playerA = Guid.NewGuid();
+        var playerB = Guid.NewGuid();
+
+        await using (var ctx = _factory.CreateContext())
+        {
+            var repo = new CommentRepository(ctx);
+            await repo.CreateAsync(NewComment(playerA), default);
+            await repo.CreateAsync(NewComment(playerA), default);
+            await repo.CreateAsync(NewComment(playerB), default);
+        }
+
+        await using (var ctx = _factory.CreateContext())
+        {
+            var deleted = await new CommentRepository(ctx)
+                .DeleteByPlayerIdAsync(playerA, default);
+            deleted.Should().Be(2);
+        }
+
+        await using var read = _factory.CreateContext();
+        (await new CommentRepository(read).GetByPlayerIdAsync(playerA, default))
+            .Should().BeEmpty();
+        (await new CommentRepository(read).GetByPlayerIdAsync(playerB, default))
+            .Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task DeleteByPlayerIdAsync_returns_zero_when_no_comments()
+    {
+        await using var ctx = _factory.CreateContext();
+        var deleted = await new CommentRepository(ctx)
+            .DeleteByPlayerIdAsync(Guid.NewGuid(), default);
+        deleted.Should().Be(0);
     }
 }

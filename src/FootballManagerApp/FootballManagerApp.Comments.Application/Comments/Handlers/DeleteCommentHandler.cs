@@ -19,14 +19,9 @@ public class DeleteCommentHandler
 
     public async Task<ApiResponse<object>> HandleAsync(Guid id, CancellationToken ct)
     {
-        var existing = await _repo.GetByIdAsync(id, ct);
-        if (existing is null)
-            return ApiResponse<object>.NotFound($"Comentario {id} no encontrado");
-
+        // Idempotente: DELETE devuelve 204 aunque el comentario ya no exista.
         await _repo.DeleteAsync(id, ct);
-
-        _logger.LogInformation("Comment deleted {CommentId}", id);
-
+        _logger.LogInformation("Comment delete (idempotent) {CommentId}", id);
         return ApiResponse<object>.NoContent();
     }
 }

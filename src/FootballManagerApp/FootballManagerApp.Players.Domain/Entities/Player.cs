@@ -30,6 +30,18 @@ public class Player
     public DateTime RegisteredAt { get; private set; }
     public string CreatedByUserId { get; private set; } = null!;
 
+    // Optimistic concurrency token incrementado en cada modificación.
+    // Portable entre Postgres y SQLite (a diferencia de xmin/rowversion).
+    public int Version { get; private set; }
+
+    // Soft-delete: DELETE marca este timestamp en vez de borrar la fila.
+    // Las queries normales filtran por DeletedAt == null vía HasQueryFilter.
+    public DateTime? DeletedAt { get; private set; }
+
+    public void MarkDeleted() => DeletedAt = DateTime.UtcNow;
+
+    private void Touch() => Version++;
+
     public Geolocation? ClientGeolocation { get; private set; }
     public Geolocation? PlayerGeolocation { get; private set; }
 

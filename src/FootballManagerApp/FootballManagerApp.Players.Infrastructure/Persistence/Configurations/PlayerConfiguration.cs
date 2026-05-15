@@ -38,6 +38,13 @@ public class PlayerConfiguration : IEntityTypeConfiguration<Player>
         builder.Property(p => p.RegisteredAt).IsRequired();
         builder.Property(p => p.CreatedByUserId).IsRequired().HasMaxLength(100);
 
+        builder.Property(p => p.Version)
+            .IsConcurrencyToken();
+
+        builder.Property(p => p.DeletedAt);
+        builder.HasIndex(p => p.DeletedAt);
+        builder.HasQueryFilter(p => p.DeletedAt == null);
+
         builder.OwnsOne(p => p.ClientGeolocation, geo =>
         {
             geo.Property(g => g.Lat).HasColumnName("ClientLat").HasPrecision(10, 8);

@@ -3,6 +3,7 @@ using System;
 using FootballManagerApp.Comments.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FootballManagerApp.Comments.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(CommentsDbContext))]
-    partial class CommentsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260515175547_CommentRatingHalfStars")]
+    partial class CommentRatingHalfStars
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -40,9 +43,6 @@ namespace FootballManagerApp.Comments.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<Guid>("PlayerId")
                         .HasColumnType("uuid");
 
@@ -58,8 +58,6 @@ namespace FootballManagerApp.Comments.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedAt");
-
-                    b.HasIndex("DeletedAt");
 
                     b.HasIndex("PlayerId");
 

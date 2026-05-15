@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using FootballManagerApp.Players.Application.Common.DTOs;
 using FootballManagerApp.Players.Application.Common.Interfaces;
+using FootballManagerApp.Shared.Responses;
 using Microsoft.Extensions.Logging;
 using Polly.CircuitBreaker;
 
@@ -22,9 +24,10 @@ public class CommentsClient : ICommentsClient
     {
         try
         {
-            var dtos = await _http.GetFromJsonAsync<IEnumerable<CommentDto>>(
+            // Comments.API envuelve la respuesta en ApiResponse<T>; desenvolvemos .Data.
+            var envelope = await _http.GetFromJsonAsync<ApiResponse<IEnumerable<CommentDto>>>(
                 $"api/comments/player/{playerId}", ct);
-            return dtos ?? Array.Empty<CommentDto>();
+            return envelope?.Data ?? Array.Empty<CommentDto>();
         }
         catch (BrokenCircuitException ex)
         {
@@ -44,6 +47,13 @@ public class CommentsClient : ICommentsClient
         {
             _logger.LogWarning(ex,
                 "Comments service timed out for player {PlayerId}; returning empty list",
+                playerId);
+            return Array.Empty<CommentDto>();
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex,
+                "Comments service returned malformed JSON for player {PlayerId}; returning empty list",
                 playerId);
             return Array.Empty<CommentDto>();
         }
@@ -75,6 +85,36 @@ public class CommentsClient : ICommentsClient
             _logger.LogWarning(ex,
                 "Comments service timed out while deleting comment {CommentId}",
                 commentId);
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteByPlayerIdAsync(Guid playerId, CancellationToken ct)
+    {
+        try
+        {
+            var response = await _http.DeleteAsync($"api/comments/player/{playerId}", ct);
+            return response.IsSuccessStatusCode;
+        }
+        catch (BrokenCircuitException ex)
+        {
+            _logger.LogWarning(ex,
+                "Comments circuit open while cascading delete for player {PlayerId}",
+                playerId);
+            return false;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning(ex,
+                "Comments service unreachable while cascading delete for player {PlayerId}",
+                playerId);
+            return false;
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            _logger.LogWarning(ex,
+                "Comments service timed out while cascading delete for player {PlayerId}",
+                playerId);
             return false;
         }
     }
