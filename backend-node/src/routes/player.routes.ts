@@ -1,22 +1,41 @@
 import { Router } from 'express';
-import { PlayerController } from '../controllers/player.controller';
-import { PlayerService } from '../services/player.service';
-import { PlayerRepository } from '../repositories/player.repository';
+import * as playerController from '../controllers/player.controller';
 
 const router = Router();
-const playerRepo = new PlayerRepository();
-const playerService = new PlayerService(playerRepo);
-const playerController = new PlayerController(playerService);
 
 /**
  * @swagger
  * /api/players:
  *   get:
- *     summary: Obtener todos los jugadores
+ *     summary: Listado paginado de jugadores
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
  *     responses:
  *       200:
- *         description: Lista de jugadores
+ *         description: PagedResponse<PlayerListItemDto>
  */
 router.get('/', playerController.getAll);
+
+/**
+ * @swagger
+ * /api/players/{id}:
+ *   get:
+ *     summary: Detalle de jugador con statistics y comments embebidos
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: ApiResponse<PlayerDetailDto> }
+ *       400: { description: id inválido }
+ *       404: { description: no encontrado }
+ */
+router.get('/:id', playerController.getById);
 
 export default router;
