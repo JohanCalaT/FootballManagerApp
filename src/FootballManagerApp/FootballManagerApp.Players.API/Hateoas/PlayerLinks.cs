@@ -6,16 +6,16 @@ namespace FootballManagerApp.Players.API.Hateoas;
 internal static class PlayerLinks
 {
     public static Dictionary<string, HateoasLink> ForDetail(
-        IUrlHelper url, Guid id, string? commentsBase, bool isAdmin)
+        IUrlHelper url, Guid id, bool isAdmin)
     {
+        // /api/comments/* viaja por el Gateway YARP en producción; usamos URL
+        // relativa para que el cliente la resuelva contra el host que ya conoce.
         var links = new Dictionary<string, HateoasLink>
         {
             ["self"]       = new(url.Link("GetPlayerById", new { id })!, "self", "GET"),
             ["collection"] = new(url.Link("GetAllPlayers", null)!, "collection", "GET"),
+            ["comments"]   = new($"/api/comments/player/{id}", "comments", "GET"),
         };
-
-        if (!string.IsNullOrEmpty(commentsBase))
-            links["comments"] = new($"{commentsBase}/api/comments/player/{id}", "comments", "GET");
 
         if (isAdmin)
         {

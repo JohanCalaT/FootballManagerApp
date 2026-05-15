@@ -86,7 +86,11 @@ public class PlayersController : ControllerBase
     {
         var result = await _getByIdHandler.HandleAsync(id, ct);
         if (result.Status == 200)
-            result = result.WithLinks(PlayerLinks.ForDetail(Url, id, commentsBase: null, IsAdmin));
+        {
+            result = result.WithLinks(PlayerLinks.ForDetail(Url, id, IsAdmin));
+            if (result.Data is not null)
+                Response.Headers.ETag = $"\"{result.Data.Version}\"";
+        }
         return StatusCode(result.Status, result);
     }
 
@@ -104,7 +108,7 @@ public class PlayersController : ControllerBase
         if (result.Status == 201 && result.Data is not null)
         {
             var id = result.Data.Id;
-            result = result.WithLinks(PlayerLinks.ForDetail(Url, id, commentsBase: null, IsAdmin));
+            result = result.WithLinks(PlayerLinks.ForDetail(Url, id, IsAdmin));
             Response.Headers.Location = Url.Link("GetPlayerById", new { id });
         }
         return StatusCode(result.Status, result);
@@ -130,9 +134,17 @@ public class PlayersController : ControllerBase
         if (!IsAdmin)
             return StatusCode(403, ApiResponse<PlayerDetailDto>.Forbidden());
 
-        var result = await _updateHandler.HandleAsync(id, dto, ct);
+        // If-Match: <version> opcional — habilita optimistic concurrency 412.
+        int? ifMatch = int.TryParse(Request.Headers.IfMatch.FirstOrDefault()?.Trim('"'),
+            out var v) ? v : null;
+
+        var result = await _updateHandler.HandleAsync(id, dto, ifMatch, ct);
         if (result.Status == 200)
-            result = result.WithLinks(PlayerLinks.ForDetail(Url, id, commentsBase: null, IsAdmin));
+        {
+            result = result.WithLinks(PlayerLinks.ForDetail(Url, id, IsAdmin));
+            if (result.Data is not null)
+                Response.Headers.ETag = $"\"{result.Data.Version}\"";
+        }
         return StatusCode(result.Status, result);
     }
 

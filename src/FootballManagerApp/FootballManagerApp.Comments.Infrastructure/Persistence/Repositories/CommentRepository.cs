@@ -30,9 +30,15 @@ public class CommentRepository : ICommentRepository
 
     public async Task DeleteAsync(Guid id, CancellationToken ct)
     {
+        // Soft-delete con MarkDeleted.
         var entity = await _db.Comments.FindAsync([id], ct);
         if (entity is null) return;
-        _db.Comments.Remove(entity);
+        entity.MarkDeleted();
         await _db.SaveChangesAsync(ct);
     }
+
+    public async Task<int> DeleteByPlayerIdAsync(Guid playerId, CancellationToken ct) =>
+        await _db.Comments
+            .Where(c => c.PlayerId == playerId)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.DeletedAt, DateTime.UtcNow), ct);
 }

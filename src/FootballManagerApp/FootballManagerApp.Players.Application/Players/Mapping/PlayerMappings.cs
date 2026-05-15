@@ -33,6 +33,7 @@ internal static class PlayerMappings
             p.ImageUrl,
             p.Injured,
             p.RegisteredAt,
+            p.Version,
             p.Statistics.Select(s => s.ToStatsDto()),
             comments);
 

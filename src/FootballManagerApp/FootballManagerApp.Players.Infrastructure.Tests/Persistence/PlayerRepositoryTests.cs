@@ -2,6 +2,7 @@ using FluentAssertions;
 using FootballManagerApp.Players.Domain.Entities;
 using FootballManagerApp.Players.Infrastructure.Persistence.Repositories;
 using FootballManagerApp.Shared.ValueObjects;
+using Microsoft.EntityFrameworkCore;
 
 namespace FootballManagerApp.Players.Infrastructure.Tests.Persistence;
 
@@ -118,7 +119,7 @@ public class PlayerRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteAsync_removes_player_and_statistics_via_cascade()
+    public async Task DeleteAsync_softdeletes_player_hiding_it_from_default_queries()
     {
         var player = NewPlayer();
         var stats = PlayerStatistics.Create(player.Id, 2023, "PSG", "Ligue 1");
@@ -134,9 +135,15 @@ public class PlayerRepositoryTests : IDisposable
             await new PlayerRepository(ctx).DeleteAsync(player.Id, default);
         }
 
+        // El query filter HasQueryFilter(p => p.DeletedAt == null) lo oculta.
         await using var read = _factory.CreateContext();
         (await read.Players.FindAsync(player.Id)).Should().BeNull();
-        read.PlayerStatistics.Should().BeEmpty();
+
+        // Pero la fila sigue físicamente — visible con IgnoreQueryFilters.
+        var soft = await read.Players.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.Id == player.Id);
+        soft.Should().NotBeNull();
+        soft!.DeletedAt.Should().NotBeNull();
     }
 
     [Fact]
@@ -166,6 +173,40 @@ public class PlayerRepositoryTests : IDisposable
         (await repo.ExistsAsync(154, 2024, default)).Should().BeTrue();
         (await repo.ExistsAsync(154, 2023, default)).Should().BeFalse();
         (await repo.ExistsAsync(999, 2024, default)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task FindIdByNameAndTeamAsync_matches_case_insensitive_with_trim()
+    {
+        var player = Player.Create("Pedri González", "FC Barcelona", "La Liga", "u1");
+        await using (var ctx = _factory.CreateContext())
+        {
+            await new PlayerRepository(ctx).CreateAsync(player, default);
+        }
+
+        await using var read = _factory.CreateContext();
+        var repo = new PlayerRepository(read);
+
+        (await repo.FindIdByNameAndTeamAsync("  pedri gonzález  ", "fc barcelona", default))
+            .Should().Be(player.Id);
+        (await repo.FindIdByNameAndTeamAsync("PEDRI GONZÁLEZ", "FC BARCELONA", default))
+            .Should().Be(player.Id);
+    }
+
+    [Fact]
+    public async Task FindIdByNameAndTeamAsync_returns_null_when_team_differs()
+    {
+        var player = Player.Create("Pedri González", "FC Barcelona", "La Liga", "u1");
+        await using (var ctx = _factory.CreateContext())
+        {
+            await new PlayerRepository(ctx).CreateAsync(player, default);
+        }
+
+        await using var read = _factory.CreateContext();
+        var result = await new PlayerRepository(read)
+            .FindIdByNameAndTeamAsync("Pedri González", "PSG", default);
+
+        result.Should().BeNull();
     }
 
     [Fact]

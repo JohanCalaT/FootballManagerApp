@@ -35,6 +35,7 @@ public record PlayerDetailDto(
     string? ImageUrl,
     bool Injured,
     DateTime RegisteredAt,
+    int Version,
     IEnumerable<PlayerStatisticsDto> Statistics,
     IEnumerable<CommentDto> Comments);
 
@@ -46,6 +47,7 @@ public record CreatePlayerDto(
     string? ImageUrl,
     string? ImageSource,
     string? Nationality,
+    DateTime? BirthDate,
     string? Height,
     string? Weight,
     int? ShirtNumber,
@@ -62,6 +64,7 @@ public record UpdatePlayerDto(
     string? Position,
     string? ImageUrl,
     string? Nationality,
+    DateTime? BirthDate,
     string? Height,
     string? Weight,
     int? ShirtNumber,

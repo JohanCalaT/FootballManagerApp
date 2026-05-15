@@ -12,4 +12,6 @@ public interface ICommentRepository
     Task<Comment> CreateAsync(Comment comment, CancellationToken ct);
 
     Task DeleteAsync(Guid id, CancellationToken ct);
+
+    Task<int> DeleteByPlayerIdAsync(Guid playerId, CancellationToken ct);
 }

@@ -8,4 +8,6 @@ public interface ICommentsClient
         Guid playerId, CancellationToken ct);
 
     Task<bool> DeleteAsync(Guid commentId, CancellationToken ct);
+
+    Task<bool> DeleteByPlayerIdAsync(Guid playerId, CancellationToken ct);
 }

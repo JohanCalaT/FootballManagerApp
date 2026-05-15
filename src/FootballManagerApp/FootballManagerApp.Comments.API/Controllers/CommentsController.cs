@@ -3,6 +3,7 @@ using FootballManagerApp.Comments.Application.Comments.DTOs;
 using FootballManagerApp.Comments.Application.Comments.Handlers;
 using FootballManagerApp.Shared.Responses;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace FootballManagerApp.Comments.API.Controllers;
 
@@ -13,15 +14,18 @@ public class CommentsController : ControllerBase
     private readonly GetCommentsByPlayerHandler _getByPlayerHandler;
     private readonly CreateCommentHandler _createHandler;
     private readonly DeleteCommentHandler _deleteHandler;
+    private readonly DeleteCommentsByPlayerHandler _deleteByPlayerHandler;
 
     public CommentsController(
         GetCommentsByPlayerHandler getByPlayerHandler,
         CreateCommentHandler createHandler,
-        DeleteCommentHandler deleteHandler)
+        DeleteCommentHandler deleteHandler,
+        DeleteCommentsByPlayerHandler deleteByPlayerHandler)
     {
         _getByPlayerHandler = getByPlayerHandler;
         _createHandler = createHandler;
         _deleteHandler = deleteHandler;
+        _deleteByPlayerHandler = deleteByPlayerHandler;
     }
 
     private string? CurrentUserId =>
@@ -42,6 +46,7 @@ public class CommentsController : ControllerBase
     }
 
     [HttpPost("player/{playerId:guid}", Name = "CreateCommentForPlayer")]
+    [EnableRateLimiting("create-comment")]
     public async Task<IActionResult> Create(
         Guid playerId,
         [FromBody] CreateCommentDto dto,
@@ -68,5 +73,15 @@ public class CommentsController : ControllerBase
         return result.Status == 204
             ? NoContent()
             : StatusCode(result.Status, result);
+    }
+
+    // Cascade endpoint invoked by Players.API when a player is deleted.
+    // No auth: it's an internal microservice call; in production the Gateway should
+    // restrict /api/comments/player/{playerId} DELETE to service-to-service traffic.
+    [HttpDelete("player/{playerId:guid}", Name = "DeleteCommentsForPlayer")]
+    public async Task<IActionResult> DeleteByPlayer(Guid playerId, CancellationToken ct)
+    {
+        await _deleteByPlayerHandler.HandleAsync(playerId, ct);
+        return NoContent();
     }
 }

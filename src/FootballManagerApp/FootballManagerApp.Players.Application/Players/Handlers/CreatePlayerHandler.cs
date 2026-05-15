@@ -45,6 +45,34 @@ public class CreatePlayerHandler
             return ApiResponse<PlayerDetailDto>.BadRequest(msg);
         }
 
+        // Duplicados en Statistics[] del payload — la UNIQUE en BD lo rechazaría
+        // como 500; mejor un 400 explícito antes de tocar el repositorio.
+        if (dto.Statistics is not null)
+        {
+            var dup = dto.Statistics
+                .GroupBy(s => (s.Season, Team: s.TeamName?.Trim().ToLower(),
+                               League: s.LeagueName?.Trim().ToLower()))
+                .FirstOrDefault(g => g.Count() > 1);
+            if (dup is not null)
+                return ApiResponse<PlayerDetailDto>.BadRequest(
+                    $"Statistics duplicadas para temporada {dup.Key.Season} " +
+                    $"en {dup.Key.Team}/{dup.Key.League}");
+        }
+
+        // Soft-uniqueness: mismo Name + Team (case-insensitive) → 409.
+        // Permite "Pedri González @ FC Barcelona" y "Pedri González @ PSG"
+        // pero bloquea duplicados accidentales en el mismo equipo.
+        var existingId = await _repo.FindIdByNameAndTeamAsync(dto.Name, dto.Team, ct);
+        if (existingId is not null)
+        {
+            _logger.LogInformation(
+                "Create rejected: player {Name} already exists in {Team} (id={ExistingId})",
+                dto.Name, dto.Team, existingId);
+            return ApiResponse<PlayerDetailDto>.Conflict(
+                $"Ya existe un jugador '{dto.Name}' en '{dto.Team}' (id={existingId}). " +
+                "Modifícalo o créalo en otro equipo.");
+        }
+
         try
         {
             var player = Player.Create(dto.Name, dto.Team, dto.League, userId);
@@ -52,7 +80,7 @@ public class CreatePlayerHandler
             player.SetPersonalInfo(
                 firstName: null, lastName: null,
                 nationality: dto.Nationality,
-                birthDate: null, birthPlace: null, birthCountry: null,
+                birthDate: dto.BirthDate, birthPlace: null, birthCountry: null,
                 height: dto.Height, weight: dto.Weight);
 
             player.SetFootballInfo(dto.Position, dto.ShirtNumber);

@@ -26,12 +26,33 @@ public class BaselineTests
     [InlineData(-1)]
     [InlineData(6)]
     [InlineData(99)]
-    public void Comment_Create_WithInvalidRating_ShouldThrow(int rating)
+    public void Comment_Create_WithInvalidRating_ShouldThrow(decimal rating)
     {
         var act = () => Comment.Create(Guid.NewGuid(), "ana", "ok", rating);
 
         act.Should().Throw<InvalidRatingException>()
            .WithMessage($"*{rating}*");
+    }
+
+    [Theory]
+    [InlineData(0.3)]
+    [InlineData(2.7)]
+    [InlineData(4.99)]
+    public void Comment_Create_WithNonHalfStepRating_ShouldThrow(decimal rating)
+    {
+        var act = () => Comment.Create(Guid.NewGuid(), "ana", "ok", rating);
+        act.Should().Throw<InvalidRatingException>();
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(0.5)]
+    [InlineData(2.5)]
+    [InlineData(5)]
+    public void Comment_Create_WithValidHalfStep_ShouldSucceed(decimal rating)
+    {
+        var comment = Comment.Create(Guid.NewGuid(), "ana", "ok", rating);
+        comment.Rating.Should().Be(rating);
     }
 
     [Fact]

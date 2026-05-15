@@ -3,6 +3,7 @@ using System;
 using FootballManagerApp.Players.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FootballManagerApp.Players.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PlayersDbContext))]
-    partial class PlayersDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260515180223_PlayerVersionConcurrencyToken")]
+    partial class PlayerVersionConcurrencyToken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -46,9 +49,6 @@ namespace FootballManagerApp.Players.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("FirstName")
                         .HasMaxLength(100)
@@ -117,8 +117,6 @@ namespace FootballManagerApp.Players.Infrastructure.Persistence.Migrations
                     b.HasIndex("ApiFootballId")
                         .IsUnique()
                         .HasFilter("\"ApiFootballId\" IS NOT NULL");
-
-                    b.HasIndex("DeletedAt");
 
                     b.ToTable("Players", (string)null);
                 });

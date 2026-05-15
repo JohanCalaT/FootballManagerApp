@@ -16,17 +16,23 @@ public class UpdatePlayerHandlerTests
             NullLogger<UpdatePlayerHandler>.Instance);
 
     private static UpdatePlayerDto Dto(string name = "Pedri González") =>
-        new(name, "Barcelona", "La Liga", "Midfielder", null, null, null, null, 8,
-            null, null, null, null);
+        new(name, "Barcelona", "La Liga", "Midfielder",
+            ImageUrl: null, Nationality: null, BirthDate: null,
+            Height: null, Weight: null, ShirtNumber: 8,
+            PlayerLat: null, PlayerLng: null,
+            PlayerCity: null, PlayerCountry: null);
 
     [Fact]
     public async Task Returns_400_when_dto_invalid()
     {
         var repo = new Mock<IPlayerRepository>();
-        var bad = new UpdatePlayerDto("", "", "", null, null, null, null, null, null,
-            null, null, null, null);
+        var bad = new UpdatePlayerDto("", "", "", Position: null,
+            ImageUrl: null, Nationality: null, BirthDate: null,
+            Height: null, Weight: null, ShirtNumber: null,
+            PlayerLat: null, PlayerLng: null,
+            PlayerCity: null, PlayerCountry: null);
 
-        var result = await Build(repo).HandleAsync(Guid.NewGuid(), bad, default);
+        var result = await Build(repo).HandleAsync(Guid.NewGuid(), bad, null, default);
 
         result.Status.Should().Be(400);
         repo.Verify(r => r.UpdateAsync(It.IsAny<Player>(), It.IsAny<CancellationToken>()),
@@ -40,9 +46,25 @@ public class UpdatePlayerHandlerTests
         repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Player?)null);
 
-        var result = await Build(repo).HandleAsync(Guid.NewGuid(), Dto(), default);
+        var result = await Build(repo).HandleAsync(Guid.NewGuid(), Dto(), null, default);
 
         result.Status.Should().Be(404);
+    }
+
+    [Fact]
+    public async Task Returns_412_when_if_match_version_mismatches()
+    {
+        var player = Player.Create("Pedri", "Barcelona", "La Liga", "u1");
+        // Version starts at 0; cliente envía If-Match: 99 → mismatch.
+        var repo = new Mock<IPlayerRepository>();
+        repo.Setup(r => r.GetByIdAsync(player.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(player);
+
+        var result = await Build(repo).HandleAsync(player.Id, Dto(), 99, default);
+
+        result.Status.Should().Be(412);
+        repo.Verify(r => r.UpdateAsync(It.IsAny<Player>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -53,7 +75,7 @@ public class UpdatePlayerHandlerTests
         repo.Setup(r => r.GetByIdAsync(player.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(player);
 
-        var result = await Build(repo).HandleAsync(player.Id, Dto("Pedri G."), default);
+        var result = await Build(repo).HandleAsync(player.Id, Dto("Pedri G."), null, default);
 
         result.Status.Should().Be(200);
         result.Data!.Name.Should().Be("Pedri G.");
