@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.AddNpgsqlDbContext<PlayersDbContext>("playersdb");
+builder.AddRedisDistributedCache("redis");
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

@@ -156,6 +156,83 @@ public class PlayerRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task ExistsAsync_ignores_soft_deleted_players()
+    {
+        var player = NewPlayer();
+        player.SetApiFootballId(154);
+        player.AddStatistics(PlayerStatistics.Create(player.Id, 2024, "Inter Miami", "MLS"));
+
+        await using (var ctx = _factory.CreateContext())
+        {
+            await new PlayerRepository(ctx).CreateAsync(player, default);
+        }
+        await using (var ctx = _factory.CreateContext())
+        {
+            await new PlayerRepository(ctx).DeleteAsync(player.Id, default);
+        }
+
+        await using var read = _factory.CreateContext();
+        var exists = await new PlayerRepository(read).ExistsAsync(154, 2024, default);
+
+        // El query filter HasQueryFilter oculta soft-deleted → ExistsAsync devuelve false.
+        // Es lo que permite re-importar al mismo jugador tras borrarlo.
+        exists.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task FindIdByNameAndTeamAsync_ignores_soft_deleted()
+    {
+        var player = Player.Create("Pedri", "Barcelona", "La Liga", "u1");
+        await using (var ctx = _factory.CreateContext())
+        {
+            await new PlayerRepository(ctx).CreateAsync(player, default);
+        }
+        await using (var ctx = _factory.CreateContext())
+        {
+            await new PlayerRepository(ctx).DeleteAsync(player.Id, default);
+        }
+
+        await using var read = _factory.CreateContext();
+        var found = await new PlayerRepository(read)
+            .FindIdByNameAndTeamAsync("Pedri", "Barcelona", default);
+
+        // CreatePlayerHandler delegará en este resultado: null → no 409, crea nuevo.
+        found.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreateAsync_after_soft_delete_succeeds_with_new_id()
+    {
+        var original = NewPlayer(name: "Pedri", team: "FC Barcelona");
+        original.SetApiFootballId(909);
+
+        await using (var ctx = _factory.CreateContext())
+        {
+            await new PlayerRepository(ctx).CreateAsync(original, default);
+        }
+        await using (var ctx = _factory.CreateContext())
+        {
+            await new PlayerRepository(ctx).DeleteAsync(original.Id, default);
+        }
+
+        // Mismo ApiFootballId + mismo Name+Team — debe insertarse sin chocar.
+        var replacement = NewPlayer(name: "Pedri", team: "FC Barcelona");
+        replacement.SetApiFootballId(909);
+
+        await using (var ctx = _factory.CreateContext())
+        {
+            var act = async () => await new PlayerRepository(ctx)
+                .CreateAsync(replacement, default);
+            await act.Should().NotThrowAsync();
+        }
+
+        await using var read = _factory.CreateContext();
+        var visible = await read.Players.Where(p => p.ApiFootballId == 909).ToListAsync();
+        visible.Should().HaveCount(1); // solo el nuevo es visible
+        visible[0].Id.Should().Be(replacement.Id);
+    }
+
+    [Fact]
     public async Task ExistsAsync_returns_true_when_api_football_id_and_season_match()
     {
         var player = NewPlayer();

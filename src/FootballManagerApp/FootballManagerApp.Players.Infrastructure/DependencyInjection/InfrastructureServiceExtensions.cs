@@ -3,21 +3,26 @@ using FootballManagerApp.Players.Application.Common.Interfaces;
 using FootballManagerApp.Players.Application.IdealTeam.Handlers;
 using FootballManagerApp.Players.Application.Players.Handlers;
 using FootballManagerApp.Players.Application.Players.Validators;
+using FootballManagerApp.Players.Infrastructure.Cache;
 using FootballManagerApp.Players.Infrastructure.ExternalServices.ApiFootball;
 using FootballManagerApp.Players.Infrastructure.ExternalServices.Gemini;
 using FootballManagerApp.Players.Infrastructure.Http;
 using FootballManagerApp.Players.Infrastructure.Persistence.Repositories;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
+using Polly.RateLimiting;
+using System.Threading.RateLimiting;
 
 namespace FootballManagerApp.Players.Infrastructure.DependencyInjection;
 
 public static class InfrastructureServiceExtensions
 {
-    // Aspire service discovery resolves this scheme://name to the Comments.API
-    // endpoint when AppHost wires playersApi.WithReference(commentsApi).
-    private const string CommentsServiceUri = "http://comments-api";
+    // Aspire service discovery resolves these scheme://name to the actual endpoints
+    // when AppHost wires playersApi.WithReference(commentsApi).
+    private const string CommentsServiceUri  = "http://comments-api";
+    private const string ApiFootballBaseUrl  = "https://v3.football.api-sports.io/";
 
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
@@ -25,11 +30,64 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IPlayerRepository, PlayerRepository>();
         services.AddScoped<IPlayerStatisticsRepository, PlayerStatisticsRepository>();
 
-        // ICacheService → se registra en Fase 2B con Redis + API-Football.
+        // Cache distribuido (Redis vía Aspire). Si Redis no está registrado en
+        // Program.cs, RedisCacheService no se resolverá y los handlers que
+        // dependan de ICacheService fallarán explícitamente — es lo correcto.
+        services.AddScoped<ICacheService, RedisCacheService>();
 
-        // External HTTP clients — implementaciones reales en Fase 2B.
-        services.AddHttpClient<IApiFootballService, ApiFootballService>();
+        // External HTTP — Gemini sigue stub hasta su tarea propia.
         services.AddHttpClient<IGeminiService, GeminiService>();
+
+        // API-Football: HttpClient tipado con auth header + Polly resilience.
+        services
+            .AddHttpClient<IApiFootballService, ApiFootballService>((sp, client) =>
+            {
+                client.BaseAddress = new Uri(ApiFootballBaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(15);
+
+                var config = sp.GetRequiredService<IConfiguration>();
+                var apiKey = config["ApiFootball:ApiKey"]
+                    ?? throw new InvalidOperationException(
+                        "ApiFootball:ApiKey no configurada. " +
+                        "Define el user-secret 'Parameters:ApiFootballKey' en el AppHost.");
+                client.DefaultRequestHeaders.Add("x-apisports-key", apiKey);
+            })
+            .AddResilienceHandler("api-football", pipeline =>
+            {
+                // Rate-limit aplicación-wide: alinea con el plan free (10/min).
+                // Si excedemos, Polly tira RateLimiterRejectedException → SendAsync
+                // lo mapea a ApiFootballError.RateLimited (→ 503 al cliente).
+                pipeline.AddRateLimiter(new TokenBucketRateLimiter(
+                    new TokenBucketRateLimiterOptions
+                    {
+                        TokenLimit = 10,
+                        TokensPerPeriod = 10,
+                        ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        AutoReplenishment = true,
+                    }));
+
+                pipeline.AddRetry(new HttpRetryStrategyOptions
+                {
+                    ShouldHandle = new Polly.PredicateBuilder<HttpResponseMessage>()
+                        .HandleResult(r =>
+                            r.StatusCode == System.Net.HttpStatusCode.TooManyRequests ||
+                            (int)r.StatusCode >= 500),
+                    MaxRetryAttempts = 3,
+                    BackoffType = DelayBackoffType.Exponential,
+                    UseJitter = true,
+                    Delay = TimeSpan.FromSeconds(1),
+                });
+                pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+                {
+                    FailureRatio = 0.5,
+                    MinimumThroughput = 10,
+                    SamplingDuration = TimeSpan.FromSeconds(60),
+                    BreakDuration = TimeSpan.FromMinutes(1),
+                });
+                pipeline.AddTimeout(TimeSpan.FromSeconds(10));
+            });
 
         // Comments microservice — circuit breaker para 🏆 matrícula DWSC.
         services

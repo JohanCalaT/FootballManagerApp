@@ -3,6 +3,7 @@ using FootballManagerApp.Players.Application.Common.Interfaces;
 using FootballManagerApp.Players.Application.Players.DTOs;
 using FootballManagerApp.Players.Application.Players.Mapping;
 using FootballManagerApp.Players.Domain.Entities;
+using FootballManagerApp.Players.Domain.Exceptions;
 using FootballManagerApp.Shared.Exceptions;
 using FootballManagerApp.Shared.Responses;
 using FootballManagerApp.Shared.ValueObjects;
@@ -115,6 +116,14 @@ public class CreatePlayerHandler
             return ApiResponse<PlayerDetailDto>.Created(
                 player.ToDetail(Array.Empty<Common.DTOs.CommentDto>()),
                 "Jugador creado correctamente");
+        }
+        catch (PlayerAlreadyExistsException ex)
+        {
+            // FindIdByNameAndTeamAsync ya filtra activos, pero si la BD lanza
+            // 23505 (constraint UNIQUE de apiFootballId), devolvemos 409 en lugar
+            // de dejar que suba como 500.
+            _logger.LogWarning(ex, "DB unique violation creating player");
+            return ApiResponse<PlayerDetailDto>.Conflict(ex.Message);
         }
         catch (DomainException ex)
         {

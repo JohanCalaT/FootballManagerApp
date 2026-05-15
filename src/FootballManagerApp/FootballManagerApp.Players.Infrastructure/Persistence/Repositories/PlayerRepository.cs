@@ -1,7 +1,9 @@
 using FootballManagerApp.Players.Application.Common.Interfaces;
 using FootballManagerApp.Players.Domain.Entities;
+using FootballManagerApp.Players.Domain.Exceptions;
 using FootballManagerApp.Shared.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace FootballManagerApp.Players.Infrastructure.Persistence.Repositories;
 
@@ -72,9 +74,23 @@ public class PlayerRepository : IPlayerRepository
     public async Task<Player> CreateAsync(Player player, CancellationToken ct)
     {
         await _db.Players.AddAsync(player, ct);
-        await _db.SaveChangesAsync(ct);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            // Postgres 23505 — algún índice UNIQUE rechazó la fila.
+            // Suele ser IX_Players_ApiFootballId (otro jugador ACTIVO con el mismo id).
+            throw new PlayerAlreadyExistsException(
+                player.ApiFootballId ?? 0,
+                player.Statistics.FirstOrDefault()?.Season ?? 0);
+        }
         return player;
     }
+
+    private static bool IsUniqueViolation(DbUpdateException ex) =>
+        ex.InnerException is PostgresException pg && pg.SqlState == "23505";
 
     public async Task UpdateAsync(Player player, CancellationToken ct)
     {

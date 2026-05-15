@@ -10,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.AddNpgsqlDbContext<CommentsDbContext>("commentsdb");
+builder.AddRedisDistributedCache("redis");
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

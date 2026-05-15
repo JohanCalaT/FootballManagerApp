@@ -28,6 +28,10 @@ public sealed class PlayersApiFactory : WebApplicationFactory<Program>
         // host; le damos un valor dummy y luego lo reemplazamos por SQLite.
         builder.UseSetting("ConnectionStrings:playersdb",
             "Host=localhost;Database=ignored;Username=t;Password=t");
+        // AddRedisDistributedCache también necesita una connection string.
+        builder.UseSetting("ConnectionStrings:redis", "localhost:6379");
+        // ApiFootballService lee ApiFootball:ApiKey al construir el HttpClient.
+        builder.UseSetting("ApiFootball:ApiKey", "test-key-not-used");
 
         builder.ConfigureServices(services =>
         {
@@ -48,6 +52,14 @@ public sealed class PlayersApiFactory : WebApplicationFactory<Program>
             // Comments.API no está disponible en tests → CommentsClient se simula.
             services.RemoveAll<ICommentsClient>();
             services.AddScoped<ICommentsClient, FakeCommentsClient>();
+
+            // API-Football tampoco se contacta — fake con respuestas vacías.
+            services.RemoveAll<IApiFootballService>();
+            services.AddScoped<IApiFootballService, FakeApiFootballService>();
+
+            // ICacheService Redis fallaría sin un Redis real. Reemplazamos por noop.
+            services.RemoveAll<ICacheService>();
+            services.AddScoped<ICacheService, NoopCacheService>();
 
             using var scope = services.BuildServiceProvider().CreateScope();
             scope.ServiceProvider.GetRequiredService<PlayersDbContext>()
@@ -70,4 +82,30 @@ internal sealed class FakeCommentsClient : ICommentsClient
         Task.FromResult(true);
     public Task<bool> DeleteByPlayerIdAsync(Guid playerId, CancellationToken ct) =>
         Task.FromResult(true);
+}
+
+internal sealed class FakeApiFootballService : IApiFootballService
+{
+    public Task<ApiFootballSearchPage> SearchProfilesAsync(
+        string query, int page, CancellationToken ct) =>
+        Task.FromResult(new ApiFootballSearchPage(
+            Items: Array.Empty<ApiFootballProfileSummary>(),
+            Page: page, TotalPages: 1, TotalResults: 0));
+
+    public Task<IReadOnlyList<int>> GetSeasonsAsync(int apiFootballId, CancellationToken ct) =>
+        Task.FromResult<IReadOnlyList<int>>(Array.Empty<int>());
+
+    public Task<ApiFootballImportData?> GetPlayerImportDataAsync(
+        int apiFootballId, int season, CancellationToken ct) =>
+        Task.FromResult<ApiFootballImportData?>(null);
+}
+
+internal sealed class NoopCacheService : ICacheService
+{
+    public Task<T?> GetAsync<T>(string key, CancellationToken ct) =>
+        Task.FromResult<T?>(default);
+    public Task SetAsync<T>(string key, T value, TimeSpan ttl, CancellationToken ct) =>
+        Task.CompletedTask;
+    public Task RemoveAsync(string key, CancellationToken ct) =>
+        Task.CompletedTask;
 }

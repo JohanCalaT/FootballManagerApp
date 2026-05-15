@@ -1,3 +1,4 @@
+using FootballManagerApp.Comments.Application.Common.Interfaces;
 using FootballManagerApp.Comments.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -23,6 +24,7 @@ public sealed class CommentsApiFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:commentsdb",
             "Host=localhost;Database=ignored;Username=t;Password=t");
+        builder.UseSetting("ConnectionStrings:redis", "localhost:6379");
 
         builder.ConfigureServices(services =>
         {
@@ -37,6 +39,9 @@ public sealed class CommentsApiFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<CommentsDbContext>(opts => opts.UseSqlite(_connection));
 
+            services.RemoveAll<ICacheService>();
+            services.AddScoped<ICacheService, NoopCacheService>();
+
             using var scope = services.BuildServiceProvider().CreateScope();
             scope.ServiceProvider.GetRequiredService<CommentsDbContext>()
                  .Database.EnsureCreated();
@@ -48,4 +53,14 @@ public sealed class CommentsApiFactory : WebApplicationFactory<Program>
         if (disposing) _connection.Dispose();
         base.Dispose(disposing);
     }
+}
+
+internal sealed class NoopCacheService : ICacheService
+{
+    public Task<T?> GetAsync<T>(string key, CancellationToken ct) =>
+        Task.FromResult<T?>(default);
+    public Task SetAsync<T>(string key, T value, TimeSpan ttl, CancellationToken ct) =>
+        Task.CompletedTask;
+    public Task RemoveAsync(string key, CancellationToken ct) =>
+        Task.CompletedTask;
 }

@@ -77,6 +77,15 @@ public record ImportPlayerItemDto(
     int ApiFootballId,
     int Season);
 
+public record ImportFailureDto(
+    int ApiFootballId,
+    int Season,
+    string Reason);
+
+public record ImportResultDto(
+    IReadOnlyList<PlayerListItemDto> Imported,
+    IReadOnlyList<ImportFailureDto> Failed);
+
 public record GenerateIdealTeamDto(
     string Formation = "4-3-3",
     int? Season = null);
