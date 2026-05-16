@@ -66,10 +66,15 @@ var gateway = builder.AddProject<Projects.FootballManagerApp_Gateway>("gateway")
     .WithReference(commentsApi)
     .WithExternalHttpEndpoints();
 
+// Node consume el mismo Redis que .NET para compartir cache de API-Football
+// (keys af:*). WithReference inyecta ConnectionStrings__redis con la cadena
+// formato StackExchange.Redis — el cliente Node la parsea a host:port.
 var nodeBackend = builder.AddNpmApp("node-backend", "../../../backend-node", scriptName: "dev")
     .WithHttpEndpoint(env: "PORT")
+    .WithReference(redis)
     .WithEnvironment("MONGODB_URI",      mongoDbUri)
     .WithEnvironment("API_FOOTBALL_KEY", apiFootballKey)
+    .WaitFor(redis)
     .WithExternalHttpEndpoints()
     .PublishAsDockerFile();
 
