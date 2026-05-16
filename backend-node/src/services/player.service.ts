@@ -5,8 +5,8 @@ import {
   ApiFootballDailyQuotaExceeded, ApiFootballError, ApiFootballRateLimited,
 } from '../errors/apiFootball.errors';
 import {
-  PlayerDetailDto, PlayerListItemDto,
-  toDetailDto, toListItemDto,
+  CommentDto, PlayerDetailDto, PlayerListItemDto,
+  toCommentDto, toDetailDto, toListItemDto,
 } from '../dtos/player.dto';
 import { escapeRegex } from '../utils/escapeRegex';
 import {
@@ -213,6 +213,39 @@ export const update = async (
  */
 export const remove = async (id: string): Promise<boolean> => {
   return repo.deleteById(id);
+};
+
+// ─────────────── Comments anidados ───────────────
+
+export const listCommentsOf = async (playerId: string): Promise<CommentDto[]> => {
+  const comments = await repo.findCommentsOf(playerId);
+  if (comments === null) throw new PlayerNotFoundError(playerId);
+  return comments.map(toCommentDto);
+};
+
+export interface AddCommentInput {
+  author:           string;
+  text:             string;
+  rating:           number;
+  createdByUserId:  string;
+  clientGeolocation?: IGeolocation;
+}
+
+export const addComment = async (
+  playerId: string,
+  input: AddCommentInput,
+): Promise<CommentDto> => {
+  const created = await repo.addComment(playerId, input);
+  if (!created) throw new PlayerNotFoundError(playerId);
+  return toCommentDto(created);
+};
+
+/**
+ * Borrado idempotente: devuelve `true` si se borró, `false` si no había
+ * ningún comment con ese id en la BD. El controller responde 204 igual.
+ */
+export const removeComment = async (commentId: string): Promise<boolean> => {
+  return repo.removeComment(commentId);
 };
 
 // ─────────────── Import batch desde API-Football ───────────────

@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { PlayerModel, IPlayer } from '../models/player.model';
+import { PlayerModel, IPlayer, IComment, IGeolocation } from '../models/player.model';
 
 // Mongoose 9 ya no exporta FilterQuery — usamos un Record genérico. La query
 // se valida por Mongoose en runtime contra el schema (campos desconocidos los
@@ -96,6 +96,61 @@ export const deleteById = async (id: string): Promise<boolean> => {
   if (!Types.ObjectId.isValid(id)) return false;
   const res = await PlayerModel.findByIdAndDelete(id).lean().exec();
   return res !== null;
+};
+
+// ─────────────── Comments anidados ───────────────
+
+export const findCommentsOf = async (
+  playerId: string,
+): Promise<IComment[] | null> => {
+  if (!Types.ObjectId.isValid(playerId)) return null;
+  const doc = await PlayerModel.findById(playerId)
+    .select('comments')
+    .lean<{ comments: IComment[] }>()
+    .exec();
+  return doc ? doc.comments : null;
+};
+
+export interface NewCommentInput {
+  author:           string;
+  text:             string;
+  rating:           number;
+  createdByUserId?: string;
+  clientGeolocation?: IGeolocation;
+}
+
+/**
+ * `$push` un comment al array embebido. Devuelve el sub-documento creado
+ * (el último del array tras el push) o `null` si el player no existe.
+ */
+export const addComment = async (
+  playerId: string,
+  input: NewCommentInput,
+): Promise<IComment | null> => {
+  if (!Types.ObjectId.isValid(playerId)) return null;
+  const updated = await PlayerModel.findByIdAndUpdate(
+    playerId,
+    { $push: { comments: { ...input, createdAt: new Date() } } },
+    { returnDocument: 'after', runValidators: true },
+  ).lean<{ comments: IComment[] }>().exec();
+  if (!updated) return null;
+  // El nuevo siempre es el último tras $push
+  return updated.comments[updated.comments.length - 1] ?? null;
+};
+
+/**
+ * `$pull` un comment por su `_id`. Devuelve `true` si efectivamente
+ * borró algo, `false` si no había un comment con ese id en ningún player.
+ * El controller responde 204 en ambos casos (idempotente).
+ */
+export const removeComment = async (commentId: string): Promise<boolean> => {
+  if (!Types.ObjectId.isValid(commentId)) return false;
+  const objId = new Types.ObjectId(commentId);
+  const res = await PlayerModel.updateOne(
+    { 'comments._id': objId },
+    { $pull: { comments: { _id: objId } } },
+  ).exec();
+  return res.modifiedCount > 0;
 };
 
 export const existsByApiFootballAndSeason = async (

@@ -4,13 +4,11 @@ import commentRoutes from './comment.routes';
 
 const router = Router();
 
-// API Routes
-router.use('/api/players', playerRoutes);
-// Nested routes setup for comments
-router.use('/api/players/:id/comments', commentRoutes);
+router.use('/api/players',  playerRoutes);
+router.use('/api/comments', commentRoutes);
 
-// View Route
-router.get('/status', (req: Request, res: Response) => {
+// View Route (panel de estado — matrícula TRWM) — completar en Sesión 8
+router.get('/status', (_req: Request, res: Response) => {
   res.render('status', { title: 'Panel de Estado' });
 });
 

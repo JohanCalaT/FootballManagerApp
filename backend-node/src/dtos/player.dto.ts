@@ -126,7 +126,7 @@ export const toListItemDto = (p: IPlayer): PlayerListItemDto => ({
   registeredAt:  p.registeredAt,
 });
 
-const toCommentDto = (c: IComment): CommentDto => ({
+export const toCommentDto = (c: IComment): CommentDto => ({
   id:                c._id ? toId(c._id) : '',
   author:            c.author,
   text:              c.text,
