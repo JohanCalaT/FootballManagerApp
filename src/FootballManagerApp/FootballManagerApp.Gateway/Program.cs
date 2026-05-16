@@ -21,6 +21,7 @@ var app = builder.Build();
 // app.UseAuthentication();
 // app.UseAuthorization();
 
+app.UseMiddleware<HeaderForwardingMiddleware>();
 app.UseMiddleware<BackendSelectorMiddleware>();
 
 app.MapDefaultEndpoints();
