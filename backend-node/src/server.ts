@@ -3,6 +3,7 @@ dotenv.config();
 
 import app from './app';
 import { connectDB } from './config/database';
+import { initCache } from './services/cache.service';
 
 const PORT = process.env.PORT ?? 3000;
 
@@ -16,6 +17,8 @@ app.get('/health', (_req, res) =>
 
 const start = async (): Promise<void> => {
   await connectDB();
+  // initCache no bloquea: si Redis falla, degrada a no-op y arrancamos igual
+  await initCache();
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });

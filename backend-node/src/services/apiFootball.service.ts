@@ -5,6 +5,10 @@ import {
   ApiFootballSeasonNotAvailable, ApiFootballTimeout, ApiFootballUpstreamError,
 } from '../errors/apiFootball.errors';
 import { VALID_SEASONS } from '../config/constants';
+import { getCache } from './cache.service';
+
+/** TTL para `af:player:stats:{id}:{season}` — temporadas finalizadas. */
+const STATS_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 días
 
 // ─────────────── Tipos del envelope ───────────────
 
@@ -124,17 +128,10 @@ const mapAxiosError = (err: unknown): never => {
  * - Devuelve `null` si `results: 0` (no es error: el jugador no jugó esa temporada).
  * - Lanza `ApiFootballError.*` para errores reales.
  */
-export const getPlayerWithStats = async (
+const fetchPlayerWithStatsFromApi = async (
   apiFootballId: number,
   season: number,
 ): Promise<ApiFootballPlayerStatsResponse | null> => {
-  if (!Number.isInteger(apiFootballId) || apiFootballId <= 0) {
-    throw new ApiFootballInvalidParameter('id');
-  }
-  if (!(VALID_SEASONS as readonly number[]).includes(season)) {
-    throw new ApiFootballSeasonNotAvailable(season);
-  }
-
   let envelope: ApiFootballEnvelope<ApiFootballPlayerStatsResponse>;
   try {
     const res = await getClient().get<ApiFootballEnvelope<ApiFootballPlayerStatsResponse>>(
@@ -150,4 +147,32 @@ export const getPlayerWithStats = async (
   ensureNoBodyErrors(envelope);
   if (envelope.results === 0) return null;
   return envelope.response[0] ?? null;
+};
+
+/**
+ * Cache-aside sobre `af:player:stats:{id}:{season}` (TTL 30d). Comparte
+ * la clave con el backend .NET, así si .NET ya consultó esa combinación
+ * el Node no gasta otra petición de la cuota diaria de 100 req/día.
+ *
+ * `null` (jugador sin datos para esa temporada) NO se cachea — el cache
+ * service solo guarda valores no-null. Errores tampoco se cachean
+ * (mapAxiosError / ensureNoBodyErrors lanzan antes del set).
+ */
+export const getPlayerWithStats = async (
+  apiFootballId: number,
+  season: number,
+): Promise<ApiFootballPlayerStatsResponse | null> => {
+  if (!Number.isInteger(apiFootballId) || apiFootballId <= 0) {
+    throw new ApiFootballInvalidParameter('id');
+  }
+  if (!(VALID_SEASONS as readonly number[]).includes(season)) {
+    throw new ApiFootballSeasonNotAvailable(season);
+  }
+
+  const cacheKey = `af:player:stats:${apiFootballId}:${season}`;
+  return getCache().getOrSet<ApiFootballPlayerStatsResponse>(
+    cacheKey,
+    STATS_TTL_SECONDS,
+    () => fetchPlayerWithStatsFromApi(apiFootballId, season),
+  );
 };

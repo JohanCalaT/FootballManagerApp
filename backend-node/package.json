@@ -27,6 +27,7 @@
     "firebase-admin": "^13.8.0",
     "mongoose": "^9.5.0",
     "pug": "^3.0.4",
+    "redis": "^5.12.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },
