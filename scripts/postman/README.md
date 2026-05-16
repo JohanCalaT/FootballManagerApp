@@ -5,7 +5,7 @@ ejercita el CRUD completo de Players y Comments con todas las validaciones
 hardened: HATEOAS, ETag/If-Match, soft-delete, idempotencia, rate-limit, 409
 por nombre+equipo y rating decimal.
 
-**36 requests** repartidos en **8 carpetas**, todos con asserts automáticos
+Repartidos en **9 carpetas**, todos con asserts automáticos
 (`pm.test`). Pulsando "Run collection" en Postman se ejecutan en orden y los
 IDs / versions se guardan en variables.
 
@@ -38,6 +38,8 @@ Si Postman da `Session closed with error code 1`:
 | 5 | Rate limit (429)               | 6 POST seguidos del mismo usuario → el 6º cae con 429    |
 | 6 | Mutaciones admin               | 403 sin admin, 412 If-Match incorrecto, 200 If-Match OK, DELETE idempotente, soft-delete oculta vía GET 404 |
 | 7 | Fase 2B (501)                  | /import y /ideal-team siguen devolviendo 501             |
+| 8 | Node backend (TRWM)            | CRUD Mongo, soft-uniqueness, comments anidados, /status  |
+| 9 | Gateway YARP (toggle)          | Strategy/Factory dotnet↔node, always-dotnet endpoints, header forwarding |
 
 ## Variables que se rellenan solas
 
