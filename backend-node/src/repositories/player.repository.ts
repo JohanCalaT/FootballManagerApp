@@ -71,6 +71,33 @@ export const create = async (
  * ¿Hay ya un Player importado con este (apiFootballId, season)?
  * Útil antes de pegarle a API-Football para no gastar cuota en duplicados.
  */
+/**
+ * Update parcial. `runValidators: true` aplica los validators del schema
+ * sobre los campos modificados (enum position, lengths, etc.).
+ * Devuelve `null` si el id no existe o no es un ObjectId válido.
+ */
+export const update = async (
+  id: string,
+  patch: Record<string, unknown>,
+): Promise<IPlayer | null> => {
+  if (!Types.ObjectId.isValid(id)) return null;
+  return PlayerModel.findByIdAndUpdate(id, patch, {
+    returnDocument: 'after',
+    runValidators: true,
+  }).lean<IPlayer>().exec();
+};
+
+/**
+ * Borrado físico. Devuelve `true` si efectivamente borró algo,
+ * `false` si el documento no existía. El controller usa esto solo
+ * para logging — DELETE responde 204 en ambos casos (idempotente).
+ */
+export const deleteById = async (id: string): Promise<boolean> => {
+  if (!Types.ObjectId.isValid(id)) return false;
+  const res = await PlayerModel.findByIdAndDelete(id).lean().exec();
+  return res !== null;
+};
+
 export const existsByApiFootballAndSeason = async (
   apiFootballId: number,
   season: number,

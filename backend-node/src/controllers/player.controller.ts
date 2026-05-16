@@ -30,6 +30,27 @@ interface CreatePlayerBody {
   apiFootballId?: number;
 }
 
+// Body de PUT /api/players/:id — todo opcional + posibilidad de mover el mapa
+interface UpdatePlayerBody {
+  name?:         string;
+  team?:         string;
+  league?:       string;
+  firstName?:    string;
+  lastName?:     string;
+  nationality?:  string;
+  birthDate?:    string;
+  birthPlace?:   string;
+  birthCountry?: string;
+  height?:       string;
+  weight?:       string;
+  injured?:      boolean;
+  position?:     PlayerPosition;
+  shirtNumber?:  number;
+  imageUrl?:     string;
+  imageSource?:  ImageSource;
+  playerGeolocation?: { lat: number; lng: number; city?: string; country?: string };
+}
+
 export const getAll = async (
   req: Request,
   res: Response,
@@ -179,6 +200,56 @@ export const importBatch = async (
       _links:  {},
     };
     res.status(resp.status).json(resp);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const update = async (
+  req: Request<{ id: string }, unknown, UpdatePlayerBody>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const body = req.body;
+    const patch: playerService.UpdatePlayerInput = {};
+
+    if (body.name         !== undefined) patch.name         = body.name;
+    if (body.team         !== undefined) patch.team         = body.team;
+    if (body.league       !== undefined) patch.league       = body.league;
+    if (body.firstName    !== undefined) patch.firstName    = body.firstName;
+    if (body.lastName     !== undefined) patch.lastName     = body.lastName;
+    if (body.nationality  !== undefined) patch.nationality  = body.nationality;
+    if (body.birthDate    !== undefined) patch.birthDate    = new Date(body.birthDate);
+    if (body.birthPlace   !== undefined) patch.birthPlace   = body.birthPlace;
+    if (body.birthCountry !== undefined) patch.birthCountry = body.birthCountry;
+    if (body.height       !== undefined) patch.height       = body.height;
+    if (body.weight       !== undefined) patch.weight       = body.weight;
+    if (body.injured      !== undefined) patch.injured      = body.injured;
+    if (body.position     !== undefined) patch.position     = body.position;
+    if (body.shirtNumber  !== undefined) patch.shirtNumber  = body.shirtNumber;
+    if (body.imageUrl     !== undefined) patch.imageUrl     = body.imageUrl;
+    if (body.imageSource  !== undefined) patch.imageSource  = body.imageSource;
+    if (body.playerGeolocation !== undefined) patch.playerGeolocation = body.playerGeolocation;
+
+    const dto   = await playerService.update(req.params.id, patch);
+    const links = buildPlayerLinks(dto.id, req.isAdmin);
+    const resp  = ok(dto, 'Jugador actualizado', links);
+    res.status(resp.status).json(resp);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const remove = async (
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    await playerService.remove(req.params.id);
+    // Idempotente: 204 sin body tanto si existía como si no
+    res.status(204).end();
   } catch (err) {
     next(err);
   }

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import * as playerController from '../controllers/player.controller';
-import { requireUser } from '../middleware/auth.middleware';
+import { requireAdmin, requireUser } from '../middleware/auth.middleware';
 import { runValidations } from '../middleware/validate.middleware';
 
 const router = Router();
@@ -108,5 +108,60 @@ router.post('/import', requireUser, playerController.importBatch);
  *     summary: Detalle de jugador con statistics y comments embebidos
  */
 router.get('/:id', playerController.getById);
+
+/**
+ * @swagger
+ * /api/players/{id}:
+ *   put:
+ *     summary: Actualiza un jugador (admin)
+ *     security:
+ *       - XUserId: []
+ *       - XUserAdmin: []
+ *     responses:
+ *       200: { description: ApiResponse<PlayerDetailDto> }
+ *       400: { description: Body inválido }
+ *       403: { description: Falta X-User-Admin true }
+ *       404: { description: No encontrado }
+ */
+router.put(
+  '/:id',
+  requireAdmin,
+  body('name')          .optional().isString().trim().isLength({ min: 1, max: 100 }),
+  body('team')          .optional().isString().trim().isLength({ min: 1, max: 100 }),
+  body('league')        .optional().isString().trim().isLength({ min: 1, max: 100 }),
+  body('firstName')     .optional().isString().isLength({ max: 100 }),
+  body('lastName')      .optional().isString().isLength({ max: 100 }),
+  body('nationality')   .optional().isString().isLength({ max: 100 }),
+  body('birthDate')     .optional().isISO8601(),
+  body('birthPlace')    .optional().isString().isLength({ max: 100 }),
+  body('birthCountry')  .optional().isString().isLength({ max: 100 }),
+  body('height')        .optional().isString().isLength({ max: 20 }),
+  body('weight')        .optional().isString().isLength({ max: 20 }),
+  body('injured')       .optional().isBoolean().toBoolean(),
+  body('position')      .optional().isIn(POSITIONS),
+  body('shirtNumber')   .optional().isInt({ min: 1, max: 99 }).toInt(),
+  body('imageUrl')      .optional().isString().isLength({ max: 500 }),
+  body('imageSource')   .optional().isIn(IMAGE_SOURCES),
+  body('playerGeolocation.lat').optional().isFloat({ min: -90,  max: 90  }),
+  body('playerGeolocation.lng').optional().isFloat({ min: -180, max: 180 }),
+  body('playerGeolocation.city')   .optional().isString().isLength({ max: 100 }),
+  body('playerGeolocation.country').optional().isString().isLength({ max: 100 }),
+  runValidations,
+  playerController.update,
+);
+
+/**
+ * @swagger
+ * /api/players/{id}:
+ *   delete:
+ *     summary: Borra un jugador (admin, idempotente)
+ *     security:
+ *       - XUserId: []
+ *       - XUserAdmin: []
+ *     responses:
+ *       204: { description: Borrado o no existía (idempotente) }
+ *       403: { description: Falta X-User-Admin true }
+ */
+router.delete('/:id', requireAdmin, playerController.remove);
 
 export default router;

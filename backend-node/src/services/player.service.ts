@@ -170,6 +170,51 @@ export const create = async (input: CreatePlayerInput): Promise<PlayerDetailDto>
   return toDetailDto(doc);
 };
 
+// ─────────────── Update ───────────────
+
+export interface UpdatePlayerInput {
+  name?:         string;
+  team?:         string;
+  league?:       string;
+  firstName?:    string;
+  lastName?:     string;
+  nationality?:  string;
+  birthDate?:    Date;
+  birthPlace?:   string;
+  birthCountry?: string;
+  height?:       string;
+  weight?:       string;
+  injured?:      boolean;
+  position?:     PlayerPosition;
+  shirtNumber?:  number;
+  imageUrl?:     string;
+  imageSource?:  ImageSource;
+  playerGeolocation?: IGeolocation;
+}
+
+export const update = async (
+  id: string,
+  patch: UpdatePlayerInput,
+): Promise<PlayerDetailDto> => {
+  const patchRecord = patch as Record<string, unknown>;
+  // Trim de campos string requeridos si vienen en el patch
+  if (typeof patchRecord.name   === 'string') patchRecord.name   = (patchRecord.name   as string).trim();
+  if (typeof patchRecord.team   === 'string') patchRecord.team   = (patchRecord.team   as string).trim();
+  if (typeof patchRecord.league === 'string') patchRecord.league = (patchRecord.league as string).trim();
+
+  const doc = await repo.update(id, patchRecord);
+  if (!doc) throw new PlayerNotFoundError(id);
+  return toDetailDto(doc);
+};
+
+/**
+ * Borrado idempotente: devuelve `true` si se borró un documento,
+ * `false` si no existía. El controller responde 204 en ambos casos.
+ */
+export const remove = async (id: string): Promise<boolean> => {
+  return repo.deleteById(id);
+};
+
 // ─────────────── Import batch desde API-Football ───────────────
 
 export interface ImportItem  { apiFootballId: number; season: number; }
