@@ -14,7 +14,11 @@
     { "key": "viniciusId",  "value": "",                     "type": "string" },
     { "key": "bellinghamId","value": "",                     "type": "string" },
     { "key": "commentId",       "value": "",                     "type": "string" },
-    { "key": "externalPlayerId","value": "154",                  "type": "string" }
+    { "key": "externalPlayerId","value": "154",                  "type": "string" },
+    { "key": "nodeUrl",            "value": "http://localhost:3000", "type": "string" },
+    { "key": "nodeManualPlayerId", "value": "",                     "type": "string" },
+    { "key": "nodeImportedPlayerId","value": "",                    "type": "string" },
+    { "key": "nodeCommentId",      "value": "",                     "type": "string" }
   ],
   "item": [
     {
@@ -699,6 +703,468 @@
             ],
             "body": { "mode": "raw", "raw": "{ \"formation\": \"4-3-3\", \"season\": 2024 }" },
             "url": "{{playersUrl}}/api/ideal-team"
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Node backend (TRWM) — golden path",
+      "description": "Recorrido completo del backend Node (Express + MongoDB + Redis).\n\n## Cómo usar\n\n1. Levanta la AppHost: `dotnet run --project src/FootballManagerApp/FootballManagerApp.AppHost`.\n2. Copia la URL del recurso `node-backend` del dashboard de Aspire y pégala en la variable `nodeUrl`.\n3. Run collection sobre esta carpeta — los IDs se guardan automáticamente.\n\n## Cubre\n\n- Health + panel Pug `/status` (matrícula TRWM)\n- CRUD manual: 201 con Location, 409 por soft-uniqueness case+acento-insensitiva, 400 por validators\n- HATEOAS condicional por X-User-Admin\n- Búsqueda con escape de metacaracteres regex (S.A.)\n- Comments anidados ($push / $pull con _id)\n- Import API-Football REAL — gasta 1 petición de cuota la primera vez, luego viene de Redis (af:player:stats:154:2022 TTL 30d, compartido con .NET)\n- Mutaciones admin + DELETE idempotente",
+      "item": [
+        {
+          "name": "8.0 GET /health → 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('service: node-backend', () => pm.expect(pm.response.json().service).to.equal('node-backend'));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{nodeUrl}}/health" }
+        },
+        {
+          "name": "8.0 GET /status → 200 (HTML Pug, matrícula)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('Content-Type HTML', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('html'));",
+            "pm.test('Panel renderizado', () => pm.expect(pm.response.text()).to.contain('FootballManagerApp · Node Backend'));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{nodeUrl}}/status" }
+        },
+        {
+          "name": "8.1 POST Pedri manual → 201 + Location",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('Location header', () => pm.expect(pm.response.headers.get('Location')).to.contain('/api/players/'));",
+            "pm.test('id devuelto', () => pm.expect(body.data.id).to.match(/^[a-f0-9]{24}$/i));",
+            "pm.test('comments y statistics vacíos', () => {",
+            "  pm.expect(body.data.comments).to.eql([]);",
+            "  pm.expect(body.data.statistics).to.eql([]);",
+            "});",
+            "pm.test('HATEOAS self+collection+comments (sin admin)', () => {",
+            "  pm.expect(body._links.self).to.exist;",
+            "  pm.expect(body._links.collection).to.exist;",
+            "  pm.expect(body._links.comments).to.exist;",
+            "  pm.expect(body._links.update).to.be.undefined;",
+            "  pm.expect(body._links.delete).to.be.undefined;",
+            "});",
+            "pm.collectionVariables.set('nodeManualPlayerId', body.data.id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-Client-Lat", "value": "36.834" },
+              { "key": "X-Client-Lng", "value": "-2.464" },
+              { "key": "X-Client-City", "value": "Almería" },
+              { "key": "X-Client-Country", "value": "España" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pedri González\",\n  \"team\": \"FC Barcelona\",\n  \"league\": \"La Liga\",\n  \"position\": \"Midfielder\",\n  \"imageUrl\": \"https://media.api-sports.io/football/players/909.png\",\n  \"imageSource\": \"api\",\n  \"nationality\": \"Spain\",\n  \"birthDate\": \"2002-11-25\",\n  \"height\": \"174 cm\",\n  \"weight\": \"60 kg\",\n  \"shirtNumber\": 8\n}"
+            },
+            "url": "{{nodeUrl}}/api/players"
+          }
+        },
+        {
+          "name": "8.1 POST sin X-User-Id → 401",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));",
+            "pm.test('mensaje no autorizado', () => pm.expect(pm.response.json().message).to.match(/no autorizado/i));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Anon\",\n  \"team\": \"X\",\n  \"league\": \"Y\"\n}" },
+            "url": "{{nodeUrl}}/api/players"
+          }
+        },
+        {
+          "name": "8.1 POST sin name → 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('mensaje menciona name', () => pm.expect(pm.response.json().message.toLowerCase()).to.contain('name'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"team\": \"FC Test\",\n  \"league\": \"Liga\"\n}" },
+            "url": "{{nodeUrl}}/api/players"
+          }
+        },
+        {
+          "name": "8.1 POST position inválida → 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"X\",\n  \"team\": \"T\",\n  \"league\": \"L\",\n  \"position\": \"Coach\"\n}" },
+            "url": "{{nodeUrl}}/api/players"
+          }
+        },
+        {
+          "name": "8.1 POST duplicado case+acento insensitive → 409",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+            "pm.test('mensaje incluye id del existente', () => {",
+            "  pm.expect(pm.response.json().message).to.contain(pm.collectionVariables.get('nodeManualPlayerId'));",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"pedri gonzalez\",\n  \"team\": \"FC BARCELONA\",\n  \"league\": \"La Liga\"\n}" },
+            "url": "{{nodeUrl}}/api/players"
+          }
+        },
+        {
+          "name": "8.2 GET listado paginado",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('estructura PagedResponse', () => {",
+            "  pm.expect(body).to.have.property('page');",
+            "  pm.expect(body).to.have.property('total');",
+            "  pm.expect(body).to.have.property('pages');",
+            "});",
+            "pm.test('HATEOAS self+first+last', () => {",
+            "  pm.expect(body._links.self).to.exist;",
+            "  pm.expect(body._links.first).to.exist;",
+            "  pm.expect(body._links.last).to.exist;",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{nodeUrl}}/api/players?page=1&limit=10",
+              "host": ["{{nodeUrl}}"],
+              "path": ["api","players"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "8.2 GET search ?name=Pedri",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('al menos 1 resultado', () => pm.expect(pm.response.json().total).to.be.at.least(1));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{nodeUrl}}/api/players/search?name=Pedri",
+              "host": ["{{nodeUrl}}"],
+              "path": ["api","players","search"],
+              "query": [{ "key": "name", "value": "Pedri" }]
+            }
+          }
+        },
+        {
+          "name": "8.2 GET search escape regex 'S.A.' (no rompe)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('no error con metacaracteres', () => pm.expect(pm.response.json().status).to.equal(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{nodeUrl}}/api/players/search?name=S.A.",
+              "host": ["{{nodeUrl}}"],
+              "path": ["api","players","search"],
+              "query": [{ "key": "name", "value": "S.A." }]
+            }
+          }
+        },
+        {
+          "name": "8.2 GET Pedri (sin admin) → 3 links públicos",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('shape: id como string, sin _id/__v', () => {",
+            "  pm.expect(body.data.id).to.be.a('string');",
+            "  pm.expect(body.data._id).to.be.undefined;",
+            "  pm.expect(body.data.__v).to.be.undefined;",
+            "});",
+            "pm.test('sin links admin', () => {",
+            "  pm.expect(body._links.update).to.be.undefined;",
+            "  pm.expect(body._links.delete).to.be.undefined;",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{nodeUrl}}/api/players/{{nodeManualPlayerId}}"
+          }
+        },
+        {
+          "name": "8.2 GET Pedri con X-User-Admin: true → +update/delete links",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('update link', () => pm.expect(body._links.update.method).to.equal('PUT'));",
+            "pm.test('delete link', () => pm.expect(body._links.delete.method).to.equal('DELETE'));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-User-Admin", "value": "true" }],
+            "url": "{{nodeUrl}}/api/players/{{nodeManualPlayerId}}"
+          }
+        },
+        {
+          "name": "8.3 POST comment en Pedri → 201",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('comment.id devuelto (ObjectId)', () => pm.expect(body.data.id).to.match(/^[a-f0-9]{24}$/i));",
+            "pm.test('Location header', () => pm.expect(pm.response.headers.get('Location')).to.contain('/api/comments/'));",
+            "pm.collectionVariables.set('nodeCommentId', body.data.id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-Client-Lat", "value": "36.834" },
+              { "key": "X-Client-Lng", "value": "-2.464" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"author\": \"Johan\",\n  \"text\": \"Visión de juego espectacular, marca la diferencia en cada partido.\",\n  \"rating\": 5\n}" },
+            "url": "{{nodeUrl}}/api/comments/player/{{nodeManualPlayerId}}"
+          }
+        },
+        {
+          "name": "8.3 POST comment rating 4.5 → 400 (Node valida int)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('mensaje menciona rating', () => pm.expect(pm.response.json().message.toLowerCase()).to.contain('rating'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "uid-otro" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"author\": \"X\",\n  \"text\": \"ok\",\n  \"rating\": 4.5\n}" },
+            "url": "{{nodeUrl}}/api/comments/player/{{nodeManualPlayerId}}"
+          }
+        },
+        {
+          "name": "8.3 POST comment rating 6 → 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "uid-otro" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"author\": \"X\",\n  \"text\": \"ok\",\n  \"rating\": 6\n}" },
+            "url": "{{nodeUrl}}/api/comments/player/{{nodeManualPlayerId}}"
+          }
+        },
+        {
+          "name": "8.3 GET comments de Pedri → 1 comment",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('1 comment embebido', () => pm.expect(pm.response.json().data.length).to.equal(1));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{nodeUrl}}/api/comments/player/{{nodeManualPlayerId}}"
+          }
+        },
+        {
+          "name": "8.3 DELETE comment sin admin → 403",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-User-Id", "value": "{{userId}}" }],
+            "url": "{{nodeUrl}}/api/comments/{{nodeCommentId}}"
+          }
+        },
+        {
+          "name": "8.3 DELETE comment admin → 204",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-User-Admin", "value": "true" }],
+            "url": "{{nodeUrl}}/api/comments/{{nodeCommentId}}"
+          }
+        },
+        {
+          "name": "8.3 DELETE comment otra vez (idempotente) → 204",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 No Content (idempotente)', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-User-Admin", "value": "true" }],
+            "url": "{{nodeUrl}}/api/comments/{{nodeCommentId}}"
+          }
+        },
+        {
+          "name": "8.4 POST import Messi 2022 → 201 (gasta 1 cuota la 1ª vez, después Redis)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('imported[1] + failed[0]', () => {",
+            "  pm.expect(body.data.imported.length).to.equal(1);",
+            "  pm.expect(body.data.failed).to.eql([]);",
+            "});",
+            "pm.test('apiFootballId 154', () => pm.expect(body.data.imported[0].apiFootballId).to.equal(154));",
+            "pm.collectionVariables.set('nodeImportedPlayerId', body.data.imported[0].id);",
+            "console.log('Tiempo: ' + pm.response.responseTime + ' ms');",
+            "console.log('Vuelve a correr este request — el 2º debería ser mucho más rápido (cache hit af:player:stats:154:2022)');"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-Client-Lat", "value": "36.834" },
+              { "key": "X-Client-Lng", "value": "-2.464" }
+            ],
+            "body": { "mode": "raw", "raw": "[{ \"apiFootballId\": 154, \"season\": 2022 }]" },
+            "url": "{{nodeUrl}}/api/players/import"
+          }
+        },
+        {
+          "name": "8.4 POST import mismo Messi 2022 → 409 (ya importado)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+            "pm.test('reason: Ya importado', () => {",
+            "  pm.expect(pm.response.json().data.failed[0].reason).to.match(/ya importado/i);",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "[{ \"apiFootballId\": 154, \"season\": 2022 }]" },
+            "url": "{{nodeUrl}}/api/players/import"
+          }
+        },
+        {
+          "name": "8.4 POST import batch > 10 → 400 (sin tocar API-Football)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('mensaje cap 10', () => pm.expect(pm.response.json().message).to.match(/Máximo 10/));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "[\n  { \"apiFootballId\": 1, \"season\": 2022 },\n  { \"apiFootballId\": 2, \"season\": 2022 },\n  { \"apiFootballId\": 3, \"season\": 2022 },\n  { \"apiFootballId\": 4, \"season\": 2022 },\n  { \"apiFootballId\": 5, \"season\": 2022 },\n  { \"apiFootballId\": 6, \"season\": 2022 },\n  { \"apiFootballId\": 7, \"season\": 2022 },\n  { \"apiFootballId\": 8, \"season\": 2022 },\n  { \"apiFootballId\": 9, \"season\": 2022 },\n  { \"apiFootballId\": 10, \"season\": 2022 },\n  { \"apiFootballId\": 11, \"season\": 2022 }\n]" },
+            "url": "{{nodeUrl}}/api/players/import"
+          }
+        },
+        {
+          "name": "8.4 POST import season 2019 → 400 (sin tocar API-Football)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('mensaje temporada inválida', () => pm.expect(pm.response.json().message.toLowerCase()).to.contain('temporada inválida'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "[{ \"apiFootballId\": 154, \"season\": 2019 }]" },
+            "url": "{{nodeUrl}}/api/players/import"
+          }
+        },
+        {
+          "name": "8.5 PUT Pedri sin admin → 403",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+          ]}}],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"team\": \"PSG\" }" },
+            "url": "{{nodeUrl}}/api/players/{{nodeManualPlayerId}}"
+          }
+        },
+        {
+          "name": "8.5 PUT Pedri admin → 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('campo actualizado', () => pm.expect(pm.response.json().data.shirtNumber).to.equal(99));",
+            "pm.test('mantiene campos no enviados', () => pm.expect(pm.response.json().data.name).to.equal('Pedri González'));"
+          ]}}],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Admin", "value": "true" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"shirtNumber\": 99,\n  \"playerGeolocation\": { \"lat\": 41.380898, \"lng\": 2.122820, \"city\": \"Barcelona\", \"country\": \"España\" }\n}" },
+            "url": "{{nodeUrl}}/api/players/{{nodeManualPlayerId}}"
+          }
+        },
+        {
+          "name": "8.5 DELETE Messi importado → 204",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-User-Admin", "value": "true" }],
+            "url": "{{nodeUrl}}/api/players/{{nodeImportedPlayerId}}"
+          }
+        },
+        {
+          "name": "8.5 DELETE Pedri → 204",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-User-Admin", "value": "true" }],
+            "url": "{{nodeUrl}}/api/players/{{nodeManualPlayerId}}"
+          }
+        },
+        {
+          "name": "8.5 DELETE Pedri otra vez (idempotente) → 204",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 No Content (idempotente)', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-User-Admin", "value": "true" }],
+            "url": "{{nodeUrl}}/api/players/{{nodeManualPlayerId}}"
+          }
+        },
+        {
+          "name": "8.5 GET Pedri tras DELETE → 404",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('404 Not Found (borrado físico)', () => pm.response.to.have.status(404));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{nodeUrl}}/api/players/{{nodeManualPlayerId}}"
           }
         }
       ]
