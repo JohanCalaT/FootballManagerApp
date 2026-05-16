@@ -78,6 +78,12 @@ var nodeBackend = builder.AddNpmApp("node-backend", "../../../backend-node", scr
     .WithExternalHttpEndpoints()
     .PublishAsDockerFile();
 
+// Gateway routes /api/** dynamically to either dotnet (players/comments APIs)
+// or node (this nodeBackend) depending on the active backend strategy. Wire
+// the node-backend reference here so Aspire Service Discovery resolves the
+// "node-backend" cluster in YARP config.
+gateway.WithReference(nodeBackend);
+
 var frontend = builder.AddNpmApp("ionic-app", "../../../frontend", scriptName: "start")
     .WithReference(gateway)
     .WithHttpEndpoint(targetPort: 80)

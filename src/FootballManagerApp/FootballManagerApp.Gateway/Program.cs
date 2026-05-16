@@ -1,4 +1,5 @@
 using FootballManagerApp.Gateway.Extensions;
+using FootballManagerApp.Gateway.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,8 @@ var app = builder.Build();
 // TODO: JWT Firebase validation
 // app.UseAuthentication();
 // app.UseAuthorization();
+
+app.UseMiddleware<BackendSelectorMiddleware>();
 
 app.MapDefaultEndpoints();
 app.MapControllers();
