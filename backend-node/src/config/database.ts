@@ -11,8 +11,7 @@ export const connectDB = async (uri?: string): Promise<typeof mongoose> => {
 
   let attempt = 0;
   // Retry simple con backoff fijo — production-grade es Polly-like pero excesivo aquí.
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
+  for (;;) {
     try {
       const conn = await mongoose.connect(connectionString);
       console.log(`[mongo] connected to ${conn.connection.host}/${conn.connection.name}`);
