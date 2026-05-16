@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { DomainError } from '../errors/domain.errors';
+import { ApiFootballError } from '../errors/apiFootball.errors';
 import {
   ApiResponse, badRequest, conflict, serverError,
 } from '../utils/apiResponse';
@@ -14,8 +15,8 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction,
 ): void => {
-  // 1) Errores de dominio tipados — status viene en la clase
-  if (err instanceof DomainError) {
+  // 1) Errores de dominio o de API-Football — status viene en la clase
+  if (err instanceof DomainError || err instanceof ApiFootballError) {
     const resp: ApiResponse<null> = {
       status: err.status,
       message: err.message,

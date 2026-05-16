@@ -81,6 +81,28 @@ router.post(
 
 /**
  * @swagger
+ * /api/players/import:
+ *   post:
+ *     summary: Importa jugadores desde API-Football (batch <= 10)
+ *     security:
+ *       - XUserId: []
+ *     responses:
+ *       201: { description: Todos importados }
+ *       207: { description: Mix éxito/error }
+ *       400: { description: Validación local (cap > 10, season inválida) }
+ *       401: { description: Falta X-User-Id }
+ *       409: { description: Todos duplicados (sin error de API) }
+ *       422: { description: Temporada no disponible en API-Football }
+ *       502: { description: Error upstream de API-Football }
+ *       503: { description: Rate limit o cuota diaria agotada }
+ *       504: { description: Timeout API-Football }
+ */
+// Body es un array — la validación profunda vive en service.validateBatch.
+// express-validator no es ideal para arrays heterogéneos; lo hacemos a mano.
+router.post('/import', requireUser, playerController.importBatch);
+
+/**
+ * @swagger
  * /api/players/{id}:
  *   get:
  *     summary: Detalle de jugador con statistics y comments embebidos

@@ -66,3 +66,18 @@ export const create = async (
   const doc = await PlayerModel.create(input);
   return doc.toObject() as IPlayer;
 };
+
+/**
+ * ¿Hay ya un Player importado con este (apiFootballId, season)?
+ * Útil antes de pegarle a API-Football para no gastar cuota en duplicados.
+ */
+export const existsByApiFootballAndSeason = async (
+  apiFootballId: number,
+  season: number,
+): Promise<boolean> => {
+  const count = await PlayerModel.countDocuments({
+    apiFootballId,
+    'statistics.season': season,
+  }).exec();
+  return count > 0;
+};

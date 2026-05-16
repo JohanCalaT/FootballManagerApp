@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import * as playerService from '../services/player.service';
-import { created, ok, paged } from '../utils/apiResponse';
+import {
+  ApiResponse, created, multiStatus, ok, paged,
+} from '../utils/apiResponse';
 import { buildPagedLinks, buildPlayerLinks } from '../utils/hateoas';
 import { parseClientGeo } from '../utils/clientGeo';
 import { ImageSource, PlayerPosition } from '../models/player.model';
+import { ApiFootballError } from '../errors/apiFootball.errors';
 
 // Body de POST /api/players — el validator ya garantizó las restricciones
 // cuando llega aquí, así que tipamos la forma esperada.
@@ -124,6 +127,57 @@ export const create = async (
     const resp  = created(dto, 'Jugador creado', links);
 
     res.setHeader('Location', `/api/players/${dto.id}`);
+    res.status(resp.status).json(resp);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Selector de status cuando NINGÚN item se importó. Espejo del .NET
+ * `SelectStatus()` del `ImportPlayersHandler`.
+ */
+const pickFailureStatus = (firstApiError: ApiFootballError | undefined): number =>
+  firstApiError?.status ?? 409; // sin error de API ⇒ todos duplicados ⇒ 409
+
+export const importBatch = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const result = await playerService.importBatch(
+      req.body,
+      req.userId!,
+      parseClientGeo(req.headers) ?? undefined,
+    );
+
+    if (result.failed.length === 0) {
+      const resp = created(
+        result,
+        `${result.imported.length} jugador(es) importado(s)`,
+      );
+      res.status(resp.status).json(resp);
+      return;
+    }
+
+    if (result.imported.length > 0) {
+      const resp = multiStatus(
+        result,
+        `${result.imported.length} importados, ${result.failed.length} con error`,
+      );
+      res.status(resp.status).json(resp);
+      return;
+    }
+
+    // Todos fallaron — status según el primer error de API (o 409 si solo dupes)
+    const status = pickFailureStatus(result.firstApiError);
+    const resp: ApiResponse<playerService.ImportResult> = {
+      status,
+      message: result.firstApiError?.message ?? 'Ninguno importado (duplicados)',
+      data:    result,
+      _links:  {},
+    };
     res.status(resp.status).json(resp);
   } catch (err) {
     next(err);
