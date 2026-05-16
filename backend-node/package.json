@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon src/server.ts",
     "start": "node dist/server.js",
-    "build": "tsc --ignoreDeprecations 6.0",
+    "build": "tsc --ignoreDeprecations 6.0 && node -e \"require('fs').cpSync('src/views','dist/views',{recursive:true})\"",
     "test": "jest",
     "lint": "eslint src tests"
   },

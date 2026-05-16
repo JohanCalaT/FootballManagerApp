@@ -1,6 +1,78 @@
 doctype html
-html(lang="es")
+html(lang='es')
   head
-    title= title
+    meta(charset='UTF-8')
+    title Status — FootballManagerApp Node Backend
+    style.
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a;
+        background: #fafbfc;
+      }
+      h1 { border-bottom: 2px solid #333; padding-bottom: .5rem; margin-bottom: .25rem; }
+      .subtitle { color: #555; font-size: .9rem; margin-top: 0; }
+      .grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem; margin: 1.5rem 0;
+      }
+      .card {
+        background: #fff; padding: 1rem; border-radius: 8px;
+        border: 1px solid #d0d7de; box-shadow: 0 1px 2px rgba(0,0,0,.05);
+      }
+      .card h3 { margin: 0 0 .5rem 0; font-size: .9rem; text-transform: uppercase; color: #57606a; }
+      .ok { color: #1f883d; font-weight: bold; }
+      .ko { color: #cf222e; font-weight: bold; }
+      .num { font-size: 2rem; font-weight: bold; margin: .25rem 0; color: #0969da; }
+      table { width: 100%; border-collapse: collapse; margin-top: 1rem; background: #fff;
+              border: 1px solid #d0d7de; border-radius: 8px; overflow: hidden; }
+      th, td { text-align: left; padding: .75rem; border-bottom: 1px solid #d0d7de; }
+      th { background: #f6f8fa; font-size: .85rem; text-transform: uppercase; color: #57606a; }
+      tr:last-child td { border-bottom: none; }
+      .empty { text-align: center; color: #57606a; padding: 2rem; }
   body
-    h1 Panel de Estado
+    h1 FootballManagerApp · Node Backend
+    p.subtitle Servicio: #{service} · Versión: #{version} · Uptime: #{uptime}
+
+    .grid
+      .card
+        h3 MongoDB
+        if dbConnected
+          p.ok ● Conectado
+          p Host: #{dbHost}
+        else
+          p.ko ● Desconectado
+          p Sin acceso a la base de datos
+
+      .card
+        h3 Jugadores
+        p.num= totalPlayers
+        p Documentos en `players`
+
+      .card
+        h3 Comentarios
+        p.num= totalComments
+        p Suma de `comments[]` (aggregate $size)
+
+      .card
+        h3 Peticiones
+        p.num= requestsToday
+        p Desde arranque del proceso
+
+    h3 Últimos 5 jugadores insertados
+    if recentPlayers.length === 0
+      p.empty No hay jugadores aún. Importa alguno desde `POST /api/players/import` o crea uno con `POST /api/players`.
+    else
+      table
+        thead
+          tr
+            th Nombre
+            th Equipo
+            th Liga
+            th Registrado
+        tbody
+          each p in recentPlayers
+            tr
+              td= p.name
+              td= p.team
+              td= p.league
+              td= p.registeredAt.toISOString().slice(0, 19).replace('T', ' ')

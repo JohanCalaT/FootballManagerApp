@@ -1,15 +1,12 @@
-import { Router, Request, Response } from 'express';
-import playerRoutes from './player.routes';
+import { Router } from 'express';
+import playerRoutes  from './player.routes';
 import commentRoutes from './comment.routes';
+import statusRoutes  from './status.routes';
 
 const router = Router();
 
 router.use('/api/players',  playerRoutes);
 router.use('/api/comments', commentRoutes);
-
-// View Route (panel de estado — matrícula TRWM) — completar en Sesión 8
-router.get('/status', (_req: Request, res: Response) => {
-  res.render('status', { title: 'Panel de Estado' });
-});
+router.use('/',             statusRoutes); // GET /status (panel Pug — matrícula TRWM)
 
 export default router;
