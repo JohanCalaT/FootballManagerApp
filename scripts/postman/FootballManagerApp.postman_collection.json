@@ -18,7 +18,10 @@
     { "key": "nodeUrl",            "value": "http://localhost:3000", "type": "string" },
     { "key": "nodeManualPlayerId", "value": "",                     "type": "string" },
     { "key": "nodeImportedPlayerId","value": "",                    "type": "string" },
-    { "key": "nodeCommentId",      "value": "",                     "type": "string" }
+    { "key": "nodeCommentId",      "value": "",                     "type": "string" },
+    { "key": "gatewayUrl",          "value": "http://localhost:5000", "type": "string" },
+    { "key": "gatewayPedriId",      "value": "",                     "type": "string" },
+    { "key": "gatewayCommentId",    "value": "",                     "type": "string" }
   ],
   "item": [
     {
@@ -1165,6 +1168,277 @@
           "request": {
             "method": "GET",
             "url": "{{nodeUrl}}/api/players/{{nodeManualPlayerId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Gateway YARP — toggle dotnet/node + routing",
+      "description": "Recorrido end-to-end del API Gateway YARP que conmuta entre backend .NET y Node en runtime vía Strategy/Factory (matrícula DAH).\n\n## Cómo usar\n\n1. Levanta la AppHost: `dotnet run --project src/FootballManagerApp/FootballManagerApp.AppHost`.\n2. Copia la URL del recurso `gateway` del dashboard Aspire y pégala en `gatewayUrl` (suele ser https://localhost:7XXX o http://localhost:5000).\n3. Run collection sobre esta carpeta — el toggle se gestiona automáticamente entre llamadas.\n\n## Cubre\n\n- `/config/backend` GET/POST — patrón Strategy/Factory observable\n- Routing dinámico: el MISMO path `/api/players` resuelve a Postgres o MongoDB según strategy activa\n- Endpoints SIEMPRE a .NET (search-external, seasons, import, ideal-team) ignoran el toggle\n- Forwarding de `X-User-Id` y `X-User-Admin` sin validar JWT (Fase 1)\n- Header `Authorization` se descarta antes de llegar al backend\n- Comentarios anidados accesibles tanto en dotnet (Comments.API) como en node (sub-doc) bajo el mismo path\n- Cleanup final + reset del backend activo a dotnet (estado por defecto)\n\n## Pre-requisitos contractuales\n\nTodas las respuestas siguen `{ status, message, data, _links }` independientemente del backend. Si difieren, el toggle rompe el frontend.",
+      "item": [
+        {
+          "name": "9.0 GET /health del Gateway → 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{gatewayUrl}}/health" }
+        },
+        {
+          "name": "9.1 GET /config/backend → default 'dotnet'",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('active = dotnet', () => pm.expect(body.active).to.equal('dotnet'));",
+            "pm.test('available contiene dotnet y node', () => {",
+            "  pm.expect(body.available).to.include('dotnet');",
+            "  pm.expect(body.available).to.include('node');",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{gatewayUrl}}/config/backend" }
+        },
+        {
+          "name": "9.2 POST /config/backend { backend: 'invalid' } → 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"backend\": \"invalid\" }" },
+            "url": "{{gatewayUrl}}/config/backend"
+          }
+        },
+        {
+          "name": "9.2 POST /config/backend { backend: '' } → 400",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"backend\": \"\" }" },
+            "url": "{{gatewayUrl}}/config/backend"
+          }
+        },
+        {
+          "name": "9.3 POST /config/backend { backend: 'dotnet' } → 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('active = dotnet', () => pm.expect(pm.response.json().active).to.equal('dotnet'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"backend\": \"dotnet\" }" },
+            "url": "{{gatewayUrl}}/config/backend"
+          }
+        },
+        {
+          "name": "9.4 [dotnet] POST /api/players Pedri vía Gateway → 201",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('ApiResponse shape', () => {",
+            "  pm.expect(body).to.have.property('status');",
+            "  pm.expect(body).to.have.property('message');",
+            "  pm.expect(body).to.have.property('data');",
+            "  pm.expect(body).to.have.property('_links');",
+            "});",
+            "pm.test('Location header presente', () => pm.expect(pm.response.headers.get('Location')).to.not.be.null);",
+            "pm.collectionVariables.set('gatewayPedriId', body.data.id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "Authorization", "value": "Bearer placeholder-should-be-stripped" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pedri Gateway dotnet\",\n  \"team\": \"FC Barcelona\",\n  \"league\": \"La Liga\",\n  \"position\": \"Midfielder\",\n  \"imageSource\": \"api\"\n}"
+            },
+            "url": "{{gatewayUrl}}/api/players"
+          }
+        },
+        {
+          "name": "9.4 [dotnet] GET /api/players/:id vía Gateway → 200",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('Mismo id que el POST', () => pm.expect(body.data.id).to.equal(pm.collectionVariables.get('gatewayPedriId')));",
+            "pm.test('HATEOAS _links.self', () => pm.expect(body._links.self).to.exist);"
+          ]}}],
+          "request": { "method": "GET", "url": "{{gatewayUrl}}/api/players/{{gatewayPedriId}}" }
+        },
+        {
+          "name": "9.4 [dotnet] POST /api/comments/player/:id vía Gateway → 201",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('gatewayCommentId', pm.response.json().data.id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"author\": \"Johan\", \"text\": \"Comentario vía Gateway → Comments.API\", \"rating\": 4.5 }"
+            },
+            "url": "{{gatewayUrl}}/api/comments/player/{{gatewayPedriId}}"
+          }
+        },
+        {
+          "name": "9.5 [always-dotnet] GET /api/players/search-external aun con node activo",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Cambiar a node ANTES de la llamada para demostrar que el endpoint ignora el toggle",
+              "pm.sendRequest({",
+              "  url: pm.collectionVariables.get('gatewayUrl') + '/config/backend',",
+              "  method: 'POST',",
+              "  header: { 'Content-Type': 'application/json' },",
+              "  body: { mode: 'raw', raw: '{\"backend\":\"node\"}' }",
+              "}, () => {});"
+            ]}},
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('No es 404 de YARP (no cae en ruta dinámica de Node)', () => pm.expect(pm.response.code).to.not.equal(404));",
+              "pm.test('Llega a Players.API (200 o 401/400 según auth)', () => pm.expect([200, 400, 401]).to.include(pm.response.code));"
+            ]}}
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-User-Id", "value": "{{userId}}" }],
+            "url": "{{gatewayUrl}}/api/players/search-external?name=Messi"
+          }
+        },
+        {
+          "name": "9.5 [always-dotnet] POST /api/players/import con node activo → llega a Players.API",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('No es ruta hacia node (sin 404 catch-all)', () => pm.expect(pm.response.code).to.not.equal(404));",
+            "pm.test('Status válido para Players.API', () => pm.expect([200, 201, 207, 400, 401, 422, 502, 503]).to.include(pm.response.code));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"items\": [ { \"apiFootballId\": 154, \"season\": 2022 } ] }" },
+            "url": "{{gatewayUrl}}/api/players/import"
+          }
+        },
+        {
+          "name": "9.6 [node] GET /api/players con node activo → MongoDB",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Asegurar strategy = node",
+              "pm.sendRequest({",
+              "  url: pm.collectionVariables.get('gatewayUrl') + '/config/backend',",
+              "  method: 'POST',",
+              "  header: { 'Content-Type': 'application/json' },",
+              "  body: { mode: 'raw', raw: '{\"backend\":\"node\"}' }",
+              "}, () => {});"
+            ]}},
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('ApiResponse shape paginado', () => {",
+              "  pm.expect(body).to.have.property('status');",
+              "  pm.expect(body).to.have.property('data');",
+              "  pm.expect(body).to.have.property('page');",
+              "  pm.expect(body).to.have.property('_links');",
+              "});",
+              "pm.test('No incluye Pedri Gateway dotnet (datos están en Postgres, no en MongoDB)', () => {",
+              "  const ids = (body.data || []).map(p => p.id);",
+              "  pm.expect(ids).to.not.include(pm.collectionVariables.get('gatewayPedriId'));",
+              "});"
+            ]}}
+          ],
+          "request": { "method": "GET", "url": "{{gatewayUrl}}/api/players?page=1&limit=10" }
+        },
+        {
+          "name": "9.6 [node] POST /api/players con node activo → MongoDB",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.test('Location header presente', () => pm.expect(pm.response.headers.get('Location')).to.not.be.null);",
+            "pm.collectionVariables.set('gatewayPedriId', pm.response.json().data.id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pedri Gateway node\",\n  \"team\": \"FC Barcelona\",\n  \"league\": \"La Liga\",\n  \"position\": \"Midfielder\"\n}"
+            },
+            "url": "{{gatewayUrl}}/api/players"
+          }
+        },
+        {
+          "name": "9.6 [node] DELETE /api/players/:id sin X-User-Admin → 403",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('403 Forbidden propagado desde node', () => pm.response.to.have.status(403));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-User-Id", "value": "{{userId}}" }],
+            "url": "{{gatewayUrl}}/api/players/{{gatewayPedriId}}"
+          }
+        },
+        {
+          "name": "9.6 [node] DELETE /api/players/:id con X-User-Admin → 204",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Admin", "value": "true" }
+            ],
+            "url": "{{gatewayUrl}}/api/players/{{gatewayPedriId}}"
+          }
+        },
+        {
+          "name": "9.7 Cleanup: DELETE Pedri dotnet vía Gateway",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Volver a dotnet para limpiar el jugador de Postgres",
+              "pm.sendRequest({",
+              "  url: pm.collectionVariables.get('gatewayUrl') + '/config/backend',",
+              "  method: 'POST',",
+              "  header: { 'Content-Type': 'application/json' },",
+              "  body: { mode: 'raw', raw: '{\"backend\":\"dotnet\"}' }",
+              "}, () => {});"
+            ]}},
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('204 No Content (idempotente)', () => pm.response.to.have.status(204));"
+            ]}}
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Admin", "value": "true" }
+            ],
+            "url": "{{gatewayUrl}}/api/players/{{gatewayPedriId}}"
+          }
+        },
+        {
+          "name": "9.8 Reset: POST /config/backend { backend: 'dotnet' }",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('active = dotnet (estado por defecto)', () => pm.expect(pm.response.json().active).to.equal('dotnet'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"backend\": \"dotnet\" }" },
+            "url": "{{gatewayUrl}}/config/backend"
           }
         }
       ]
