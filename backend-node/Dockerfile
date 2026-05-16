@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
 
 # ── Build stage ─────────────────────────────────────────────────
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 # Copy manifests first to leverage Docker layer cache: deps reinstall
 # only when package.json or lockfile actually change.
@@ -13,7 +13,7 @@ COPY . .
 RUN npm run build
 
 # ── Runtime stage ───────────────────────────────────────────────
-FROM node:20-alpine
+FROM node:24-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/dist ./dist

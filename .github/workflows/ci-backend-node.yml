@@ -1,4 +1,7 @@
 name: CI · Backend Node (Express/TS)
+# Node version: el repo declara engines `>=24.0.0 <26.0.0` con
+# engine-strict=true en backend-node/.npmrc. Si subes este job a Node 20
+# o 22, `npm ci` falla con EBADENGINE antes de instalar nada.
 
 on:
   push:
@@ -32,10 +35,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node 20
+      - name: Setup Node 24 (matches package.json engines + Dockerfile)
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: backend-node/package-lock.json
 

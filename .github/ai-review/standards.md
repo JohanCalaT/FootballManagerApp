@@ -116,25 +116,109 @@ Reference skills: `clean-architecture-dotnet`, `result-pattern-api-response`,
 
 ### 4.2 Node stack (`backend-node/**`)
 
+Reference skills: `node-service-layer`, `node-mongoose-nested`,
+`node-error-handling`, `node-tdd-jest-supertest`,
+`node-apifootball-integration`, `node-pug-status-panel`.
+
+The Node backend mirrors the .NET microservices in contract: same JSON
+shape (`status`/`message`/`data`/`_links`), same HTTP status codes,
+same headers (`X-User-Id`, `X-User-Admin`, `X-Client-*`). Breaking that
+parity breaks the frontend toggle (`X-Backend: dotnet | node`), so most
+contract violations escalate to `major` or `critical`.
+
 **Critical**
-- `any` in TypeScript (production code).
-- `console.log` in production code paths (allowed only in scripts/tests).
-- Callback-style I/O (must be `async/await`).
+- `any` in TypeScript production code under `backend-node/src/**`. Use
+  `unknown` + narrowing or a precise type instead. Allowed only with an
+  inline `// eslint-disable-next-line` accompanied by a justification
+  comment.
+- New hardcoded secret (Mongo URI, Redis URL, API-Football key, Firebase
+  key, etc.) — already covered by §3.1 but doubly enforced here.
 - Mongoose schema declared without `strict: true`.
-- Route handler without `express-validator` validation on user input.
+- Comment persisted as a **top-level collection** (`mongoose.model('Comment', …)`)
+  instead of an embedded array on the `Player` document. The TRWM rubric
+  explicitly demands nested sub-documents; reintroducing a Comments
+  collection breaks the model.
+- Callback-style I/O (must be `async/await`). `.then().catch()` chains are
+  also forbidden except inside `Promise.all([...])` setup.
+- New 500-producing path that bypasses `middleware/error.middleware.ts`
+  (e.g. `res.status(500).json(...)` in a controller, or a `catch`
+  swallowing the error and returning a hand-crafted 500 body). The
+  error middleware is the **only** allowed 500 producer.
+- Mongoose documents leaked to the response without DTO mapping —
+  evidence: response JSON shows `_id`, `__v`, or untyped `Buffer`-like
+  blobs. Always use `dtos/*.dto.ts` mappers.
+- TS strict settings disabled in `tsconfig.json` — `strict`,
+  `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes` are
+  required and must stay enabled.
 
 **Major**
-- New route without Swagger annotation.
-- Error not funneled through the centralized error middleware.
-- Comment created as a top-level document instead of being nested inside
-  the `Player` document (per TRWM rubric).
-- Missing Jest/Supertest test for a new route.
-- `node.missing-spec`: a new `*.controller.ts` or `*.service.ts` under
-  `backend-node/src/**` is added without a sibling/test-folder file with
-  the same basename ending in `.test.ts` or `.spec.ts`.
+- **POST returns 200 instead of 201** + `Location` header.
+- **DELETE returns 200 instead of 204**, or DELETE that is **not
+  idempotent** (returns 404 for a missing or malformed id instead of 204).
+- **Import batch endpoint** (`POST /api/players/import`) that returns a
+  single status when the result mixes successes and failures — the
+  selector must produce `207 Multi-Status` on mix, `201` on all-success,
+  and the documented status per `ApiFootballError` subtype when all
+  failed.
+- **HATEOAS `update`/`delete` links emitted unconditionally** instead of
+  gated on `req.isAdmin`. The `buildPlayerLinks(id, isAdmin)` helper
+  exists for this — using a different helper that ignores admin is a
+  bug.
+- **Route accepts user input without validation**. Acceptable validation
+  forms: (a) `express-validator` chain followed by `runValidations`
+  middleware, OR (b) explicit service-level validation that throws a
+  `ValidationError` (used in `POST /import` because the body is an
+  array). A controller that takes `req.body` straight to Mongoose
+  without either form is the violation.
+- **Error not funneled through the central error middleware**. Pattern
+  to enforce: services throw subclasses of `DomainError` /
+  `ApiFootballError`, controllers `catch (err) { next(err) }`. A
+  controller that maps domain errors to status codes in-line is a
+  duplication and a `major` finding.
+- **New external HTTP call** (axios/fetch to API-Football, Gemini, etc.)
+  without typed error mapping. Pattern: a `catch` that classifies into
+  the matching `ApiFootballError` / domain error subclass — never a
+  generic `throw err`.
+- **Redis cache misuse**:
+  - New cache key with a prefix outside the documented namespaces
+    (`af:*`, `players:*`, `comments:*`, `gemini:*` per `CLAUDE.md` raíz).
+  - Caching an error payload or a `null`/`[]` result with the same TTL
+    as a happy-path response (perpetuates a transient failure or
+    "ghost" miss).
+  - Cache write without a matching invalidation strategy on the
+    corresponding Create/Update/Delete path **when the data is owned
+    by Node** (the `af:*` keys are read-only from Node's POV — owned
+    by API-Football's lifecycle, no invalidation required).
+- **Mongoose deprecated APIs**: `new: true` on `findByIdAndUpdate`
+  / `findOneAndUpdate` instead of `returnDocument: 'after'`.
+- **New route without `@swagger` JSDoc annotation** on the route
+  handler — Swagger UI at `/api-docs` is rubric-scored (TRWM 1pt).
+- **`node.missing-test`** — the PR adds a non-trivial file under
+  `backend-node/src/{controllers,services,repositories}/` but adds or
+  modifies zero files under `backend-node/tests/`. The test layout is
+  feature-based (`tests/integration/players.create.test.ts`,
+  `tests/unit/escapeRegex.test.ts`), so do NOT require an exact
+  basename match — the requirement is that the diff touches
+  `backend-node/tests/` whenever it adds production logic. Renames and
+  type-only changes don't trigger this rule.
+- **New env var consumed in code without an entry in
+  `backend-node/.env.example`** (overlaps §3.1 but the AI should still
+  raise it under this section so the Node author sees it).
 
 **Minor**
+- `console.log` / `console.warn` / `console.error` inside business
+  logic paths (`services/*`, `controllers/*`, `repositories/*`).
+  **Allowed without flagging** when used as bootstrap or fault logs in
+  any of: `server.ts`, `config/database.ts`, `services/cache.service.ts`
+  (cache degrade warnings), and `middleware/error.middleware.ts`
+  (fallback 500 logger). These four files are the project's lightweight
+  logger surface until a real `pino`/`winston` is wired.
 - Inconsistent async error handling (mixing `.catch` with `try/catch`).
+- New file that uses `as unknown as <T>` casts when a proper type guard
+  would do the same job.
+- Route file with `responses: { description: ... }` inline-flow YAML in
+  the `@swagger` JSDoc — the parser breaks when descriptions contain
+  `<`, `>`, `[`, `]`. Use block style with quoted strings.
 
 ### 4.3 Angular / Ionic stack (`frontend/**`)
 
