@@ -17,13 +17,17 @@ const IMAGE_SOURCES = ['blob', 'api', 'url'] as const;
  *     parameters:
  *       - in: query
  *         name: page
- *         schema: { type: integer, default: 1 }
+ *         schema:
+ *           type: integer
+ *           default: 1
  *       - in: query
  *         name: limit
- *         schema: { type: integer, default: 10 }
+ *         schema:
+ *           type: integer
+ *           default: 10
  *     responses:
- *       200:
- *         description: PagedResponse<PlayerListItemDto>
+ *       "200":
+ *         description: "PagedResponse<PlayerListItemDto>"
  */
 router.get('/', playerController.getAll);
 
@@ -45,10 +49,14 @@ router.get('/search', playerController.search);
  *     security:
  *       - XUserId: []
  *     responses:
- *       201: { description: ApiResponse<PlayerDetailDto> + Location header }
- *       400: { description: Body inválido }
- *       401: { description: Falta X-User-Id }
- *       409: { description: Ya existe un Player con mismo name+team (case-insensitive) }
+ *       "201":
+ *         description: "ApiResponse<PlayerDetailDto> + Location header"
+ *       "400":
+ *         description: "Body inválido"
+ *       "401":
+ *         description: "Falta X-User-Id"
+ *       "409":
+ *         description: "Ya existe un Player con mismo name+team (case-insensitive)"
  */
 router.post(
   '/',
@@ -87,15 +95,24 @@ router.post(
  *     security:
  *       - XUserId: []
  *     responses:
- *       201: { description: Todos importados }
- *       207: { description: Mix éxito/error }
- *       400: { description: Validación local (cap > 10, season inválida) }
- *       401: { description: Falta X-User-Id }
- *       409: { description: Todos duplicados (sin error de API) }
- *       422: { description: Temporada no disponible en API-Football }
- *       502: { description: Error upstream de API-Football }
- *       503: { description: Rate limit o cuota diaria agotada }
- *       504: { description: Timeout API-Football }
+ *       "201":
+ *         description: "Todos importados"
+ *       "207":
+ *         description: "Mix éxito/error"
+ *       "400":
+ *         description: "Validación local (cap > 10, season inválida)"
+ *       "401":
+ *         description: "Falta X-User-Id"
+ *       "409":
+ *         description: "Todos duplicados (sin error de API)"
+ *       "422":
+ *         description: "Temporada no disponible en API-Football"
+ *       "502":
+ *         description: "Error upstream de API-Football"
+ *       "503":
+ *         description: "Rate limit o cuota diaria agotada"
+ *       "504":
+ *         description: "Timeout API-Football"
  */
 // Body es un array — la validación profunda vive en service.validateBatch.
 // express-validator no es ideal para arrays heterogéneos; lo hacemos a mano.
@@ -118,10 +135,14 @@ router.get('/:id', playerController.getById);
  *       - XUserId: []
  *       - XUserAdmin: []
  *     responses:
- *       200: { description: ApiResponse<PlayerDetailDto> }
- *       400: { description: Body inválido }
- *       403: { description: Falta X-User-Admin true }
- *       404: { description: No encontrado }
+ *       "200":
+ *         description: "ApiResponse<PlayerDetailDto>"
+ *       "400":
+ *         description: "Body inválido"
+ *       "403":
+ *         description: "Falta X-User-Admin true"
+ *       "404":
+ *         description: "No encontrado"
  */
 router.put(
   '/:id',
@@ -159,8 +180,10 @@ router.put(
  *       - XUserId: []
  *       - XUserAdmin: []
  *     responses:
- *       204: { description: Borrado o no existía (idempotente) }
- *       403: { description: Falta X-User-Admin true }
+ *       "204":
+ *         description: "Borrado o no existía (idempotente)"
+ *       "403":
+ *         description: "Falta X-User-Admin true"
  */
 router.delete('/:id', requireAdmin, playerController.remove);
 

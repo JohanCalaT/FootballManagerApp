@@ -127,10 +127,7 @@ export const initCache = async (): Promise<CacheService> => {
   try {
     const client = createClient({
       url,
-      socket: {
-        connectTimeout: 5_000,
-        reconnectStrategy: (retries) => Math.min(retries * 200, 3_000),
-      },
+      socket: buildSocketOptions(url),
     });
     client.on('error', (err: Error) => {
       console.warn('[cache] redis error event:', err.message);
@@ -145,4 +142,32 @@ export const initCache = async (): Promise<CacheService> => {
     instance = NOOP;
     return instance;
   }
+};
+
+/**
+ * Build socket opts. Caso particular Aspire local:
+ *   `AddAzureManagedRedis(...).RunAsContainer(...)` levanta un contenedor
+ *   Redis con TLS y cert AUTOFIRMADO. El connection string trae `ssl=True`,
+ *   que pasamos a `rediss://`, y el cliente Node rechaza el cert.
+ *   Para hosts loopback aceptamos cert no verificado — solo en local dev,
+ *   nunca contra un Azure Managed Redis real (esos llevan cert válido).
+ *
+ * Override manual: `REDIS_TLS_REJECT_UNAUTHORIZED=false` fuerza la
+ * aceptación si tu Redis remoto también usa self-signed por algún motivo.
+ */
+const buildSocketOptions = (url: string): Record<string, unknown> => {
+  const base: Record<string, unknown> = {
+    connectTimeout: 5_000,
+    reconnectStrategy: (retries: number) => Math.min(retries * 200, 3_000),
+  };
+  let parsed: URL;
+  try { parsed = new URL(url); } catch { return base; }
+  const isTls       = parsed.protocol === 'rediss:';
+  const isLoopback  = ['localhost', '127.0.0.1', '::1', 'host.docker.internal']
+    .includes(parsed.hostname);
+  const overrideEnv = (process.env.REDIS_TLS_REJECT_UNAUTHORIZED ?? '').toLowerCase() === 'false';
+  if (isTls && (isLoopback || overrideEnv)) {
+    return { ...base, tls: true, rejectUnauthorized: false };
+  }
+  return base;
 };

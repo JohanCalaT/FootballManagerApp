@@ -12,8 +12,10 @@ const router = Router();
  *   get:
  *     summary: Lista de comments embebidos del jugador
  *     responses:
- *       200: { description: ApiResponse<CommentDto[]> }
- *       404: { description: Player no encontrado }
+ *       "200":
+ *         description: "ApiResponse<CommentDto[]>"
+ *       "404":
+ *         description: "Player no encontrado"
  */
 router.get('/player/:playerId', commentController.getByPlayer);
 
@@ -25,10 +27,14 @@ router.get('/player/:playerId', commentController.getByPlayer);
  *     security:
  *       - XUserId: []
  *     responses:
- *       201: { description: ApiResponse<CommentDto> + Location header }
- *       400: { description: Body inválido (text > 1000, rating fuera de 0..5) }
- *       401: { description: Falta X-User-Id }
- *       404: { description: Player no encontrado }
+ *       "201":
+ *         description: "ApiResponse<CommentDto> + Location header"
+ *       "400":
+ *         description: "Body inválido (text > 1000, rating fuera de 0..5)"
+ *       "401":
+ *         description: "Falta X-User-Id"
+ *       "404":
+ *         description: "Player no encontrado"
  */
 router.post(
   '/player/:playerId',
@@ -52,8 +58,10 @@ router.post(
  *       - XUserId: []
  *       - XUserAdmin: []
  *     responses:
- *       204: { description: Borrado o no existía }
- *       403: { description: Falta X-User-Admin true }
+ *       "204":
+ *         description: "Borrado o no existía"
+ *       "403":
+ *         description: "Falta X-User-Admin true"
  */
 router.delete('/:commentId', requireAdmin, commentController.remove);
 
