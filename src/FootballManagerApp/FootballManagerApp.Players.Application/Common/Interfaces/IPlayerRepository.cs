@@ -1,9 +1,15 @@
+using FootballManagerApp.Players.Application.IdealTeam.DTOs;
 using FootballManagerApp.Players.Domain.Entities;
 
 namespace FootballManagerApp.Players.Application.Common.Interfaces;
 
 public interface IPlayerRepository
 {
+    // Proyección agregada para construir el prompt del equipo ideal.
+    // Vive en el repositorio para que el handler no toque IQueryable.
+    Task<IReadOnlyList<PlayerForPromptDto>> GetAllForIdealTeamAsync(
+        CancellationToken ct);
+
     Task<Player?> GetByIdAsync(Guid id, CancellationToken ct);
 
     Task<(IEnumerable<Player> Players, int Total)> GetAllAsync(

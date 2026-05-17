@@ -1,4 +1,5 @@
 using FootballManagerApp.Players.Application.Common.Interfaces;
+using FootballManagerApp.Players.Application.IdealTeam.DTOs;
 using FootballManagerApp.Players.Domain.Entities;
 using FootballManagerApp.Players.Domain.Exceptions;
 using FootballManagerApp.Shared.Exceptions;
@@ -138,5 +139,30 @@ public class PlayerRepository : IPlayerRepository
             .Where(p => p.Name.ToLower() == n && p.Team.ToLower() == t)
             .Select(p => (Guid?)p.Id)
             .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<PlayerForPromptDto>> GetAllForIdealTeamAsync(
+        CancellationToken ct)
+    {
+        var list = await _db.Players
+            .AsNoTracking()
+            .Select(p => new PlayerForPromptDto
+            {
+                Id               = p.Id.ToString(),
+                Name             = p.Name,
+                Team             = p.Team,
+                Position         = p.Position ?? "Unknown",
+                AverageRating    = p.Statistics
+                    .Where(s => s.Rating != null)
+                    .Average(s => (decimal?)s.Rating),
+                TotalGoals       = p.Statistics.Sum(s => s.Goals),
+                TotalAssists     = p.Statistics.Sum(s => s.Assists),
+                TotalAppearances = p.Statistics.Sum(s => s.Appearances),
+                TotalTackles     = p.Statistics.Sum(s => s.TacklesTotal),
+                TotalSaves       = p.Statistics.Sum(s => s.GoalsSaved),
+                HasStatistics    = p.Statistics.Any(),
+            })
+            .ToListAsync(ct);
+        return list;
     }
 }
