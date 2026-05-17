@@ -39,6 +39,9 @@ export const generateIdealTeam = async (
   if (players.length < 11)
     throw new ValidationError('No hay jugadores suficientes (mínimo 11)');
 
+  // No validamos por línea — el prompt indica a Gemini que adapte jugadores
+  // de posición similar (regla 5). Una lista vacía aparece como "(ninguno)"
+  // en el prompt; Gemini se encargará de improvisar.
   const byLine = new Map<string, playerRepo.PlayerForPromptDto[]>();
   for (const p of players) {
     const list = byLine.get(p.position) ?? [];
@@ -50,11 +53,6 @@ export const generateIdealTeam = async (
   const defs = byLine.get('Defender')   ?? [];
   const mids = byLine.get('Midfielder') ?? [];
   const atts = byLine.get('Attacker')   ?? [];
-
-  if (gks.length  === 0) throw new ValidationError('No hay porteros disponibles');
-  if (defs.length === 0) throw new ValidationError('No hay defensas disponibles');
-  if (mids.length === 0) throw new ValidationError('No hay centrocampistas disponibles');
-  if (atts.length === 0) throw new ValidationError('No hay delanteros disponibles');
 
   const prompt = buildIdealTeamPrompt(formation, gks, defs, mids, atts);
   const raw    = await geminiService.generateIdealTeam(prompt);

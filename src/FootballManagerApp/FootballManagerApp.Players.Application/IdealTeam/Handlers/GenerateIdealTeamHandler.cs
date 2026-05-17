@@ -46,18 +46,20 @@ public sealed class GenerateIdealTeamHandler
             return ApiResponse<IdealTeamResponseDto>.BadRequest(
                 "No hay jugadores suficientes (mínimo 11)");
 
+        // No validamos por línea — el prompt indica a Gemini que adapte
+        // jugadores de posición similar (regla 5). Una lista vacía aparece
+        // como "(ninguno)" en el prompt; Gemini se encargará de improvisar.
         var byLine = players
             .GroupBy(p => p.Position)
             .ToDictionary(g => g.Key, g => (IReadOnlyList<PlayerForPromptDto>)g.ToList());
 
-        if (!byLine.TryGetValue("Goalkeeper", out var gks) || gks.Count == 0)
-            return ApiResponse<IdealTeamResponseDto>.BadRequest("No hay porteros disponibles");
-        if (!byLine.TryGetValue("Defender", out var defs) || defs.Count == 0)
-            return ApiResponse<IdealTeamResponseDto>.BadRequest("No hay defensas disponibles");
-        if (!byLine.TryGetValue("Midfielder", out var mids) || mids.Count == 0)
-            return ApiResponse<IdealTeamResponseDto>.BadRequest("No hay centrocampistas disponibles");
-        if (!byLine.TryGetValue("Attacker", out var atts) || atts.Count == 0)
-            return ApiResponse<IdealTeamResponseDto>.BadRequest("No hay delanteros disponibles");
+        IReadOnlyList<PlayerForPromptDto> Get(string line) =>
+            byLine.TryGetValue(line, out var l) ? l : Array.Empty<PlayerForPromptDto>();
+
+        var gks  = Get("Goalkeeper");
+        var defs = Get("Defender");
+        var mids = Get("Midfielder");
+        var atts = Get("Attacker");
 
         // 3. Construir prompt y llamar a Gemini
         var prompt = IdealTeamPrompt.Build(dto.Formation, gks, defs, mids, atts);
