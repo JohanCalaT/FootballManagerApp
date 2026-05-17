@@ -163,3 +163,57 @@ export const existsByApiFootballAndSeason = async (
   }).exec();
   return count > 0;
 };
+
+// ─────────────── Ideal Team — proyección agregada ───────────────
+
+export interface PlayerForPromptDto {
+  id: string;
+  name: string;
+  team: string;
+  position: string;
+  averageRating: number | null;
+  totalGoals: number;
+  totalAssists: number;
+  totalAppearances: number;
+  totalTackles: number;
+  totalSaves: number;
+  hasStatistics: boolean;
+}
+
+/**
+ * Proyección plana de cada Player + agregados de su array statistics[].
+ * El service usa esto para construir el prompt de Gemini.
+ *
+ * Los paths apuntan a campos planos del sub-schema (goals, assists,
+ * appearances, tacklesTotal, goalsSaved) — 1:1 con PlayerStatistics
+ * de EF Core. No usar paths anidados como goals.total.
+ */
+export const getAllForIdealTeam = async (): Promise<PlayerForPromptDto[]> =>
+  PlayerModel.aggregate<PlayerForPromptDto>([
+    {
+      $project: {
+        _id:      0,
+        id:       { $toString: '$_id' },
+        name:     1,
+        team:     1,
+        position: { $ifNull: ['$position', 'Unknown'] },
+        hasStatistics: {
+          $gt: [{ $size: { $ifNull: ['$statistics', []] } }, 0],
+        },
+        averageRating: {
+          $avg: {
+            $filter: {
+              input: '$statistics.rating',
+              as:    'r',
+              cond:  { $ne: ['$$r', null] },
+            },
+          },
+        },
+        totalGoals:       { $sum: '$statistics.goals' },
+        totalAssists:     { $sum: '$statistics.assists' },
+        totalAppearances: { $sum: '$statistics.appearances' },
+        totalTackles:     { $sum: '$statistics.tacklesTotal' },
+        totalSaves:       { $sum: '$statistics.goalsSaved' },
+      },
+    },
+  ]).exec();

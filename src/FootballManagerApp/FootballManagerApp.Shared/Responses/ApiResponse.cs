@@ -39,6 +39,10 @@ public record ApiResponse<T>
         string message = "Error interno del servidor") =>
         new() { Status = 500, Message = message, Data = default };
 
+    public static ApiResponse<T> ServiceUnavailable(
+        string message = "Servicio no disponible") =>
+        new() { Status = 503, Message = message, Data = default };
+
     public static ApiResponse<T> NotImplemented(
         string message = "Funcionalidad no disponible") =>
         new() { Status = 501, Message = message, Data = default };

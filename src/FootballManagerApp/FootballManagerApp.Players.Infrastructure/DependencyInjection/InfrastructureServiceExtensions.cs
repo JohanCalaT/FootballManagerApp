@@ -35,8 +35,35 @@ public static class InfrastructureServiceExtensions
         // dependan de ICacheService fallarán explícitamente — es lo correcto.
         services.AddScoped<ICacheService, RedisCacheService>();
 
-        // External HTTP — Gemini sigue stub hasta su tarea propia.
-        services.AddHttpClient<IGeminiService, GeminiService>();
+        // Gemini: HttpClient tipado con Polly resilience (retry + circuit breaker
+        // + per-attempt timeout). Sin rate-limiter — la cuota de Gemini se
+        // negocia por proyecto y no es por minuto como API-Football.
+        services
+            .AddHttpClient<IGeminiService, GeminiService>()
+            .AddResilienceHandler("gemini-pipeline", pipeline =>
+            {
+                pipeline.AddRetry(new HttpRetryStrategyOptions
+                {
+                    ShouldHandle = new Polly.PredicateBuilder<HttpResponseMessage>()
+                        .HandleResult(r =>
+                            r.StatusCode == System.Net.HttpStatusCode.TooManyRequests ||
+                            (int)r.StatusCode >= 500),
+                    MaxRetryAttempts = 2,
+                    BackoffType = DelayBackoffType.Exponential,
+                    UseJitter = true,
+                    Delay = TimeSpan.FromSeconds(1),
+                });
+                pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+                {
+                    FailureRatio = 0.5,
+                    MinimumThroughput = 5,
+                    SamplingDuration = TimeSpan.FromSeconds(60),
+                    BreakDuration = TimeSpan.FromSeconds(30),
+                });
+                // Per-attempt timeout — el HttpClient.Timeout total ya lo
+                // configura GeminiService desde Gemini:TimeoutSeconds.
+                pipeline.AddTimeout(TimeSpan.FromSeconds(30));
+            });
 
         // API-Football: HttpClient tipado con auth header + Polly resilience.
         services

@@ -47,3 +47,12 @@ export class ForbiddenError extends DomainError {
   readonly status = 403;
   constructor(message = 'Sin permisos') { super(message); }
 }
+
+/**
+ * Lanzada cuando Gemini no responde, devuelve un error HTTP, agota timeout
+ * o produce un payload inválido. error.middleware la mapea a HTTP 503.
+ */
+export class GeminiUnavailableError extends DomainError {
+  readonly status = 503;
+  constructor(message = 'Servicio Gemini no disponible') { super(message); }
+}

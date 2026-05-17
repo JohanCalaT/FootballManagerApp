@@ -1,15 +1,23 @@
 namespace FootballManagerApp.Players.Application.IdealTeam.DTOs;
 
-public record IdealTeamPlayerDto(
-    Guid PlayerId,
+/// <summary>
+/// Jugador situado en el campo dentro del equipo ideal generado por Gemini.
+/// La línea (goalkeeper/defenders/midfielders/attackers) queda implícita en
+/// la clave que lo agrupa en IdealTeamResponseDto.
+/// </summary>
+public sealed record IdealTeamPlayerDto(
+    Guid Id,
     string Name,
-    string Position,
+    string Team,
+    string Position,   // GK | CB | LB | RB | LWB | RWB | CDM | CM | CAM | LM | RM | LW | RW | CF | ST
+    decimal X,         // 0..1 — 0=izquierda, 1=derecha
+    decimal Y,         // 0..1 — 0=portería propia, 1=portería rival
     string Reason);
 
-public record IdealTeamResponseDto(
+public sealed record IdealTeamResponseDto(
     string Formation,
     IdealTeamPlayerDto Goalkeeper,
-    IEnumerable<IdealTeamPlayerDto> Defenders,
-    IEnumerable<IdealTeamPlayerDto> Midfielders,
-    IEnumerable<IdealTeamPlayerDto> Attackers,
+    IReadOnlyList<IdealTeamPlayerDto> Defenders,
+    IReadOnlyList<IdealTeamPlayerDto> Midfielders,
+    IReadOnlyList<IdealTeamPlayerDto> Attackers,
     string GeneralJustification);

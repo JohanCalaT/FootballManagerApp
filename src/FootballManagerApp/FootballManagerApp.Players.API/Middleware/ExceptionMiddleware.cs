@@ -1,4 +1,5 @@
 using System.Text.Json;
+using FootballManagerApp.Players.Application.Common.Exceptions;
 using FootballManagerApp.Shared.Exceptions;
 using FootballManagerApp.Shared.Responses;
 
@@ -28,6 +29,11 @@ public class ExceptionMiddleware
             _logger.LogWarning(ex, "Domain validation falló en {Path}", context.Request.Path);
             await WriteResponseAsync(context, 400, ex.Message);
         }
+        catch (GeminiUnavailableException ex)
+        {
+            _logger.LogWarning(ex, "Gemini no disponible en {Path}", context.Request.Path);
+            await WriteResponseAsync(context, 503, "Servicio Gemini no disponible");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Excepción no manejada en {Path}", context.Request.Path);
@@ -44,6 +50,7 @@ public class ExceptionMiddleware
         var body = status switch
         {
             400 => ApiResponse<object>.BadRequest(message),
+            503 => ApiResponse<object>.ServiceUnavailable(message),
             500 => ApiResponse<object>.ServerError(message),
             _   => ApiResponse<object>.ServerError(message),
         };
