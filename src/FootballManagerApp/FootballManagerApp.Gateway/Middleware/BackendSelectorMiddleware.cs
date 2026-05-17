@@ -6,8 +6,9 @@ namespace FootballManagerApp.Gateway.Middleware;
 /// Stamps an internal <c>X-Backend-Target</c> request header with the active
 /// strategy name (<c>dotnet</c> or <c>node</c>) for routes that follow the
 /// toggle. YARP route definitions match on this header to pick the right
-/// cluster. Routes that ALWAYS go to .NET (search-external, seasons, import,
-/// ideal-team) are not stamped — they match by path/method only.
+/// cluster. Routes that ALWAYS go to .NET (search-external, seasons, import)
+/// are not stamped — they match by path/method only because they depend on
+/// API-Football integration that only lives in .NET.
 /// </summary>
 public sealed class BackendSelectorMiddleware
 {
@@ -18,7 +19,6 @@ public sealed class BackendSelectorMiddleware
         ("GET",  "/api/players/search-external"),
         ("GET",  "/api/players/seasons/"),
         ("POST", "/api/players/import"),
-        ("POST", "/api/ideal-team"),
     };
 
     private readonly RequestDelegate _next;
@@ -39,8 +39,9 @@ public sealed class BackendSelectorMiddleware
             return;
         }
 
-        if (path.StartsWith("/api/players", StringComparison.OrdinalIgnoreCase) ||
-            path.StartsWith("/api/comments", StringComparison.OrdinalIgnoreCase))
+        if (path.StartsWith("/api/players",    StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/comments",   StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/ideal-team", StringComparison.OrdinalIgnoreCase))
         {
             context.Request.Headers[BackendTargetHeader] = factory.GetActive().Name;
         }

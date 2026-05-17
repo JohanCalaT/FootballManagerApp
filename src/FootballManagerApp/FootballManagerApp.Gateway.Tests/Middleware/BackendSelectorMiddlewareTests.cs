@@ -29,7 +29,6 @@ public class BackendSelectorMiddlewareTests
     [InlineData("GET",  "/api/players/search-external")]
     [InlineData("GET",  "/api/players/seasons/42")]
     [InlineData("POST", "/api/players/import")]
-    [InlineData("POST", "/api/ideal-team")]
     public async Task AlwaysDotnetRoutes_DoNotStampBackendTarget(string method, string path)
     {
         var (mw, factory) = Build(active: "node");
@@ -50,6 +49,8 @@ public class BackendSelectorMiddlewareTests
     [InlineData("node",   "/api/players/abc",        "node")]
     [InlineData("node",   "/api/comments/player/x",  "node")]
     [InlineData("node",   "/api/comments/abc",       "node")]
+    [InlineData("dotnet", "/api/ideal-team",         "dotnet")]
+    [InlineData("node",   "/api/ideal-team",         "node")]
     public async Task DynamicRoutes_StampHeaderWithActiveStrategy(
         string activeStrategy, string path, string expectedHeader)
     {
