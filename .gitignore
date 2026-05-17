@@ -48,6 +48,10 @@ TestResults/
 Thumbs.db
 .azure
 
+# --- Local-only design docs (SDDs) ---
+# Notas de diseño que viven en la máquina del autor. No se publican al repo.
+docs/
+
 # --- Firebase service account (si se descarga, nunca al repo) ---
 **/firebase-adminsdk*.json
 **/serviceAccountKey.json
