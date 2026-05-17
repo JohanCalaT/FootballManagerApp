@@ -18,9 +18,10 @@ const options = {
       { url: `http://localhost:${port}` },
     ],
     tags: [
-      { name: 'Players',  description: 'CRUD jugadores + import API-Football' },
-      { name: 'Comments', description: 'Comentarios anidados en jugador' },
-      { name: 'System',   description: 'Health, status (Pug), Swagger' },
+      { name: 'Players',   description: 'CRUD jugadores + import API-Football' },
+      { name: 'Comments',  description: 'Comentarios anidados en jugador' },
+      { name: 'IdealTeam', description: 'Generación de equipo ideal vía Gemini' },
+      { name: 'System',    description: 'Health, status (Pug), Swagger' },
     ],
     components: {
       securitySchemes: {
