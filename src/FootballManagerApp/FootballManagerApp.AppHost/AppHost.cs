@@ -74,6 +74,7 @@ var nodeBackend = builder.AddNpmApp("node-backend", "../../../backend-node", scr
     .WithReference(redis)
     .WithEnvironment("MONGODB_URI",      mongoDbUri)
     .WithEnvironment("API_FOOTBALL_KEY", apiFootballKey)
+    .WithEnvironment("GEMINI_API_KEY",   geminiApiKey)
     .WaitFor(redis)
     .WithExternalHttpEndpoints()
     .PublishAsDockerFile();
