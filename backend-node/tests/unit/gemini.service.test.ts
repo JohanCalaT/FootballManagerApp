@@ -28,7 +28,9 @@ describe('gemini.service', () => {
 
     expect(text).toBe('{"formation":"4-3-3"}');
     expect(axiosPost).toHaveBeenCalledTimes(1);
-    const [url, body] = axiosPost.mock.calls[0];
+    const call = axiosPost.mock.calls[0];
+    if (!call) throw new Error('expected axios.post to have been called');
+    const [url, body] = call;
     expect(url).toContain('gemini-2.0-flash:generateContent');
     expect(url).toContain('key=test-key');
     expect((body as { generationConfig: { responseMimeType: string } })

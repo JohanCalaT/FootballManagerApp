@@ -1,14 +1,20 @@
-import { PlayerModel } from '../../src/models/player.model';
+import { PlayerModel, PlayerPosition } from '../../src/models/player.model';
 import { getAllForIdealTeam } from '../../src/repositories/player.repository';
 
-const newPlayer = (over: Partial<Record<string, unknown>> = {}) => ({
-  name: 'X',
-  team: 'T',
-  league: 'La Liga',
-  position: 'Midfielder',
+interface SeedOverrides {
+  name?:       string;
+  team?:       string;
+  position?:   PlayerPosition | null;
+  statistics?: Array<Record<string, unknown>>;
+}
+
+const newPlayer = (over: SeedOverrides = {}) => ({
+  name:            over.name ?? 'X',
+  team:            over.team ?? 'T',
+  league:          'La Liga',
+  position:        over.position === undefined ? 'Midfielder' : over.position,
   createdByUserId: 'uid-1',
-  statistics: [],
-  ...over,
+  statistics:      over.statistics ?? [],
 });
 
 describe('player.repository · getAllForIdealTeam', () => {
@@ -22,6 +28,7 @@ describe('player.repository · getAllForIdealTeam', () => {
     }));
 
     const [dto] = await getAllForIdealTeam();
+    if (!dto) throw new Error('expected one dto');
 
     expect(dto.name).toBe('Pedri');
     expect(dto.team).toBe('FC Barcelona');
@@ -39,6 +46,7 @@ describe('player.repository · getAllForIdealTeam', () => {
     await PlayerModel.create(newPlayer({ name: 'Rookie', position: 'Defender' }));
 
     const [dto] = await getAllForIdealTeam();
+    if (!dto) throw new Error('expected one dto');
 
     expect(dto.averageRating).toBeNull();
     expect(dto.totalGoals).toBe(0);
@@ -60,6 +68,7 @@ describe('player.repository · getAllForIdealTeam', () => {
     }));
 
     const [dto] = await getAllForIdealTeam();
+    if (!dto) throw new Error('expected one dto');
 
     expect(dto.averageRating).toBeCloseTo(7.0);
     expect(dto.totalGoals).toBe(6);
@@ -69,6 +78,7 @@ describe('player.repository · getAllForIdealTeam', () => {
     await PlayerModel.create(newPlayer({ name: 'NoPos', position: null }));
 
     const [dto] = await getAllForIdealTeam();
+    if (!dto) throw new Error('expected one dto');
     expect(dto.position).toBe('Unknown');
   });
 
