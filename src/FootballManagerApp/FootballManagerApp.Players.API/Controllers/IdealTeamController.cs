@@ -16,13 +16,18 @@ public class IdealTeamController : ControllerBase
         _handler = handler;
 
     [HttpPost(Name = "GenerateIdealTeam")]
-    public IActionResult Generate(
+    public async Task<IActionResult> Generate(
         [FromBody] GenerateIdealTeamDto dto,
         CancellationToken ct)
     {
-        // Fase 2B: requiere Gemini.
-        var resp = ApiResponse<IdealTeamResponseDto>.NotImplemented(
-            "GenerateIdealTeam disponible en Fase 2B con Gemini");
-        return StatusCode(resp.Status, resp);
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            var unauthorized = ApiResponse<IdealTeamResponseDto>.Unauthorized();
+            return StatusCode(unauthorized.Status, unauthorized);
+        }
+
+        var result = await _handler.HandleAsync(dto, userId, ct);
+        return StatusCode(result.Status, result);
     }
 }
