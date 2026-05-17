@@ -694,9 +694,10 @@
           }
         },
         {
-          "name": "POST ideal-team → 501 (Gemini pendiente)",
+          "name": "POST ideal-team formation inválida → 400",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('501 Not Implemented', () => pm.response.to.have.status(501));"
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('mensaje menciona formaciones permitidas', () => pm.expect(pm.response.json().message).to.match(/Formaci/i));"
           ]}}],
           "request": {
             "method": "POST",
@@ -704,7 +705,21 @@
               { "key": "Content-Type", "value": "application/json" },
               { "key": "X-User-Id", "value": "{{userId}}" }
             ],
-            "body": { "mode": "raw", "raw": "{ \"formation\": \"4-3-3\", \"season\": 2024 }" },
+            "body": { "mode": "raw", "raw": "{ \"formation\": \"9-9-9\" }" },
+            "url": "{{playersUrl}}/api/ideal-team"
+          }
+        },
+        {
+          "name": "POST ideal-team sin X-User-Id → 401",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"formation\": \"4-3-3\" }" },
             "url": "{{playersUrl}}/api/ideal-team"
           }
         }
@@ -1174,7 +1189,7 @@
     },
     {
       "name": "9. Gateway YARP — toggle dotnet/node + routing",
-      "description": "Recorrido end-to-end del API Gateway YARP que conmuta entre backend .NET y Node en runtime vía Strategy/Factory (matrícula DAH).\n\n## Cómo usar\n\n1. Levanta la AppHost: `dotnet run --project src/FootballManagerApp/FootballManagerApp.AppHost`.\n2. Copia la URL del recurso `gateway` del dashboard Aspire y pégala en `gatewayUrl` (suele ser https://localhost:7XXX o http://localhost:5000).\n3. Run collection sobre esta carpeta — el toggle se gestiona automáticamente entre llamadas.\n\n## Cubre\n\n- `/config/backend` GET/POST — patrón Strategy/Factory observable\n- Routing dinámico: el MISMO path `/api/players` resuelve a Postgres o MongoDB según strategy activa\n- Endpoints SIEMPRE a .NET (search-external, seasons, import, ideal-team) ignoran el toggle\n- Forwarding de `X-User-Id` y `X-User-Admin` sin validar JWT (Fase 1)\n- Header `Authorization` se descarta antes de llegar al backend\n- Comentarios anidados accesibles tanto en dotnet (Comments.API) como en node (sub-doc) bajo el mismo path\n- Cleanup final + reset del backend activo a dotnet (estado por defecto)\n\n## Pre-requisitos contractuales\n\nTodas las respuestas siguen `{ status, message, data, _links }` independientemente del backend. Si difieren, el toggle rompe el frontend.",
+      "description": "Recorrido end-to-end del API Gateway YARP que conmuta entre backend .NET y Node en runtime vía Strategy/Factory (matrícula DAH).\n\n## Cómo usar\n\n1. Levanta la AppHost: `dotnet run --project src/FootballManagerApp/FootballManagerApp.AppHost`.\n2. Copia la URL del recurso `gateway` del dashboard Aspire y pégala en `gatewayUrl` (suele ser https://localhost:7XXX o http://localhost:5000).\n3. Run collection sobre esta carpeta — el toggle se gestiona automáticamente entre llamadas.\n\n## Cubre\n\n- `/config/backend` GET/POST — patrón Strategy/Factory observable\n- Routing dinámico: el MISMO path `/api/players` resuelve a Postgres o MongoDB según strategy activa\n- Endpoints SIEMPRE a .NET (search-external, seasons, import) ignoran el toggle\n- `/api/ideal-team` respeta el toggle: ambos backends llaman a Gemini y devuelven el mismo JSON\n- Forwarding de `X-User-Id` y `X-User-Admin` sin validar JWT (Fase 1)\n- Header `Authorization` se descarta antes de llegar al backend\n- Comentarios anidados accesibles tanto en dotnet (Comments.API) como en node (sub-doc) bajo el mismo path\n- Cleanup final + reset del backend activo a dotnet (estado por defecto)\n\n## Pre-requisitos contractuales\n\nTodas las respuestas siguen `{ status, message, data, _links }` independientemente del backend. Si difieren, el toggle rompe el frontend.",
       "item": [
         {
           "name": "9.0 GET /health del Gateway → 200",
@@ -1327,6 +1342,124 @@
             ],
             "body": { "mode": "raw", "raw": "{ \"items\": [ { \"apiFootballId\": 154, \"season\": 2022 } ] }" },
             "url": "{{gatewayUrl}}/api/players/import"
+          }
+        },
+        {
+          "name": "9.5b [toggle] POST /api/ideal-team formation inválida → 400 (independiente del backend)",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Strategy dotnet — el toggle de ideal-team es transparente; un body inválido falla en ambos backends.",
+              "pm.sendRequest({",
+              "  url: pm.collectionVariables.get('gatewayUrl') + '/config/backend',",
+              "  method: 'POST',",
+              "  header: { 'Content-Type': 'application/json' },",
+              "  body: { mode: 'raw', raw: '{\"backend\":\"dotnet\"}' }",
+              "}, () => {});"
+            ]}},
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+              "pm.test('ApiResponse shape', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('status', 400);",
+              "  pm.expect(body).to.have.property('message');",
+              "});"
+            ]}}
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"formation\": \"9-9-9\" }" },
+            "url": "{{gatewayUrl}}/api/ideal-team"
+          }
+        },
+        {
+          "name": "9.5b [toggle dotnet] POST /api/ideal-team → Players.API (200 si Gemini OK, 400 si <11 jugadores, 503 si Gemini fail)",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Strategy dotnet — debe llegar al cluster players-api.",
+              "pm.sendRequest({",
+              "  url: pm.collectionVariables.get('gatewayUrl') + '/config/backend',",
+              "  method: 'POST',",
+              "  header: { 'Content-Type': 'application/json' },",
+              "  body: { mode: 'raw', raw: '{\"backend\":\"dotnet\"}' }",
+              "}, () => {});"
+            ]}},
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('No es 404 (la ruta dynamic-ideal-team-dotnet matchea)', () => pm.expect(pm.response.code).to.not.equal(404));",
+              "pm.test('Status válido (depende de BD + Gemini)', () => pm.expect([200, 400, 503]).to.include(pm.response.code));",
+              "pm.test('ApiResponse shape', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('status');",
+              "  pm.expect(body).to.have.property('message');",
+              "  pm.expect(body).to.have.property('_links');",
+              "});",
+              "if (pm.response.code === 200) {",
+              "  const data = pm.response.json().data;",
+              "  pm.test('formation, goalkeeper y arrays por línea', () => {",
+              "    pm.expect(data).to.have.property('formation', '4-3-3');",
+              "    pm.expect(data).to.have.property('goalkeeper');",
+              "    pm.expect(data.defenders).to.be.an('array');",
+              "    pm.expect(data.midfielders).to.be.an('array');",
+              "    pm.expect(data.attackers).to.be.an('array');",
+              "  });",
+              "}"
+            ]}}
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"formation\": \"4-3-3\" }" },
+            "url": "{{gatewayUrl}}/api/ideal-team"
+          }
+        },
+        {
+          "name": "9.6b [toggle node] POST /api/ideal-team → node-backend (mismo JSON shape que .NET)",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Strategy node — debe llegar al cluster node-backend.",
+              "pm.sendRequest({",
+              "  url: pm.collectionVariables.get('gatewayUrl') + '/config/backend',",
+              "  method: 'POST',",
+              "  header: { 'Content-Type': 'application/json' },",
+              "  body: { mode: 'raw', raw: '{\"backend\":\"node\"}' }",
+              "}, () => {});"
+            ]}},
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('No es 404 (la ruta dynamic-ideal-team-node matchea)', () => pm.expect(pm.response.code).to.not.equal(404));",
+              "pm.test('Status válido (depende de BD + Gemini)', () => pm.expect([200, 400, 503]).to.include(pm.response.code));",
+              "pm.test('ApiResponse shape idéntico a .NET', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('status');",
+              "  pm.expect(body).to.have.property('message');",
+              "  pm.expect(body).to.have.property('_links');",
+              "});",
+              "if (pm.response.code === 200) {",
+              "  const data = pm.response.json().data;",
+              "  pm.test('mismas claves que el response de .NET', () => {",
+              "    pm.expect(data).to.have.property('formation');",
+              "    pm.expect(data).to.have.property('goalkeeper');",
+              "    pm.expect(data).to.have.property('defenders');",
+              "    pm.expect(data).to.have.property('midfielders');",
+              "    pm.expect(data).to.have.property('attackers');",
+              "    pm.expect(data).to.have.property('generalJustification');",
+              "  });",
+              "}"
+            ]}}
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"formation\": \"4-3-3\" }" },
+            "url": "{{gatewayUrl}}/api/ideal-team"
           }
         },
         {
