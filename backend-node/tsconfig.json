@@ -2,7 +2,11 @@
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     // File Layout
-    "rootDir": "./",
+    // rootDir must be ./src so that src/server.ts compiles to
+    // dist/server.js (matches the runtime image's CMD ["node", "dist/server.js"]).
+    // With rootDir=./ tsc preserved the src/ prefix and emitted dist/src/server.js,
+    // crashing the container with MODULE_NOT_FOUND on startup.
+    "rootDir": "./src",
     "outDir": "./dist",
 
     // Environment Settings
