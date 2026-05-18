@@ -11,15 +11,19 @@ var isProduction = string.Equals(
     StringComparison.OrdinalIgnoreCase);
 acaEnv.WithDashboard(!isProduction);
 
-// Local-only stable credentials so external DB clients can connect with fixed creds.
-// In Azure publish these parameters are not used by the managed Postgres Flexible Server
-// (which defaults to Microsoft Entra ID authentication).
+// Stable Postgres credentials for both local Docker and Azure publish.
+// In Azure they are read from the AZURE_POSTGRES_USER / AZURE_POSTGRES_PASSWORD
+// pipeline secrets (deploy-azure.yml) and bound to the Flexible Server via
+// WithPasswordAuthentication — otherwise Aspire defaults to Entra-only auth
+// and the injected connection string ships without a password, failing the
+// SCRAM-SHA-256 handshake.
 var postgresUser = builder.AddParameter("postgres-user", "postgres");
 var postgresPassword = builder.AddParameter("postgres-password", "postgres", secret: true);
 
 // Postgres: local = Docker container with fixed port + persistent volume + fixed creds,
-// cloud = Azure Database for PostgreSQL Flexible Server (managed, Entra auth).
+// cloud = Azure Database for PostgreSQL Flexible Server with password auth.
 var postgres = builder.AddAzurePostgresFlexibleServer("postgres")
+    .WithPasswordAuthentication(postgresUser, postgresPassword)
     .RunAsContainer(c => c
         .WithDataVolume()
         .WithHostPort(5432)
