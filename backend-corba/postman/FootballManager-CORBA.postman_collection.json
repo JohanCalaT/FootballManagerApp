@@ -1,0 +1,210 @@
+{
+  "info": {
+    "name": "FootballManager - CORBA News (Fase 1)",
+    "_postman_id": "fm-corba-news-fase1",
+    "description": "9 pasos del SDD v0.2 §7.2 con tests automaticos del FIFO. Base URL: http://localhost:8080",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "noticiaId", "value": "" },
+    { "key": "fifoId1", "value": "" },
+    { "key": "fifoId2", "value": "" },
+    { "key": "fifoId3", "value": "" },
+    { "key": "fifoId4", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. GET /admin/status (estado inicial)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "X-User-Admin", "value": "true" }],
+        "url": { "raw": "{{baseUrl}}/admin/status", "host": ["{{baseUrl}}"], "path": ["admin", "status"] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('200 OK', () => pm.response.to.have.status(200));",
+          "const j = pm.response.json();",
+          "pm.test('envelope success', () => pm.expect(j.status).to.eql('success'));",
+          "pm.test('data presente', () => pm.expect(j.data).to.have.property('totalNoticias'));"
+        ], "type": "text/javascript" }
+      }]
+    },
+    {
+      "name": "2. POST /news (crear noticia base)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"titulo\": \"Messi marca su gol 800\",\n  \"contenido\": \"El astro argentino marco hoy un gol historico.\",\n  \"autor\": \"admin\",\n  \"imagenUrl\": \"https://example.com/img.jpg\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('201 Created', () => pm.response.to.have.status(201));",
+          "const j = pm.response.json();",
+          "pm.test('envelope success', () => pm.expect(j.status).to.eql('success'));",
+          "pm.test('id generado', () => pm.expect(j.data.id).to.be.a('string').and.not.empty);",
+          "pm.test('fechaPub generada', () => pm.expect(j.data.fechaPub).to.be.a('string').and.not.empty);",
+          "pm.collectionVariables.set('noticiaId', j.data.id);"
+        ], "type": "text/javascript" }
+      }]
+    },
+    {
+      "name": "3. GET /news (debe contener la noticia)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('200 OK', () => pm.response.to.have.status(200));",
+          "const j = pm.response.json();",
+          "pm.test('al menos 1 noticia', () => pm.expect(j.data.length).to.be.at.least(1));",
+          "const id = pm.collectionVariables.get('noticiaId');",
+          "pm.test('incluye la creada', () => pm.expect(j.data.find(n => n.id === id)).to.not.be.undefined);"
+        ], "type": "text/javascript" }
+      }]
+    },
+    {
+      "name": "4. GET /news/{id} (la creada en paso 2)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/news/{{noticiaId}}", "host": ["{{baseUrl}}"], "path": ["news", "{{noticiaId}}"] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('200 OK', () => pm.response.to.have.status(200));",
+          "const j = pm.response.json();",
+          "pm.test('id coincide', () => pm.expect(j.data.id).to.eql(pm.collectionVariables.get('noticiaId')));"
+        ], "type": "text/javascript" }
+      }]
+    },
+    {
+      "name": "5. PUT /admin/config/max-size (limite=3)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-User-Admin", "value": "true" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"limite\": 3\n}" },
+        "url": { "raw": "{{baseUrl}}/admin/config/max-size", "host": ["{{baseUrl}}"], "path": ["admin", "config", "max-size"] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('200 OK', () => pm.response.to.have.status(200));",
+          "const j = pm.response.json();",
+          "pm.test('limite=3', () => pm.expect(j.data.limiteMaximo).to.eql(3));"
+        ], "type": "text/javascript" }
+      }]
+    },
+    {
+      "name": "6a. POST /news (FIFO #1)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"FIFO 1\",\n  \"contenido\": \"primera\",\n  \"autor\": \"admin\"\n}" },
+        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('201', () => pm.response.to.have.status(201));",
+        "pm.collectionVariables.set('fifoId1', pm.response.json().data.id);"
+      ], "type": "text/javascript" } }]
+    },
+    {
+      "name": "6b. POST /news (FIFO #2)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"FIFO 2\",\n  \"contenido\": \"segunda\",\n  \"autor\": \"admin\"\n}" },
+        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('201', () => pm.response.to.have.status(201));",
+        "pm.collectionVariables.set('fifoId2', pm.response.json().data.id);"
+      ], "type": "text/javascript" } }]
+    },
+    {
+      "name": "6c. POST /news (FIFO #3)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"FIFO 3\",\n  \"contenido\": \"tercera\",\n  \"autor\": \"admin\"\n}" },
+        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('201', () => pm.response.to.have.status(201));",
+        "pm.collectionVariables.set('fifoId3', pm.response.json().data.id);"
+      ], "type": "text/javascript" } }]
+    },
+    {
+      "name": "6d. POST /news (FIFO #4 - dispara descarte)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"FIFO 4\",\n  \"contenido\": \"cuarta\",\n  \"autor\": \"admin\"\n}" },
+        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('201', () => pm.response.to.have.status(201));",
+        "pm.collectionVariables.set('fifoId4', pm.response.json().data.id);"
+      ], "type": "text/javascript" } }]
+    },
+    {
+      "name": "7. GET /news (solo 3, sin FIFO #1)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('200 OK', () => pm.response.to.have.status(200));",
+          "const j = pm.response.json();",
+          "pm.test('exactamente 3 noticias', () => pm.expect(j.data.length).to.eql(3));",
+          "const ids = j.data.map(n => n.id);",
+          "pm.test('FIFO #1 expulsada', () => pm.expect(ids).to.not.include(pm.collectionVariables.get('fifoId1')));",
+          "pm.test('FIFO #2 presente', () => pm.expect(ids).to.include(pm.collectionVariables.get('fifoId2')));",
+          "pm.test('FIFO #3 presente', () => pm.expect(ids).to.include(pm.collectionVariables.get('fifoId3')));",
+          "pm.test('FIFO #4 presente', () => pm.expect(ids).to.include(pm.collectionVariables.get('fifoId4')));"
+        ], "type": "text/javascript" }
+      }]
+    },
+    {
+      "name": "8. POST /admin/reset (vacia todo)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-User-Admin", "value": "true" }],
+        "url": { "raw": "{{baseUrl}}/admin/reset", "host": ["{{baseUrl}}"], "path": ["admin", "reset"] }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('204', () => pm.response.to.have.status(204));"
+      ], "type": "text/javascript" } }]
+    },
+    {
+      "name": "9. GET /admin/status (vacio)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "X-User-Admin", "value": "true" }],
+        "url": { "raw": "{{baseUrl}}/admin/status", "host": ["{{baseUrl}}"], "path": ["admin", "status"] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('200 OK', () => pm.response.to.have.status(200));",
+          "const j = pm.response.json();",
+          "pm.test('totalNoticias=0', () => pm.expect(j.data.totalNoticias).to.eql(0));",
+          "pm.test('limiteMaximo=3 (sigue tras reset)', () => pm.expect(j.data.limiteMaximo).to.eql(3));"
+        ], "type": "text/javascript" }
+      }]
+    }
+  ]
+}

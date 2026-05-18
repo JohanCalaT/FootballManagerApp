@@ -1,0 +1,46 @@
+services:
+  corba-server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    image: footballmanager/corba-server:dev
+    container_name: corba-server
+    hostname: corba-server
+    networks: [corba-net]
+    environment:
+      NEWS_MAX_SIZE: "50"
+      CORBA_PORT: "1050"
+      NAMING_PORT: "9000"
+      NAMING_HOST: "localhost"
+      CORBA_SERVER_HOST: "corba-server"
+    ports:
+      - "1050:1050"
+      - "9000:9000"
+
+  news-adapter:
+    build:
+      context: .
+      dockerfile: adapter/Dockerfile
+    image: footballmanager/news-adapter:dev
+    container_name: news-adapter
+    networks: [corba-net]
+    environment:
+      CORBA_NAMING_HOST: "corba-server"
+      CORBA_NAMING_PORT: "9000"
+      CORBA_SERVANT_NAME: "ServicioNoticias"
+      ADMIN_ENFORCE_AUTH: "false"
+    ports:
+      - "8080:8080"
+    depends_on:
+      corba-server:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+networks:
+  corba-net:
+    driver: bridge

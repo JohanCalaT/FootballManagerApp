@@ -1,0 +1,51 @@
+// News.idl — Contrato CORBA del subsistema de noticias.
+// Mapea al paquete Java footballmanager.news (generado por idlj).
+module footballmanager {
+  module news {
+
+    struct Noticia {
+      string id;
+      string titulo;
+      string contenido;
+      string autor;
+      string fechaPub;
+      string imagenUrl;
+    };
+
+    typedef sequence<Noticia> ListaNoticias;
+
+    struct EstadoServicio {
+      long totalNoticias;
+      long limiteMaximo;
+      string fechaUltimoReset;
+    };
+
+    exception NoticiaNoEncontrada {
+      string mensaje;
+    };
+
+    exception DatosInvalidos {
+      string mensaje;
+    };
+
+    exception LimiteInvalido {
+      string mensaje;
+    };
+
+    interface ServicioNoticias {
+      // --- Productor (admin) ---
+      string publicar(in Noticia noticia) raises (DatosInvalidos);
+
+      // --- Consumidores (usuarios registrados) ---
+      ListaNoticias listarTodas();
+      Noticia obtenerPorId(in string id) raises (NoticiaNoEncontrada);
+
+      // --- Admin: gestion y mantenimiento ---
+      void eliminar(in string id) raises (NoticiaNoEncontrada);
+      void resetear();
+      void setLimiteMaximo(in long nuevoLimite) raises (LimiteInvalido);
+      EstadoServicio obtenerEstado();
+    };
+
+  };
+};
