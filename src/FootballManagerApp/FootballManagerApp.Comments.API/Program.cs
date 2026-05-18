@@ -9,7 +9,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.AddNpgsqlDbContext<CommentsDbContext>("commentsdb");
+// Force TLS on the Npgsql connection string. Aspire's published Azure
+// Postgres connection string omits SslMode, and Azure Database for
+// PostgreSQL Flexible Server rejects plaintext with
+// "no pg_hba.conf entry ... no encryption".
+builder.AddNpgsqlDbContext<CommentsDbContext>("commentsdb", configureSettings: s =>
+{
+    var csb = new Npgsql.NpgsqlConnectionStringBuilder(s.ConnectionString)
+    {
+        SslMode = Npgsql.SslMode.Require,
+    };
+    s.ConnectionString = csb.ConnectionString;
+});
 builder.AddRedisDistributedCache("redis");
 
 builder.Services.AddControllers();
