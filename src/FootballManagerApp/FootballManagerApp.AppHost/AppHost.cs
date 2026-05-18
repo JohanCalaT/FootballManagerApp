@@ -1,6 +1,15 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-builder.AddAzureContainerAppEnvironment("aca-env").WithDashboard(false);
+// Expose the Aspire dashboard only outside Production so we can inspect
+// traces/logs/metrics in staging without an extra Container App in prod
+// (cost) and without leaking telemetry behind a public unauthenticated
+// endpoint in the production environment.
+var acaEnv = builder.AddAzureContainerAppEnvironment("aca-env");
+var isProduction = string.Equals(
+    builder.Environment.EnvironmentName,
+    "Production",
+    StringComparison.OrdinalIgnoreCase);
+acaEnv.WithDashboard(!isProduction);
 
 // Local-only stable credentials so external DB clients can connect with fixed creds.
 // In Azure publish these parameters are not used by the managed Postgres Flexible Server
