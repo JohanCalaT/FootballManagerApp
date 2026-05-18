@@ -20,12 +20,16 @@ var postgres = builder.AddAzurePostgresFlexibleServer("postgres")
 var playersDb = postgres.AddDatabase("playersdb");
 var commentsDb = postgres.AddDatabase("commentsdb");
 
-// Redis: local = Docker container fixed port + persistent volume,
-// cloud = Azure Managed Redis. Cache-aside lo usan Players.API y Comments.API.
-var redis = builder.AddAzureManagedRedis("redis")
-    .RunAsContainer(c => c
-        .WithDataVolume()
-        .WithHostPort(6379));
+// Redis: siempre como contenedor (local y en Azure). Cambiado desde
+// AddAzureManagedRedis porque éste mapea a Microsoft.Cache/redisEnterprise,
+// que exige availability zones registradas en la suscripción — no las hay
+// en Azure for Students. AddRedis levanta el contenedor `redis:*` con
+// volumen persistente en local y como Container App en Azure, sin coste
+// de Azure Cache for Redis managed. Cache-aside lo usan Players.API,
+// Comments.API y backend-node vía el mismo Redis.
+var redis = builder.AddRedis("redis")
+    .WithDataVolume()
+    .WithHostPort(6379);
 
 // External API secrets — user-secrets del AppHost en local, Key Vault en cloud.
 var apiFootballKey = builder.AddParameter("ApiFootballKey", secret: true);

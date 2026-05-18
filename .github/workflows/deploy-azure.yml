@@ -71,6 +71,8 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       AZURE_ENV_NAME: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      # Parámetros Aspire no-secretos a nivel de job (los lee azd al provision).
+      AZURE_POSTGRES_USER: ${{ vars.AZURE_POSTGRES_USER }}
       # Effective deploy inputs. workflow_dispatch los toma del UI;
       # push events caen al default `all` / `true`.
       TARGET: ${{ github.event.inputs.target || 'all' }}
@@ -165,42 +167,70 @@ jobs:
           done
 
       # ── PROVISION ────────────────────────────────────────────
+      # azd lee cada secreto Aspire (declarado en AppHost.cs con secret: true)
+      # de la env var con prefijo AZURE_ y nombre SNAKE_CASE. Es el patrón
+      # canónico que `azd pipeline config` deja preparado a nivel de repo
+      # secret. Sin estas env vars, azd falla con
+      # `ERROR: missing required inputs`.
       - name: Provision infrastructure
         if: ${{ env.SKIP_PROVISION == 'false' || env.TARGET == 'infra-only' || env.TARGET == 'all' }}
         run: azd provision --no-prompt
         env:
-          AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
+          AZURE_API_FOOTBALL_KEY:  ${{ secrets.AZURE_API_FOOTBALL_KEY }}
+          AZURE_GEMINI_API_KEY:    ${{ secrets.AZURE_GEMINI_API_KEY }}
+          AZURE_MONGO_DB_URI:      ${{ secrets.AZURE_MONGO_DB_URI }}
+          AZURE_POSTGRES_PASSWORD: ${{ secrets.AZURE_POSTGRES_PASSWORD }}
+          AZURE_REDIS_PASSWORD:    ${{ secrets.AZURE_REDIS_PASSWORD }}
 
       # ── DEPLOY ───────────────────────────────────────────────
       # Aspire AppHost = 1 service "app" en azure.yaml → azd deploy
       # despliega todos los contenedores (players-api, comments-api,
       # gateway, ionic-app, node-backend, corba-server, news-adapter) y
       # Docker layer cache hace builds incrementales en los que no
-      # cambiaron.
+      # cambiaron. Re-inyectamos los secretos también aquí por si azd
+      # vuelve a evaluar el manifest durante deploy.
       - name: Deploy all (Aspire AppHost completo)
         if: ${{ env.TARGET == 'all' }}
         run: azd deploy --no-prompt
+        env:
+          AZURE_API_FOOTBALL_KEY:  ${{ secrets.AZURE_API_FOOTBALL_KEY }}
+          AZURE_GEMINI_API_KEY:    ${{ secrets.AZURE_GEMINI_API_KEY }}
+          AZURE_MONGO_DB_URI:      ${{ secrets.AZURE_MONGO_DB_URI }}
+          AZURE_POSTGRES_PASSWORD: ${{ secrets.AZURE_POSTGRES_PASSWORD }}
+          AZURE_REDIS_PASSWORD:    ${{ secrets.AZURE_REDIS_PASSWORD }}
 
       - name: Deploy .NET services only (players-api, comments-api, gateway)
         if: ${{ env.TARGET == 'dotnet-only' }}
-        run: |
-          # Aspire empaqueta los .NET juntos. azd deploy de la
-          # service "app" reconstruye solo lo que cambió (Docker cache).
-          azd deploy app --no-prompt
+        run: azd deploy app --no-prompt
+        env:
+          AZURE_API_FOOTBALL_KEY:  ${{ secrets.AZURE_API_FOOTBALL_KEY }}
+          AZURE_GEMINI_API_KEY:    ${{ secrets.AZURE_GEMINI_API_KEY }}
+          AZURE_MONGO_DB_URI:      ${{ secrets.AZURE_MONGO_DB_URI }}
+          AZURE_POSTGRES_PASSWORD: ${{ secrets.AZURE_POSTGRES_PASSWORD }}
+          AZURE_REDIS_PASSWORD:    ${{ secrets.AZURE_REDIS_PASSWORD }}
 
       - name: Deploy frontend only (ionic-app)
         if: ${{ env.TARGET == 'frontend-only' }}
-        run: |
-          # Cuando azd 1.x no permite filtrar sub-recursos de Aspire,
-          # el deploy completo es la opción soportada. La caché Docker
-          # de los demás contenedores hace que solo el frontend se
-          # reconstruya/empuje realmente.
-          azd deploy app --no-prompt
+        # azd 1.x no permite filtrar sub-recursos de Aspire; deploy completo.
+        # La caché Docker de los demás contenedores hace que solo el
+        # frontend se reconstruya/empuje realmente.
+        run: azd deploy app --no-prompt
+        env:
+          AZURE_API_FOOTBALL_KEY:  ${{ secrets.AZURE_API_FOOTBALL_KEY }}
+          AZURE_GEMINI_API_KEY:    ${{ secrets.AZURE_GEMINI_API_KEY }}
+          AZURE_MONGO_DB_URI:      ${{ secrets.AZURE_MONGO_DB_URI }}
+          AZURE_POSTGRES_PASSWORD: ${{ secrets.AZURE_POSTGRES_PASSWORD }}
+          AZURE_REDIS_PASSWORD:    ${{ secrets.AZURE_REDIS_PASSWORD }}
 
       - name: Deploy backend-node only
         if: ${{ env.TARGET == 'node-only' }}
-        run: |
-          azd deploy app --no-prompt
+        run: azd deploy app --no-prompt
+        env:
+          AZURE_API_FOOTBALL_KEY:  ${{ secrets.AZURE_API_FOOTBALL_KEY }}
+          AZURE_GEMINI_API_KEY:    ${{ secrets.AZURE_GEMINI_API_KEY }}
+          AZURE_MONGO_DB_URI:      ${{ secrets.AZURE_MONGO_DB_URI }}
+          AZURE_POSTGRES_PASSWORD: ${{ secrets.AZURE_POSTGRES_PASSWORD }}
+          AZURE_REDIS_PASSWORD:    ${{ secrets.AZURE_REDIS_PASSWORD }}
 
       - name: Summary
         if: always()
