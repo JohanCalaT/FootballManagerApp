@@ -97,19 +97,22 @@ jobs:
           echo "  Ref:            ${{ github.ref }}"
           echo "════════════════════════════════════════"
 
-      # Libera ~10 GB del runner antes de que azd construya y pushee
+      # Libera ~20 GB del runner antes de que azd construya y pushee
       # los 7 contenedores. Resuelve el `pushing image: signal: killed`
       # del ionic-app (OOM/disco) cuando azd hace deploy paralelo.
+      # IMPORTANTE: large-packages debe quedar en `false` porque entre
+      # esos "large packages" está azure-cli, y los pasos siguientes
+      # `azure/login@v2` y `az acr login` lo necesitan.
       - name: Free disk space on runner
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false      # mantiene .NET/Node que usamos en pasos siguientes
-          android: true
+          android: true          # ~14 GB
           dotnet: false          # NO borrar .NET, lo usamos
-          haskell: true
-          large-packages: true
+          haskell: true          # ~6 GB
+          large-packages: false  # NO: borraría azure-cli y rompería azure/login
           docker-images: false   # mantener Docker images (cachéamos pre-pulls)
-          swap-storage: true
+          swap-storage: true     # ~4 GB
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
