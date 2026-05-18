@@ -1,17 +1,16 @@
-name: Deploy · Azure (manual)
+name: Deploy · Azure
 
 # ─────────────────────────────────────────────────────────────
-# Workflow PAUSADO de auto-deploy para ahorrar costos Azure.
-# Solo se dispara manualmente desde la pestaña Actions de GitHub.
+# Workflow de deploy:
+#  - AUTO: cada push a `develop` (→ staging) o `main` (→ production)
+#    cuando se toquen `src/FootballManagerApp/**`, `frontend/**`,
+#    `backend-node/**`, `backend-corba/**`, `azure.yaml`, `infra/**`
+#    o este propio workflow.
+#  - MANUAL: desde Actions → "Deploy · Azure" → Run workflow, con
+#    inputs para elegir target y si saltar provision.
 #
-# Cómo ejecutarlo:
-#   1. Ve a Actions → "Deploy · Azure (manual)" → Run workflow
-#   2. Elige rama (develop = staging, main = production)
-#   3. Elige `target` (qué desplegar)
-#   4. Elige `skip_provision` (true si la infra ya existe)
-#
-# Para reactivar el auto-deploy en push: descomenta el bloque
-# `push:` debajo.
+# Para pausar el auto-deploy (ahorrar costos Azure):
+# comentar el bloque `push:` dentro de `on:`.
 # ─────────────────────────────────────────────────────────────
 
 on:
@@ -34,18 +33,23 @@ on:
         default: 'true'
         type: boolean
 
-  # === BLOQUE AUTO-DEPLOY DESACTIVADO PARA AHORRAR COSTOS ===
-  # Cuando quieras reactivarlo, descomenta y ajusta paths:
-  #
-  # push:
-  #   branches: [develop, main]
-  #   paths:
-  #     - 'src/FootballManagerApp/**'
-  #     - 'frontend/**'
-  #     - 'backend-node/**'
-  #     - 'azure.yaml'
-  #     - 'infra/**'
-  # ============================================================
+  # === AUTO-DEPLOY ACTIVO ===
+  # Cualquier push a develop o main que toque uno de estos paths
+  # dispara deploy con target=all y skip_provision=true (defaults).
+  # Si la rama es develop  → environment "staging"
+  # Si la rama es main     → environment "production"
+  # Para volver a pausar y ahorrar costos: comentar este bloque entero.
+  push:
+    branches: [develop, main]
+    paths:
+      - 'src/FootballManagerApp/**'
+      - 'frontend/**'
+      - 'backend-node/**'
+      - 'backend-corba/**'
+      - 'azure.yaml'
+      - 'infra/**'
+      - '.github/workflows/deploy-azure.yml'
+  # ===========================
 
 permissions:
   id-token: write
@@ -57,7 +61,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy ${{ github.event.inputs.target }} → ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    name: Deploy ${{ github.event.inputs.target || 'all' }} → ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
     runs-on: ubuntu-latest
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
 
@@ -67,6 +71,10 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       AZURE_ENV_NAME: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      # Effective deploy inputs. workflow_dispatch los toma del UI;
+      # push events caen al default `all` / `true`.
+      TARGET: ${{ github.event.inputs.target || 'all' }}
+      SKIP_PROVISION: ${{ github.event.inputs.skip_provision || 'true' }}
       # Habilita que Docker buildkit embeba metadata de caché en las
       # imágenes que sube a ACR. Permite que el siguiente build
       # reuse capas remotas via --cache-from.
@@ -80,8 +88,9 @@ jobs:
       - name: Show deploy plan
         run: |
           echo "════════════════════════════════════════"
-          echo "  Target:         ${{ github.event.inputs.target }}"
-          echo "  Skip provision: ${{ github.event.inputs.skip_provision }}"
+          echo "  Trigger:        ${{ github.event_name }}"
+          echo "  Target:         $TARGET"
+          echo "  Skip provision: $SKIP_PROVISION"
           echo "  Environment:    $AZURE_ENV_NAME"
           echo "  Ref:            ${{ github.ref }}"
           echo "════════════════════════════════════════"
@@ -147,7 +156,7 @@ jobs:
         run: |
           # Si una imagen no existe (primer deploy), continuamos.
           # Cuantas más imágenes podamos pre-pull, más layers reusará buildx.
-          for svc in players-api comments-api gateway ionic-app node-backend; do
+          for svc in players-api comments-api gateway ionic-app node-backend corba-server news-adapter; do
             IMAGE="${{ steps.acr.outputs.endpoint }}/$svc:latest"
             echo "→ Pulling $IMAGE para sembrar caché..."
             docker pull "$IMAGE" 2>/dev/null \
@@ -157,7 +166,7 @@ jobs:
 
       # ── PROVISION ────────────────────────────────────────────
       - name: Provision infrastructure
-        if: ${{ github.event.inputs.skip_provision == 'false' || github.event.inputs.target == 'infra-only' || github.event.inputs.target == 'all' }}
+        if: ${{ env.SKIP_PROVISION == 'false' || env.TARGET == 'infra-only' || env.TARGET == 'all' }}
         run: azd provision --no-prompt
         env:
           AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
@@ -165,21 +174,22 @@ jobs:
       # ── DEPLOY ───────────────────────────────────────────────
       # Aspire AppHost = 1 service "app" en azure.yaml → azd deploy
       # despliega todos los contenedores (players-api, comments-api,
-      # gateway, ionic-app, node-backend) y Docker layer cache hace
-      # builds incrementales en los que no cambiaron.
+      # gateway, ionic-app, node-backend, corba-server, news-adapter) y
+      # Docker layer cache hace builds incrementales en los que no
+      # cambiaron.
       - name: Deploy all (Aspire AppHost completo)
-        if: ${{ github.event.inputs.target == 'all' }}
+        if: ${{ env.TARGET == 'all' }}
         run: azd deploy --no-prompt
 
       - name: Deploy .NET services only (players-api, comments-api, gateway)
-        if: ${{ github.event.inputs.target == 'dotnet-only' }}
+        if: ${{ env.TARGET == 'dotnet-only' }}
         run: |
           # Aspire empaqueta los .NET juntos. azd deploy de la
           # service "app" reconstruye solo lo que cambió (Docker cache).
           azd deploy app --no-prompt
 
       - name: Deploy frontend only (ionic-app)
-        if: ${{ github.event.inputs.target == 'frontend-only' }}
+        if: ${{ env.TARGET == 'frontend-only' }}
         run: |
           # Cuando azd 1.x no permite filtrar sub-recursos de Aspire,
           # el deploy completo es la opción soportada. La caché Docker
@@ -188,11 +198,11 @@ jobs:
           azd deploy app --no-prompt
 
       - name: Deploy backend-node only
-        if: ${{ github.event.inputs.target == 'node-only' }}
+        if: ${{ env.TARGET == 'node-only' }}
         run: |
           azd deploy app --no-prompt
 
       - name: Summary
         if: always()
         run: |
-          echo "::notice title=Deploy finalizado::Target=${{ github.event.inputs.target }} · Env=$AZURE_ENV_NAME"
+          echo "::notice title=Deploy finalizado::Target=$TARGET · Env=$AZURE_ENV_NAME"
