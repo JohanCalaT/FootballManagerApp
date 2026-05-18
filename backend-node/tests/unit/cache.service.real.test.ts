@@ -20,8 +20,7 @@ jest.mock('redis', () => ({
 
 import { initCache, getCache, __resetCacheForTests } from '../../src/services/cache.service';
 
-const ORIG_REDIS_URL = process.env.REDIS_URL;
-const ORIG_CONN      = process.env.ConnectionStrings__redis;
+const ORIG_CONN = process.env.ConnectionStrings__redis;
 
 const setupConnectedClient = () => {
   mockRedisClient.connect.mockResolvedValue(undefined);
@@ -31,28 +30,29 @@ const setupConnectedClient = () => {
 beforeEach(() => {
   jest.clearAllMocks();
   __resetCacheForTests();
-  delete process.env.REDIS_URL;
   delete process.env.ConnectionStrings__redis;
 });
 
 afterAll(() => {
-  if (ORIG_REDIS_URL) process.env.REDIS_URL = ORIG_REDIS_URL;
-  if (ORIG_CONN)      process.env.ConnectionStrings__redis = ORIG_CONN;
+  if (ORIG_CONN) process.env.ConnectionStrings__redis = ORIG_CONN;
 });
 
 describe('initCache', () => {
-  it('leaves cache as NOOP when no env var is set', async () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+  it('falls back to localhost defaults and connects when env var is unset', async () => {
+    // resolveRedisConfig returns {host: localhost, port: 6379, ...} for the
+    // standalone dev flow, and initCache will try to connect there.
+    setupConnectedClient();
+    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
 
     const cache = await initCache();
 
-    expect(cache.isEnabled()).toBe(false);
-    expect(mockRedisClient.connect).not.toHaveBeenCalled();
-    warn.mockRestore();
+    expect(mockRedisClient.connect).toHaveBeenCalledTimes(1);
+    expect(cache.isEnabled()).toBe(true);
+    log.mockRestore();
   });
 
-  it('connects and enables cache when REDIS_URL is valid', async () => {
-    process.env.REDIS_URL = 'redis://localhost:6379';
+  it('connects and enables cache when ConnectionStrings__redis is set', async () => {
+    process.env.ConnectionStrings__redis = 'redis:6379';
     setupConnectedClient();
     const log = jest.spyOn(console, 'log').mockImplementation(() => {});
 
@@ -65,24 +65,25 @@ describe('initCache', () => {
   });
 
   it('degrades to NOOP when connect() throws', async () => {
-    process.env.REDIS_URL = 'redis://unreachable:6379';
+    process.env.ConnectionStrings__redis = 'unreachable:6379';
     mockRedisClient.connect.mockRejectedValue(new Error('ECONNREFUSED'));
+    const log  = jest.spyOn(console, 'log').mockImplementation(() => {});
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
     const cache = await initCache();
 
     expect(cache.isEnabled()).toBe(false);
+    log.mockRestore();
     warn.mockRestore();
   });
 
   it('attaches an "error" handler that warns without crashing', async () => {
-    process.env.REDIS_URL = 'redis://localhost:6379';
+    process.env.ConnectionStrings__redis = 'redis:6379';
     setupConnectedClient();
     const log  = jest.spyOn(console, 'log').mockImplementation(() => {});
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
     await initCache();
-    // Simula un error post-conexión
     const errorHandler = mockRedisClient.on.mock.calls.find(([ev]) => ev === 'error')?.[1] as
       ((e: Error) => void) | undefined;
     errorHandler?.(new Error('disconnected mid-op'));
@@ -98,7 +99,7 @@ describe('initCache', () => {
 
 describe('RedisCacheService — métodos contra el client mockeado', () => {
   beforeEach(async () => {
-    process.env.REDIS_URL = 'redis://localhost:6379';
+    process.env.ConnectionStrings__redis = 'redis:6379';
     setupConnectedClient();
     jest.spyOn(console, 'log').mockImplementation(() => {});
     await initCache();
@@ -156,7 +157,6 @@ describe('RedisCacheService — métodos contra el client mockeado', () => {
   });
 
   it('removePattern iterates with scanIterator and deletes by batch', async () => {
-    // scanIterator es un async iterator; lo simulamos como una mini secuencia
     mockRedisClient.scanIterator.mockReturnValueOnce((async function* () {
       yield ['af:player:stats:1:2022', 'af:player:stats:2:2023'];
       yield 'af:player:stats:3:2024';

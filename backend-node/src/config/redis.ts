@@ -1,75 +1,96 @@
 /**
- * Resuelve la URL de Redis desde las env vars que el AppHost de Aspire
- * inyecta vía `.WithReference(redis)`.
+ * Lee la configuración de Redis EXCLUSIVAMENTE de `ConnectionStrings__redis`,
+ * la variable que el AppHost de Aspire inyecta vía `.WithReference(redis)`.
  *
- * Aspire formato StackExchange.Redis (lo que llega a `ConnectionStrings__redis`):
- *   - `localhost:6379`               (RunAsContainer en local)
- *   - `host:port,password=...,ssl=True,abortConnect=False` (Azure Managed Redis)
+ * Por qué solo esa variable:
+ *   .NET (StackExchange.Redis vía Aspire.StackExchange.Redis.DistributedCaching)
+ *   lee únicamente `ConnectionStrings:redis` y conecta correctamente. Mientras
+ *   tanto, leer también `REDIS_URL` o `REDIS_URI` arrastraba otras vars que
+ *   en staging contenían un BOM en la password (paste-from-rich-editor) y se
+ *   imponían sobre la cadena limpia de Aspire, lo que provocaba WRONGPASS.
+ *   Atándonos a la misma variable que .NET, ambos backends comparten la
+ *   misma fuente de verdad y desaparece la asimetría.
  *
- * El cliente `redis` v5 acepta URLs `redis://[user][:pass]@host:port[/db]` o
- * `rediss://...` para TLS. Convertimos la cadena de Aspire a esa forma.
+ * Formato esperado (StackExchange.Redis connection string):
+ *   host[:port][,key=value[,key=value...]]
  *
- * Sanitisation: GitHub Secrets pasted from rich editors sometimes carry a
- * U+FEFF byte-order mark at the start of the password. The BOM travels
- * through azd, Aspire and Key Vault unchanged, and Redis then rejects
- * AUTH with WRONGPASS because the password our client sends is a byte
- * longer than the one Redis was provisioned with (or vice-versa). We
- * strip leading BOMs and whitespace from the password here so any future
- * pasted secret behaves the same as a hand-typed one.
+ * Ejemplos válidos:
+ *   localhost:6379                                              (Docker local Aspire)
+ *   redis:6379,password=secret                                  (ACA Aspire publish)
+ *   cluster.redis.cache.windows.net:6380,password=X,ssl=True    (managed Redis)
+ *
+ * Modo dev sin Aspire: si la variable no existe, devolvemos config local
+ * `localhost:6379` sin password. Mantiene el flujo de `npm run dev` standalone.
  */
 
-const stripBom = (value: string): string => value.replace(/^\uFEFF/, '').trim();
+export interface RedisConnectionConfig {
+  host:     string;
+  port:     number;
+  tls:      boolean;
+  password: string | undefined;
+  /** Nombre de la env var de origen — útil en logs de arranque. */
+  source:   'ConnectionStrings__redis' | 'default-local';
+}
 
-export const resolveRedisUrl = (): string | undefined => {
-  const raw =
-    process.env.REDIS_URL ??
-    process.env.ConnectionStrings__redis ??
-    process.env.REDIS_CONNECTION_STRING;
+const DEFAULT_PORT = 6379;
+const ENV_VAR_NAME = 'ConnectionStrings__redis';
 
-  if (!raw || raw.trim() === '') return undefined;
-  const conn = raw.trim();
-
-  // Ya es una URL — sanitiza el password embebido (si lo hay) y devuélvela.
-  if (conn.startsWith('redis://') || conn.startsWith('rediss://')) {
-    return sanitiseEmbeddedPassword(conn);
+export const resolveRedisConfig = (): RedisConnectionConfig => {
+  const raw = process.env[ENV_VAR_NAME];
+  if (!raw || raw.trim() === '') {
+    return {
+      host:     'localhost',
+      port:     DEFAULT_PORT,
+      tls:      false,
+      password: undefined,
+      source:   'default-local',
+    };
   }
-
-  // Formato StackExchange: host[:port][,key=value...]
-  const parts = conn.split(',').map((p) => p.trim()).filter((p) => p.length > 0);
-  if (parts.length === 0) return undefined;
-  const hostPort = parts[0]!;
-
-  const opts = new Map<string, string>();
-  for (const p of parts.slice(1)) {
-    const eq = p.indexOf('=');
-    if (eq < 0) continue;
-    opts.set(p.slice(0, eq).trim().toLowerCase(), p.slice(eq + 1).trim());
-  }
-
-  const rawPassword = opts.get('password');
-  const password    = rawPassword !== undefined ? stripBom(rawPassword) : undefined;
-  const useSsl      = (opts.get('ssl') ?? '').toLowerCase() === 'true';
-  const scheme      = useSsl ? 'rediss' : 'redis';
-  const userInfo    = password ? `:${encodeURIComponent(password)}@` : '';
-  return `${scheme}://${userInfo}${hostPort}`;
+  return { ...parseStackExchangeConnectionString(raw.trim()), source: ENV_VAR_NAME };
 };
 
 /**
- * Aspire publishes the cloud-mode connection as a real URL (redis://:PW@host:port).
- * When the upstream secret had a stray BOM, the URL we receive looks like
- * `redis://:%EF%BB%BFsecret@host:6379` and the node client sends the
- * BOM-prefixed bytes as the password, getting WRONGPASS from Redis. Rebuild
- * the URL with a BOM-stripped password.
+ * Parsea el formato StackExchange.Redis. Tolerante a:
+ *   - Sin puerto (asume 6379).
+ *   - Keys con cualquier capitalización (`Password`, `PASSWORD`, `Ssl`...).
+ *   - Valores con `=` en el password (split por la primera ocurrencia).
+ *   - Opciones desconocidas (abortConnect, syncTimeout, ...): se ignoran.
+ *   - Espacios sobrantes alrededor de comas y `=`.
  */
-const sanitiseEmbeddedPassword = (url: string): string => {
-  let parsed: URL;
-  try { parsed = new URL(url); } catch { return url; }
-  if (!parsed.password) return url;
+const parseStackExchangeConnectionString = (
+  conn: string,
+): Omit<RedisConnectionConfig, 'source'> => {
+  const parts = conn.split(',').map((p) => p.trim()).filter((p) => p.length > 0);
+  if (parts.length === 0) {
+    return { host: 'localhost', port: DEFAULT_PORT, tls: false, password: undefined };
+  }
 
-  const decoded  = decodeURIComponent(parsed.password);
-  const stripped = stripBom(decoded);
-  if (stripped === decoded) return url;
+  const { host, port } = parseHostPort(parts[0]!);
 
-  parsed.password = encodeURIComponent(stripped);
-  return parsed.toString();
+  let password: string | undefined;
+  let tls = false;
+  for (const p of parts.slice(1)) {
+    const eq = p.indexOf('=');
+    if (eq < 0) continue;
+    const key = p.slice(0, eq).trim().toLowerCase();
+    const val = p.slice(eq + 1).trim();
+    if (key === 'password' && val.length > 0) {
+      password = val;
+    } else if ((key === 'ssl' || key === 'tls') && val.toLowerCase() === 'true') {
+      tls = true;
+    }
+    // Resto (abortConnect, syncTimeout, defaultDatabase, etc.) — ignorado a propósito.
+  }
+  return { host, port, tls, password };
+};
+
+const parseHostPort = (segment: string): { host: string; port: number } => {
+  const colonIdx = segment.lastIndexOf(':');
+  if (colonIdx < 0) return { host: segment, port: DEFAULT_PORT };
+  const host    = segment.slice(0, colonIdx);
+  const portRaw = segment.slice(colonIdx + 1);
+  const port    = Number(portRaw);
+  return Number.isFinite(port) && port > 0
+    ? { host, port }
+    : { host: segment, port: DEFAULT_PORT };
 };
