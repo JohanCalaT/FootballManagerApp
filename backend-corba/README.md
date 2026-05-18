@@ -137,8 +137,151 @@ Los tests usan `@WebMvcTest`, sin contexto completo, y `ServicioNoticias` se iny
 
 | Fase | Alcance | Estado |
 |------|---------|--------|
-| 1 | Server + Adapter en Docker, probado con Postman | ✅ esta entrega |
-| 2 | Integración Aspire AppHost + ruta `/api/news/*` en Gateway YARP + UI | pendiente |
+| 1 | Server + Adapter en Docker, probado con Postman | ✅ entregado |
+| 2 | Integración Aspire AppHost + ruta `/api/news/*` en Gateway YARP | ✅ backend listo (frontend Ionic pendiente, lo arrancará el equipo DAH) |
 | 3 | Workflow GitHub Actions `ci-backend-corba.yml` (build + JaCoCo + SpotBugs + push GHCR) | pendiente |
 | 4 | Despliegue ACA con ingress interno para el server | pendiente |
 | 5 | Validación de Firebase token en adapter (`ADMIN_ENFORCE_AUTH=true`) | pendiente |
+
+---
+
+## Contrato API para el frontend (fase 2 — listo para consumir)
+
+Cuando el equipo DAH arranque la feature `news`, el backend ya está expuesto a través del Gateway YARP. **Toda la comunicación es a través del Gateway**, no hay que hablar con el adapter directamente.
+
+### Base URL
+
+```
+{GATEWAY_URL}/api/news        ← endpoints públicos + publicar/eliminar
+{GATEWAY_URL}/api/news-admin  ← endpoints operacionales (status, reset, max-size)
+```
+
+Donde `GATEWAY_URL` lo proporciona Aspire en `provideHttpClient()` del frontend (variable de entorno `GATEWAY_URL`, igual que para `/api/players` y `/api/comments`).
+
+> **Nota**: el toggle `X-Backend-Target: dotnet|node` **no aplica** a noticias. La especificación CORBA es una sola implementación, no hay equivalente en Node.
+
+### Endpoints
+
+| Método | Ruta Gateway | Ruta interna en adapter | Códigos posibles |
+|--------|--------------|--------------------------|------------------|
+| GET    | `/api/news`               | `/news`                | 200, 503 |
+| GET    | `/api/news/{id}`          | `/news/{id}`           | 200, 404, 503 |
+| POST   | `/api/news`               | `/news`                | 201, 400, 503 |
+| DELETE | `/api/news/{id}`          | `/news/{id}`           | 204, 404 |
+| GET    | `/api/news-admin/status`            | `/admin/status`            | 200 |
+| POST   | `/api/news-admin/reset`             | `/admin/reset`             | 204 |
+| PUT    | `/api/news-admin/config/max-size`   | `/admin/config/max-size`   | 200, 400 |
+
+### Formato de respuesta uniforme
+
+Todo response usa el envelope estándar del proyecto:
+
+```json
+{
+  "status": "success" | "error",
+  "message": "string",
+  "data": <T> | null
+}
+```
+
+### Modelo TypeScript sugerido para el frontend
+
+```typescript
+export interface Noticia {
+  id: string;
+  titulo: string;       // <= 200 chars
+  contenido: string;    // <= 5000 chars
+  autor: string;        // <= 100 chars
+  fechaPub: string;     // ISO 8601
+  imagenUrl?: string;
+}
+
+export interface CreateNoticiaRequest {
+  titulo: string;
+  contenido: string;
+  autor: string;
+  imagenUrl?: string;
+}
+
+export interface EstadoServicio {
+  totalNoticias: number;
+  limiteMaximo: number;
+  fechaUltimoReset: string;
+}
+
+export interface ApiEnvelope<T> {
+  status: 'success' | 'error';
+  message: string;
+  data: T | null;
+}
+```
+
+### Ejemplos de request/response
+
+#### Listar noticias
+```
+GET /api/news
+
+200 OK
+{
+  "status": "success",
+  "message": "OK",
+  "data": [
+    { "id": "uuid", "titulo": "...", "contenido": "...", "autor": "admin",
+      "fechaPub": "2026-05-18T13:32:10.608Z", "imagenUrl": "https://..." }
+  ]
+}
+```
+
+#### Publicar noticia (admin)
+```
+POST /api/news
+Content-Type: application/json
+X-User-Admin: true        ← requerido en fase 5; en fase 2 es opcional (modo permisivo)
+
+{
+  "titulo": "Messi marca su gol 800",
+  "contenido": "El astro argentino...",
+  "autor": "admin",
+  "imagenUrl": "https://example.com/img.jpg"
+}
+
+201 Created
+{
+  "status": "success",
+  "message": "Creado",
+  "data": { "id": "uuid-generado", "titulo": "...", "fechaPub": "...", ... }
+}
+
+400 Bad Request   ← titulo vacio, contenido > 5000, etc.
+{
+  "status": "error",
+  "message": "titulo: must not be blank",
+  "data": null
+}
+```
+
+#### Eliminar (admin)
+```
+DELETE /api/news/{id}
+X-User-Admin: true
+
+204 No Content   ← cuerpo vacio, sin envelope (es 204)
+```
+
+### Modelo de autenticación
+
+- **Hoy (fase 2)**: el adapter está en modo permisivo (`ADMIN_ENFORCE_AUTH=false`). Cualquier cliente puede publicar/eliminar/operar admin. El header `X-User-Admin` se loguea pero no se valida.
+- **Fase 5 (matrícula)**: cuando el Gateway valide el Firebase JWT y propague `X-User-Admin: true` para usuarios admin, basta poner `ADMIN_ENFORCE_AUTH=true` en el resource del adapter (en `AppHost.cs`). Sin cambios de código en el adapter.
+
+### Cómo validar el wiring desde local
+
+```bash
+# Tras `aspire run` (desde src/FootballManagerApp/FootballManagerApp.AppHost):
+GATEWAY_URL=$(aspire endpoints | grep gateway | awk '{print $2}')
+curl $GATEWAY_URL/api/news
+curl -X POST -H 'Content-Type: application/json' \
+     -d '{"titulo":"t","contenido":"c","autor":"a"}' \
+     $GATEWAY_URL/api/news
+curl $GATEWAY_URL/api/news-admin/status
+```
