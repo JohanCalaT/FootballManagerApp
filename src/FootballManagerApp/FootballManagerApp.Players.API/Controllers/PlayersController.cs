@@ -20,6 +20,7 @@ public class PlayersController : ControllerBase
     private readonly ImportPlayersHandler _importHandler;
     private readonly UpdatePlayerHandler _updateHandler;
     private readonly DeletePlayerHandler _deleteHandler;
+    private readonly SearchExternalPlayersHandler _searchExternalHandler;
     private readonly IApiFootballService _apiFootball;
 
     public PlayersController(
@@ -30,6 +31,7 @@ public class PlayersController : ControllerBase
         ImportPlayersHandler importHandler,
         UpdatePlayerHandler updateHandler,
         DeletePlayerHandler deleteHandler,
+        SearchExternalPlayersHandler searchExternalHandler,
         IApiFootballService apiFootball)
     {
         _getAllHandler = getAllHandler;
@@ -39,6 +41,7 @@ public class PlayersController : ControllerBase
         _importHandler = importHandler;
         _updateHandler = updateHandler;
         _deleteHandler = deleteHandler;
+        _searchExternalHandler = searchExternalHandler;
         _apiFootball = apiFootball;
     }
 
@@ -143,49 +146,40 @@ public class PlayersController : ControllerBase
         [FromQuery] int limit = 10,
         CancellationToken ct = default)
     {
-        if (page < 1) page = 1;
-        if (limit < 1) limit = 1;
-        if (limit > 50) limit = 50;
-
         try
         {
-            var all = await _apiFootball.SearchProfilesAsync(query, ct);
-
-            var total = all.Count;
-            var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)limit);
-            var slice = all.Skip((page - 1) * limit).Take(limit).ToList();
-
-            var paged = PagedResponse<ApiFootballProfileSummary>.Success(
-                data:  slice,
-                page:  page,
-                limit: limit,
-                total: total);
-
-            var links = new Dictionary<string, HateoasLink>
-            {
-                ["self"] = new(Url.Link("SearchExternalPlayers",
-                    new { query, page, limit })!, "self", "GET"),
-            };
-            if (totalPages > 0)
-            {
-                links["first"] = new(Url.Link("SearchExternalPlayers",
-                    new { query, page = 1, limit })!, "first", "GET");
-                links["last"]  = new(Url.Link("SearchExternalPlayers",
-                    new { query, page = totalPages, limit })!, "last", "GET");
-                if (page > 1)
-                    links["prev"] = new(Url.Link("SearchExternalPlayers",
-                        new { query, page = page - 1, limit })!, "prev", "GET");
-                if (page < totalPages)
-                    links["next"] = new(Url.Link("SearchExternalPlayers",
-                        new { query, page = page + 1, limit })!, "next", "GET");
-            }
-
-            return Ok(paged.WithLinks(links));
+            var result = await _searchExternalHandler.HandleAsync(query, page, limit, ct);
+            return Ok(result.WithLinks(BuildSearchExternalLinks(
+                query, result.Page, result.Limit, result.Pages)));
         }
         catch (ApiFootballException ex)
         {
             return MapApiFootballError<IReadOnlyList<ApiFootballProfileSummary>>(ex.Error);
         }
+    }
+
+    private Dictionary<string, HateoasLink> BuildSearchExternalLinks(
+        string query, int page, int limit, int totalPages)
+    {
+        var links = new Dictionary<string, HateoasLink>
+        {
+            ["self"] = new(Url.Link("SearchExternalPlayers",
+                new { query, page, limit })!, "self", "GET"),
+        };
+        if (totalPages > 0)
+        {
+            links["first"] = new(Url.Link("SearchExternalPlayers",
+                new { query, page = 1, limit })!, "first", "GET");
+            links["last"] = new(Url.Link("SearchExternalPlayers",
+                new { query, page = totalPages, limit })!, "last", "GET");
+            if (page > 1)
+                links["prev"] = new(Url.Link("SearchExternalPlayers",
+                    new { query, page = page - 1, limit })!, "prev", "GET");
+            if (page < totalPages)
+                links["next"] = new(Url.Link("SearchExternalPlayers",
+                    new { query, page = page + 1, limit })!, "next", "GET");
+        }
+        return links;
     }
 
     [HttpGet("external/{apiFootballId:int}/seasons", Name = "GetExternalSeasons")]

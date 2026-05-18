@@ -148,6 +148,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<GetAllPlayersHandler>();
         services.AddScoped<GetPlayerByIdHandler>();
         services.AddScoped<SearchPlayersHandler>();
+        services.AddScoped<SearchExternalPlayersHandler>();
         services.AddScoped<CreatePlayerHandler>();
         services.AddScoped<ImportPlayersHandler>();
         services.AddScoped<UpdatePlayerHandler>();
