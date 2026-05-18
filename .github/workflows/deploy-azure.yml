@@ -97,6 +97,20 @@ jobs:
           echo "  Ref:            ${{ github.ref }}"
           echo "════════════════════════════════════════"
 
+      # Libera ~10 GB del runner antes de que azd construya y pushee
+      # los 7 contenedores. Resuelve el `pushing image: signal: killed`
+      # del ionic-app (OOM/disco) cuando azd hace deploy paralelo.
+      - name: Free disk space on runner
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false      # mantiene .NET/Node que usamos en pasos siguientes
+          android: true
+          dotnet: false          # NO borrar .NET, lo usamos
+          haskell: true
+          large-packages: true
+          docker-images: false   # mantener Docker images (cachéamos pre-pulls)
+          swap-storage: true
+
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
