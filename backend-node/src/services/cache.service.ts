@@ -144,21 +144,40 @@ export const initCache = async (): Promise<CacheService> => {
     console.warn('[cache] url parse failed for diagnostic', err);
   }
 
+  // Startup-time hard budget. Without this, an auth failure (WRONGPASS,
+  // wrong host, etc.) keeps node-redis v5 in an indefinite reconnect loop
+  // and `client.connect()` never resolves — blocking app.listen() and
+  // failing the Container App StartUp probe. .NET's StackExchange.Redis
+  // does not have this problem because it connects in the background; we
+  // emulate that resilience by giving up after CONNECT_BUDGET_MS and
+  // degrading to NOOP, so HTTP traffic is served without cache.
+  const CONNECT_BUDGET_MS = 8_000;
+  let client: ReturnType<typeof createClient> | undefined;
   try {
-    const client = createClient({
+    client = createClient({
       url,
       socket: buildSocketOptions(url),
     });
     client.on('error', (err: Error) => {
       console.warn('[cache] redis error event:', err.message);
     });
-    await client.connect();
-    await client.ping();
+    await Promise.race([
+      (async () => { await client!.connect(); await client!.ping(); })(),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`redis connect budget exceeded (${CONNECT_BUDGET_MS}ms)`)),
+          CONNECT_BUDGET_MS,
+        ),
+      ),
+    ]);
     instance = new RedisCacheService(client as unknown as RedisClientType);
     console.log(`[cache] connected to redis`);
     return instance;
   } catch (err) {
     console.warn('[cache] no se pudo conectar a redis — operando sin cache', err);
+    // Best-effort detach so the process does not keep retrying in the
+    // background forever. quit() may itself fail if not connected.
+    try { await client?.quit(); } catch { /* ignore */ }
     instance = NOOP;
     return instance;
   }
@@ -178,7 +197,16 @@ export const initCache = async (): Promise<CacheService> => {
 const buildSocketOptions = (url: string): Record<string, unknown> => {
   const base: Record<string, unknown> = {
     connectTimeout: 5_000,
-    reconnectStrategy: (retries: number) => Math.min(retries * 200, 3_000),
+    // Bounded retries: returning an Error tells node-redis v5 to stop
+    // reconnecting. Without this cap, WRONGPASS/auth failures spin in an
+    // infinite reconnect loop and the outer Promise.race timeout is the
+    // only thing that can break us out. 3 attempts ≈ 1.2s — enough for
+    // transient network blips, short enough to fail-fast on real auth
+    // problems and let initCache fall through to NOOP.
+    reconnectStrategy: (retries: number) =>
+      retries >= 3
+        ? new Error(`redis: giving up after ${retries} retries`)
+        : Math.min(retries * 200, 3_000),
   };
   let parsed: URL;
   try { parsed = new URL(url); } catch { return base; }
