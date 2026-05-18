@@ -19,12 +19,6 @@ public record ApiFootballProfileSummary(
     string? Position,
     string? Photo);
 
-public record ApiFootballSearchPage(
-    IReadOnlyList<ApiFootballProfileSummary> Items,
-    int Page,
-    int TotalPages,
-    int TotalResults);
-
 public record ApiFootballImportData(
     ApiFootballProfileSummary Profile,
     IReadOnlyList<ApiFootballStatLine> Statistics);

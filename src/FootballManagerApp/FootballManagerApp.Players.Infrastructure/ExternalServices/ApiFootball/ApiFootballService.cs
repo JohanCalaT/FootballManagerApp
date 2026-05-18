@@ -34,19 +34,23 @@ public sealed class ApiFootballService : IApiFootballService
         _logger = logger;
     }
 
-    // ─────────────────────────── 4.1 — Search profiles (paginado) ───────────────────────────
-    public async Task<ApiFootballSearchPage> SearchProfilesAsync(
-        string query, int page, CancellationToken ct)
+    // ─────────────────────────── 4.1 — Search profiles ───────────────────────────
+    // API-Football's /players/profiles?search= returns every match in one call
+    // (its `paging` envelope is misleading — `pages` is computed against an
+    // internal page size that does not affect the response body). We cache the
+    // full list under a single key and let the controller paginate locally,
+    // so subsequent pages are Redis hits and the 100/day quota is preserved.
+    public async Task<IReadOnlyList<ApiFootballProfileSummary>> SearchProfilesAsync(
+        string query, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(query) || query.Trim().Length < 3)
             throw new ApiFootballException(
                 new ApiFootballError.InvalidParameter("search (mínimo 3 caracteres)"));
-        if (page < 1) page = 1;
 
         var normalized = ApiFootballParsers.NormalizeQuery(query);
-        var key = $"af:profiles:search:{normalized}:p{page}";
+        var key = $"af:profiles:search:{normalized}";
 
-        var cached = await _cache.GetAsync<ApiFootballSearchPage>(key, ct);
+        var cached = await _cache.GetAsync<List<ApiFootballProfileSummary>>(key, ct);
         if (cached is not null)
         {
             _logger.LogDebug("ApiFootball cache HIT {Key}", key);
@@ -54,22 +58,16 @@ public sealed class ApiFootballService : IApiFootballService
         }
 
         var envelope = await SendAsync<ApiFootballEnvelope<ApiFootballProfileResponse>>(
-            $"players/profiles?search={Uri.EscapeDataString(normalized)}&page={page}", ct);
+            $"players/profiles?search={Uri.EscapeDataString(normalized)}", ct);
 
         var items = envelope.Response
             .Select(r => MapToSummary(r.Player))
             .ToList();
 
-        var result = new ApiFootballSearchPage(
-            Items:         items,
-            Page:          envelope.Paging?.Current ?? page,
-            TotalPages:    envelope.Paging?.Total   ?? 1,
-            TotalResults:  envelope.Results);
-
         var ttl = items.Count == 0 ? EmptyResultTtl : ProfileSearchTtl;
-        await _cache.SetAsync(key, result, ttl, ct);
+        await _cache.SetAsync(key, items, ttl, ct);
 
-        return result;
+        return items;
     }
 
     // ─────────────────────────── 4.2 — Seasons ───────────────────────────

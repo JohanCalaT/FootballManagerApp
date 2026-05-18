@@ -29,7 +29,7 @@ public class ApiFootballServiceTests
         var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
         var sut = Build(handler, new InMemoryCacheService());
 
-        var act = () => sut.SearchProfilesAsync(query, 1, default);
+        var act = () => sut.SearchProfilesAsync(query, default);
 
         var ex = await act.Should().ThrowAsync<ApiFootballException>();
         ex.Which.Error.Should().BeOfType<ApiFootballError.InvalidParameter>();
@@ -42,13 +42,10 @@ public class ApiFootballServiceTests
         var handler = StubHttpMessageHandler.FromFixture("profiles-search-messi.json");
         var sut = Build(handler, new InMemoryCacheService());
 
-        var result = await sut.SearchProfilesAsync("Messi", 1, default);
+        var items = await sut.SearchProfilesAsync("Messi", default);
 
-        result.Items.Should().HaveCount(1);
-        result.Page.Should().Be(1);
-        result.TotalPages.Should().Be(1);
-        result.TotalResults.Should().Be(1);
-        var p = result.Items[0];
+        items.Should().HaveCount(1);
+        var p = items[0];
         p.ApiFootballId.Should().Be(154);
         p.Name.Should().Be("L. Messi");
         p.FirstName.Should().Be("Lionel Andrés");
@@ -66,9 +63,9 @@ public class ApiFootballServiceTests
         var cache = new InMemoryCacheService();
         var sut = Build(handler, cache);
 
-        await sut.SearchProfilesAsync("  Messi  ", 1, default);
-        await sut.SearchProfilesAsync("MESSI",     1, default);
-        await sut.SearchProfilesAsync("messi",     1, default);
+        await sut.SearchProfilesAsync("  Messi  ", default);
+        await sut.SearchProfilesAsync("MESSI",     default);
+        await sut.SearchProfilesAsync("messi",     default);
 
         // Solo la primera llamada debe pegar al stub. Las otras 2 son cache hits.
         handler.Calls.Should().HaveCount(1);
@@ -76,17 +73,19 @@ public class ApiFootballServiceTests
     }
 
     [Fact]
-    public async Task SearchProfilesAsync_different_pages_are_separate_cache_entries()
+    public async Task SearchProfilesAsync_caches_full_list_under_single_key_per_query()
     {
         var handler = StubHttpMessageHandler.FromFixture("profiles-search-messi.json");
         var cache = new InMemoryCacheService();
         var sut = Build(handler, cache);
 
-        await sut.SearchProfilesAsync("Messi", 1, default);
-        await sut.SearchProfilesAsync("Messi", 2, default);
+        // Two consecutive calls for the same query hit API-Football once and
+        // are then served from the same Redis key (no per-page suffix).
+        await sut.SearchProfilesAsync("Messi", default);
+        await sut.SearchProfilesAsync("Messi", default);
 
-        // Cada página = key distinta → 2 llamadas al stub.
-        handler.Calls.Should().HaveCount(2);
+        handler.Calls.Should().HaveCount(1);
+        cache.HitCount.Should().Be(1);
     }
 
     // ─────────────────────────── GetSeasonsAsync ───────────────────────────
@@ -184,7 +183,7 @@ public class ApiFootballServiceTests
         });
         var sut = Build(handler, new InMemoryCacheService());
 
-        var act = () => sut.SearchProfilesAsync("messi", 1, default);
+        var act = () => sut.SearchProfilesAsync("messi", default);
 
         await act.Should().ThrowAsync<ApiFootballException>()
             .Where(e => e.Error is ApiFootballError.RateLimited);
@@ -215,7 +214,7 @@ public class ApiFootballServiceTests
         var handler = StubHttpMessageHandler.FromStatusOnly(HttpStatusCode.Unauthorized);
         var sut = Build(handler, new InMemoryCacheService());
 
-        await FluentActions.Invoking(() => sut.SearchProfilesAsync("messi", 1, default))
+        await FluentActions.Invoking(() => sut.SearchProfilesAsync("messi", default))
             .Should().ThrowAsync<ApiFootballException>()
             .Where(e => e.Error is ApiFootballError.AuthenticationFailed);
     }
@@ -226,7 +225,7 @@ public class ApiFootballServiceTests
         var handler = StubHttpMessageHandler.FromStatusOnly(HttpStatusCode.TooManyRequests);
         var sut = Build(handler, new InMemoryCacheService());
 
-        await FluentActions.Invoking(() => sut.SearchProfilesAsync("messi", 1, default))
+        await FluentActions.Invoking(() => sut.SearchProfilesAsync("messi", default))
             .Should().ThrowAsync<ApiFootballException>()
             .Where(e => e.Error is ApiFootballError.RateLimited);
     }
@@ -237,7 +236,7 @@ public class ApiFootballServiceTests
         var handler = StubHttpMessageHandler.FromStatusOnly(HttpStatusCode.InternalServerError);
         var sut = Build(handler, new InMemoryCacheService());
 
-        await FluentActions.Invoking(() => sut.SearchProfilesAsync("messi", 1, default))
+        await FluentActions.Invoking(() => sut.SearchProfilesAsync("messi", default))
             .Should().ThrowAsync<ApiFootballException>()
             .Where(e => e.Error is ApiFootballError.UpstreamError);
     }

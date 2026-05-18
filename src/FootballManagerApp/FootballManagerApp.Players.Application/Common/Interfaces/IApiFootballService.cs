@@ -7,9 +7,12 @@ namespace FootballManagerApp.Players.Application.Common.Interfaces;
 // El Handler hace try/catch y mapea a ApiResponse con el status HTTP correcto.
 public interface IApiFootballService
 {
-    // page = 1-indexed. Cada página de API-Football = 20 resultados.
-    Task<ApiFootballSearchPage> SearchProfilesAsync(
-        string query, int page, CancellationToken ct);
+    // Returns the full result list for a query. API-Football's
+    // /players/profiles?search= already returns every match in one call;
+    // its own paging metadata is unreliable, so we drop it and paginate
+    // locally in the controller from the Redis-cached list.
+    Task<IReadOnlyList<ApiFootballProfileSummary>> SearchProfilesAsync(
+        string query, CancellationToken ct);
 
     Task<IReadOnlyList<int>> GetSeasonsAsync(
         int apiFootballId, CancellationToken ct);

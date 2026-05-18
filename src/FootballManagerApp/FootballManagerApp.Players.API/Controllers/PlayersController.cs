@@ -140,35 +140,45 @@ public class PlayersController : ControllerBase
     public async Task<IActionResult> SearchExternal(
         [FromQuery] string query,
         [FromQuery] int page = 1,
+        [FromQuery] int limit = 10,
         CancellationToken ct = default)
     {
+        if (page < 1) page = 1;
+        if (limit < 1) limit = 1;
+        if (limit > 50) limit = 50;
+
         try
         {
-            var pageResult = await _apiFootball.SearchProfilesAsync(query, page, ct);
+            var all = await _apiFootball.SearchProfilesAsync(query, ct);
 
-            // Cada página API-Football = 20 items. Lo exponemos como PagedResponse
-            // para que el frontend (móvil) pinte scroll infinito de 20 en 20.
+            var total = all.Count;
+            var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)limit);
+            var slice = all.Skip((page - 1) * limit).Take(limit).ToList();
+
             var paged = PagedResponse<ApiFootballProfileSummary>.Success(
-                data:    pageResult.Items,
-                page:    pageResult.Page,
-                limit:   20,
-                total:   pageResult.TotalResults);
+                data:  slice,
+                page:  page,
+                limit: limit,
+                total: total);
 
             var links = new Dictionary<string, HateoasLink>
             {
-                ["self"]  = new(Url.Link("SearchExternalPlayers",
-                    new { query, page = pageResult.Page })!, "self", "GET"),
-                ["first"] = new(Url.Link("SearchExternalPlayers",
-                    new { query, page = 1 })!, "first", "GET"),
-                ["last"]  = new(Url.Link("SearchExternalPlayers",
-                    new { query, page = Math.Max(pageResult.TotalPages, 1) })!, "last", "GET"),
+                ["self"] = new(Url.Link("SearchExternalPlayers",
+                    new { query, page, limit })!, "self", "GET"),
             };
-            if (pageResult.Page > 1)
-                links["prev"] = new(Url.Link("SearchExternalPlayers",
-                    new { query, page = pageResult.Page - 1 })!, "prev", "GET");
-            if (pageResult.Page < pageResult.TotalPages)
-                links["next"] = new(Url.Link("SearchExternalPlayers",
-                    new { query, page = pageResult.Page + 1 })!, "next", "GET");
+            if (totalPages > 0)
+            {
+                links["first"] = new(Url.Link("SearchExternalPlayers",
+                    new { query, page = 1, limit })!, "first", "GET");
+                links["last"]  = new(Url.Link("SearchExternalPlayers",
+                    new { query, page = totalPages, limit })!, "last", "GET");
+                if (page > 1)
+                    links["prev"] = new(Url.Link("SearchExternalPlayers",
+                        new { query, page = page - 1, limit })!, "prev", "GET");
+                if (page < totalPages)
+                    links["next"] = new(Url.Link("SearchExternalPlayers",
+                        new { query, page = page + 1, limit })!, "next", "GET");
+            }
 
             return Ok(paged.WithLinks(links));
         }
