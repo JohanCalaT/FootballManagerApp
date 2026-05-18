@@ -1,0 +1,42 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: news-adapter
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+# CORBA wiring — override desde docker-compose o variables de entorno.
+corba:
+  naming:
+    host: ${CORBA_NAMING_HOST:corba-server}
+    port: ${CORBA_NAMING_PORT:9000}
+  servant:
+    name: ${CORBA_SERVANT_NAME:ServicioNoticias}
+
+# Hook para fase 2: cambiar a true exige X-User-Admin=true en /admin/**.
+admin:
+  enforce-auth: ${ADMIN_ENFORCE_AUTH:false}
+
+logging:
+  level:
+    com.footballmanager.news.adapter: INFO

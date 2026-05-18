@@ -1,0 +1,10 @@
+# Maven build output
+target/
+# IntelliJ / Eclipse
+*.iml
+.idea/
+.classpath
+.project
+.settings/
+# JaCoCo legacy file
+*.exec
