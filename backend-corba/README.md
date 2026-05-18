@@ -57,7 +57,14 @@ Formato de respuesta uniforme:
 
 ## Postman
 
-Importar `postman/FootballManager-CORBA.postman_collection.json` y ejecutar la colección entera (*Runner → Run*). Cubre los 9 pasos del SDD §7.2 incluyendo verificación automática del FIFO (límite=3, crear 4, comprobar que la 1ª desapareció).
+Importar la colección + uno de los dos environments y ejecutar entera (*Runner → Run*). Cubre los 9 pasos del SDD §7.2 incluyendo verificación automática del FIFO (límite=3, crear 4, comprobar que la 1ª desapareció). La colección usa variables `{{host}}`, `{{newsPath}}` y `{{adminPath}}` para que el mismo set de requests sirva contra el adapter directo o vía Gateway.
+
+| Modo | Cuándo | Environment | Cómo arrancar el backend |
+|------|--------|-------------|--------------------------|
+| **Direct** (adapter) | Fase 1 / smoke local del adapter aislado | `Direct.postman_environment.json` → `http://localhost:8080/news` | `docker compose up --build` en `backend-corba/` |
+| **Gateway** | Fase 2 / validar la cadena real `Gateway → adapter → CORBA` | `Gateway.postman_environment.json` → `http://localhost:5000/api/news` | `aspire run` (o `dotnet run`) en `src/FootballManagerApp/FootballManagerApp.AppHost/` |
+
+Ambos environments hacen pasar los **mismos** tests sin cambios. Verificado el 2026-05-18: 9/9 pasos verdes vía Gateway YARP con `dotnet run` del AppHost.
 
 ## Build local (sin Docker)
 

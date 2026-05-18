@@ -1,12 +1,14 @@
 {
   "info": {
-    "name": "FootballManager - CORBA News (Fase 1)",
-    "_postman_id": "fm-corba-news-fase1",
-    "description": "9 pasos del SDD v0.2 §7.2 con tests automaticos del FIFO. Base URL: http://localhost:8080",
+    "name": "FootballManager - CORBA News",
+    "_postman_id": "fm-corba-news",
+    "description": "9 pasos del SDD §7.2 + tests automaticos del FIFO. Funciona contra el adapter directo (env 'Direct') o via Gateway YARP (env 'Gateway'). Variables: {{host}}, {{newsPath}}, {{adminPath}}.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "host", "value": "http://localhost:8080", "description": "Override en environment Gateway: http://localhost:5000" },
+    { "key": "newsPath", "value": "/news", "description": "Override en env Gateway: /api/news" },
+    { "key": "adminPath", "value": "/admin", "description": "Override en env Gateway: /api/news-admin" },
     { "key": "noticiaId", "value": "" },
     { "key": "fifoId1", "value": "" },
     { "key": "fifoId2", "value": "" },
@@ -15,11 +17,11 @@
   ],
   "item": [
     {
-      "name": "1. GET /admin/status (estado inicial)",
+      "name": "1. GET admin/status (estado inicial)",
       "request": {
         "method": "GET",
         "header": [{ "key": "X-User-Admin", "value": "true" }],
-        "url": { "raw": "{{baseUrl}}/admin/status", "host": ["{{baseUrl}}"], "path": ["admin", "status"] }
+        "url": { "raw": "{{host}}{{adminPath}}/status", "host": ["{{host}}{{adminPath}}"], "path": ["status"] }
       },
       "event": [{
         "listen": "test",
@@ -32,7 +34,7 @@
       }]
     },
     {
-      "name": "2. POST /news (crear noticia base)",
+      "name": "2. POST news (crear noticia base)",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -40,7 +42,7 @@
           "mode": "raw",
           "raw": "{\n  \"titulo\": \"Messi marca su gol 800\",\n  \"contenido\": \"El astro argentino marco hoy un gol historico.\",\n  \"autor\": \"admin\",\n  \"imagenUrl\": \"https://example.com/img.jpg\"\n}"
         },
-        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+        "url": { "raw": "{{host}}{{newsPath}}", "host": ["{{host}}{{newsPath}}"] }
       },
       "event": [{
         "listen": "test",
@@ -55,10 +57,10 @@
       }]
     },
     {
-      "name": "3. GET /news (debe contener la noticia)",
+      "name": "3. GET news (debe contener la noticia)",
       "request": {
         "method": "GET",
-        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+        "url": { "raw": "{{host}}{{newsPath}}", "host": ["{{host}}{{newsPath}}"] }
       },
       "event": [{
         "listen": "test",
@@ -72,10 +74,10 @@
       }]
     },
     {
-      "name": "4. GET /news/{id} (la creada en paso 2)",
+      "name": "4. GET news/{id} (la creada en paso 2)",
       "request": {
         "method": "GET",
-        "url": { "raw": "{{baseUrl}}/news/{{noticiaId}}", "host": ["{{baseUrl}}"], "path": ["news", "{{noticiaId}}"] }
+        "url": { "raw": "{{host}}{{newsPath}}/{{noticiaId}}", "host": ["{{host}}{{newsPath}}"], "path": ["{{noticiaId}}"] }
       },
       "event": [{
         "listen": "test",
@@ -87,7 +89,7 @@
       }]
     },
     {
-      "name": "5. PUT /admin/config/max-size (limite=3)",
+      "name": "5. PUT admin/config/max-size (limite=3)",
       "request": {
         "method": "PUT",
         "header": [
@@ -95,7 +97,7 @@
           { "key": "X-User-Admin", "value": "true" }
         ],
         "body": { "mode": "raw", "raw": "{\n  \"limite\": 3\n}" },
-        "url": { "raw": "{{baseUrl}}/admin/config/max-size", "host": ["{{baseUrl}}"], "path": ["admin", "config", "max-size"] }
+        "url": { "raw": "{{host}}{{adminPath}}/config/max-size", "host": ["{{host}}{{adminPath}}"], "path": ["config", "max-size"] }
       },
       "event": [{
         "listen": "test",
@@ -107,12 +109,12 @@
       }]
     },
     {
-      "name": "6a. POST /news (FIFO #1)",
+      "name": "6a. POST news (FIFO #1)",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"FIFO 1\",\n  \"contenido\": \"primera\",\n  \"autor\": \"admin\"\n}" },
-        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+        "url": { "raw": "{{host}}{{newsPath}}", "host": ["{{host}}{{newsPath}}"] }
       },
       "event": [{ "listen": "test", "script": { "exec": [
         "pm.test('201', () => pm.response.to.have.status(201));",
@@ -120,12 +122,12 @@
       ], "type": "text/javascript" } }]
     },
     {
-      "name": "6b. POST /news (FIFO #2)",
+      "name": "6b. POST news (FIFO #2)",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"FIFO 2\",\n  \"contenido\": \"segunda\",\n  \"autor\": \"admin\"\n}" },
-        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+        "url": { "raw": "{{host}}{{newsPath}}", "host": ["{{host}}{{newsPath}}"] }
       },
       "event": [{ "listen": "test", "script": { "exec": [
         "pm.test('201', () => pm.response.to.have.status(201));",
@@ -133,12 +135,12 @@
       ], "type": "text/javascript" } }]
     },
     {
-      "name": "6c. POST /news (FIFO #3)",
+      "name": "6c. POST news (FIFO #3)",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"FIFO 3\",\n  \"contenido\": \"tercera\",\n  \"autor\": \"admin\"\n}" },
-        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+        "url": { "raw": "{{host}}{{newsPath}}", "host": ["{{host}}{{newsPath}}"] }
       },
       "event": [{ "listen": "test", "script": { "exec": [
         "pm.test('201', () => pm.response.to.have.status(201));",
@@ -146,12 +148,12 @@
       ], "type": "text/javascript" } }]
     },
     {
-      "name": "6d. POST /news (FIFO #4 - dispara descarte)",
+      "name": "6d. POST news (FIFO #4 - dispara descarte)",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"FIFO 4\",\n  \"contenido\": \"cuarta\",\n  \"autor\": \"admin\"\n}" },
-        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+        "url": { "raw": "{{host}}{{newsPath}}", "host": ["{{host}}{{newsPath}}"] }
       },
       "event": [{ "listen": "test", "script": { "exec": [
         "pm.test('201', () => pm.response.to.have.status(201));",
@@ -159,10 +161,10 @@
       ], "type": "text/javascript" } }]
     },
     {
-      "name": "7. GET /news (solo 3, sin FIFO #1)",
+      "name": "7. GET news (solo 3, sin FIFO #1)",
       "request": {
         "method": "GET",
-        "url": { "raw": "{{baseUrl}}/news", "host": ["{{baseUrl}}"], "path": ["news"] }
+        "url": { "raw": "{{host}}{{newsPath}}", "host": ["{{host}}{{newsPath}}"] }
       },
       "event": [{
         "listen": "test",
@@ -179,22 +181,22 @@
       }]
     },
     {
-      "name": "8. POST /admin/reset (vacia todo)",
+      "name": "8. POST admin/reset (vacia todo)",
       "request": {
         "method": "POST",
         "header": [{ "key": "X-User-Admin", "value": "true" }],
-        "url": { "raw": "{{baseUrl}}/admin/reset", "host": ["{{baseUrl}}"], "path": ["admin", "reset"] }
+        "url": { "raw": "{{host}}{{adminPath}}/reset", "host": ["{{host}}{{adminPath}}"], "path": ["reset"] }
       },
       "event": [{ "listen": "test", "script": { "exec": [
         "pm.test('204', () => pm.response.to.have.status(204));"
       ], "type": "text/javascript" } }]
     },
     {
-      "name": "9. GET /admin/status (vacio)",
+      "name": "9. GET admin/status (vacio)",
       "request": {
         "method": "GET",
         "header": [{ "key": "X-User-Admin", "value": "true" }],
-        "url": { "raw": "{{baseUrl}}/admin/status", "host": ["{{baseUrl}}"], "path": ["admin", "status"] }
+        "url": { "raw": "{{host}}{{adminPath}}/status", "host": ["{{host}}{{adminPath}}"], "path": ["status"] }
       },
       "event": [{
         "listen": "test",
