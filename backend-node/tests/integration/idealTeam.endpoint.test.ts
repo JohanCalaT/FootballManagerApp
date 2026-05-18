@@ -112,7 +112,7 @@ describe('POST /api/ideal-team', () => {
   it('returns 503 when Gemini returns unknown player id', async () => {
     await seedEleven();
     mockedGenerate.mockResolvedValue(JSON.stringify(fakeResponse(
-      Array.from({ length: 11 }, (_, i) =>
+      Array.from({ length: 11 }, () =>
         new (jest.requireActual('mongoose')).Types.ObjectId().toString()))));
     const res = await request(app)
       .post('/api/ideal-team')

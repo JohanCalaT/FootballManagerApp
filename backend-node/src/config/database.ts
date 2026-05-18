@@ -13,18 +13,17 @@ export const connectDB = async (uri?: string): Promise<typeof mongoose> => {
   // workflows sometimes inject when secrets are copied from rich editors.
   // Without this, mongoose throws "Invalid scheme, expected ... mongodb://"
   // even though the value looks correct in the Azure portal UI.
-  const connectionString = rawUri.replace(/^﻿/, '').trim();
+  // The BOM is referenced via its escape so ESLint's no-irregular-whitespace
+  // does not trip on an invisible source character.
+  const connectionString = rawUri.replace(/^\uFEFF/, '').trim();
 
-  // TEMPORARY DIAGNOSTIC — log the full URI on startup to surface any
-  // hidden characters. The Mongo Atlas password will be rotated once the
-  // root cause is confirmed, so leaking it briefly in container logs is
-  // acceptable here. REMOVE this block before any production deploy.
-  console.log('[mongo] raw env length:', rawUri.length);
-  console.log('[mongo] sanitized length:', connectionString.length);
-  console.log('[mongo] first 12 chars (hex):',
-    Buffer.from(rawUri.slice(0, 12), 'utf8').toString('hex'));
-  console.log('[mongo] full URI (DIAGNOSTIC — rotate password after):',
-    connectionString);
+  // Safe diagnostic — surface hidden characters WITHOUT leaking credentials.
+  // Hex of the first 6 bytes is enough to spot a BOM (ef bb bf) versus a
+  // clean ASCII start (6d 6f 6e = "mon"). Length delta confirms a strip.
+  const head = Buffer.from(rawUri.slice(0, 6), 'utf8').toString('hex');
+  console.log(
+    `[mongo] env raw_len=${rawUri.length} sanitized_len=${connectionString.length} head_hex=${head}`,
+  );
 
   let attempt = 0;
   // Retry simple con backoff fijo — production-grade es Polly-like pero excesivo aquí.
