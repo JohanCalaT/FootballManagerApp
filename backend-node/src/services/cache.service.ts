@@ -124,6 +124,26 @@ export const initCache = async (): Promise<CacheService> => {
     instance = NOOP;
     return instance;
   }
+
+  // Safe diagnostic — describe the URL without leaking the password. Helps
+  // diagnose WRONGPASS errors caused by Aspire/Key Vault/Container App
+  // drift on the Redis password.
+  try {
+    const parsed = new URL(url);
+    const pwLen  = parsed.password ? decodeURIComponent(parsed.password).length : 0;
+    const pwHead = parsed.password
+      ? Buffer.from(decodeURIComponent(parsed.password).slice(0, 3), 'utf8').toString('hex')
+      : '';
+    const rawConn = process.env.ConnectionStrings__redis ?? '';
+    console.log(
+      `[cache] redis url scheme=${parsed.protocol} host=${parsed.hostname}:${parsed.port} ` +
+      `user=${parsed.username || '<none>'} pw_len=${pwLen} pw_head_hex=${pwHead} ` +
+      `aspire_raw_starts_with=${rawConn.slice(0, 20)}`,
+    );
+  } catch (err) {
+    console.warn('[cache] url parse failed for diagnostic', err);
+  }
+
   try {
     const client = createClient({
       url,

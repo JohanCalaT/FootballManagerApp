@@ -67,4 +67,25 @@ describe('resolveRedisUrl', () => {
     process.env.REDIS_CONNECTION_STRING = 'redis://fallback:6379';
     expect(resolveRedisUrl()).toBe('redis://fallback:6379');
   });
+
+  it('strips a leading BOM from the password in StackExchange format', () => {
+    const BOM = '\uFEFF';
+    process.env.ConnectionStrings__redis =
+      `host:6379,password=${BOM}cleanpw,ssl=False`;
+    const url = resolveRedisUrl()!;
+    expect(url).toBe('redis://:cleanpw@host:6379');
+  });
+
+  it('strips a leading BOM from the password embedded in a redis:// URL', () => {
+    // Aspire publishes redis://:%EF%BB%BF<rest>@redis:6379 when the
+    // upstream secret was pasted with a BOM. The decoded password
+    // becomes "\uFEFFsecret" and Redis rejects it with WRONGPASS.
+    process.env.REDIS_URL = 'redis://:%EF%BB%BFsecret@redis:6379';
+    expect(resolveRedisUrl()).toBe('redis://:secret@redis:6379');
+  });
+
+  it('leaves a clean redis:// URL untouched even after BOM sanitisation', () => {
+    process.env.REDIS_URL = 'redis://:cleansecret@redis:6379';
+    expect(resolveRedisUrl()).toBe('redis://:cleansecret@redis:6379');
+  });
 });
