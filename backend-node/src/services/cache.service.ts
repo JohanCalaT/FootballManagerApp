@@ -1,5 +1,5 @@
 import { createClient, RedisClientType } from 'redis';
-import { resolveRedisUrl } from '../config/redis';
+import { resolveRedisConfig } from '../config/redis';
 
 /**
  * Cache distribuido sobre Redis. Si Redis no está disponible (env vacía,
@@ -113,51 +113,56 @@ export const __setCacheForTests = (svc: CacheService): void => { instance = svc;
 export const __resetCacheForTests = (): void => { instance = NOOP; };
 
 /**
- * Conecta a Redis si hay URL configurada. Llamada una sola vez al arrancar
- * el server. Si falla, deja `instance = NOOP` y loggea un warning — el
- * backend sigue funcional, solo perderá el cache.
+ * Conecta a Redis si hay configuración disponible. Llamada una sola vez al
+ * arrancar el server. Si falla, deja `instance = NOOP` y loggea un warning
+ * — el backend sigue funcional, solo perderá el cache.
+ *
+ * Pasa host/port/password/tls explícitamente a createClient en vez de un
+ * URL para evitar cualquier ambigüedad de URL-decoding en node-redis v5
+ * (el formato Aspire ya nos da los componentes directamente).
  */
 export const initCache = async (): Promise<CacheService> => {
-  const url = resolveRedisUrl();
-  if (!url) {
-    console.warn('[cache] sin REDIS_URL/ConnectionStrings__redis — operando sin cache');
-    instance = NOOP;
-    return instance;
-  }
+  const cfg = resolveRedisConfig();
 
-  // Safe diagnostic — describe the URL without leaking the password. Helps
-  // diagnose WRONGPASS errors caused by Aspire/Key Vault/Container App
-  // drift on the Redis password.
-  try {
-    const parsed = new URL(url);
-    const pwLen  = parsed.password ? decodeURIComponent(parsed.password).length : 0;
-    const pwHead = parsed.password
-      ? Buffer.from(decodeURIComponent(parsed.password).slice(0, 3), 'utf8').toString('hex')
-      : '';
-    const rawConn = process.env.ConnectionStrings__redis ?? '';
-    console.log(
-      `[cache] redis url scheme=${parsed.protocol} host=${parsed.hostname}:${parsed.port} ` +
-      `user=${parsed.username || '<none>'} pw_len=${pwLen} pw_head_hex=${pwHead} ` +
-      `aspire_raw_starts_with=${rawConn.slice(0, 20)}`,
-    );
-  } catch (err) {
-    console.warn('[cache] url parse failed for diagnostic', err);
-  }
+  // Log de arranque — host/port/tls/source siempre, password length para
+  // diagnóstico sin filtrar el secreto.
+  console.log(
+    `[cache] redis target host=${cfg.host}:${cfg.port} tls=${cfg.tls} ` +
+    `source=${cfg.source} has_password=${cfg.password !== undefined} ` +
+    `pw_len=${cfg.password?.length ?? 0}`,
+  );
 
-  // Startup-time hard budget. Without this, an auth failure (WRONGPASS,
-  // wrong host, etc.) keeps node-redis v5 in an indefinite reconnect loop
-  // and `client.connect()` never resolves — blocking app.listen() and
-  // failing the Container App StartUp probe. .NET's StackExchange.Redis
-  // does not have this problem because it connects in the background; we
-  // emulate that resilience by giving up after CONNECT_BUDGET_MS and
-  // degrading to NOOP, so HTTP traffic is served without cache.
+  // Startup-time hard budget. node-redis v5 con un password incorrecto
+  // entra en reconexión infinita y `client.connect()` nunca resuelve, lo
+  // que bloquea `app.listen()` y revienta la StartUp probe de Container
+  // Apps. Esto emula el comportamiento de StackExchange.Redis de .NET
+  // (abortOnConnectFail=false): si no estamos listos en CONNECT_BUDGET_MS,
+  // abandonamos y servimos HTTP sin cache.
   const CONNECT_BUDGET_MS = 8_000;
   let client: ReturnType<typeof createClient> | undefined;
   try {
     client = createClient({
-      url,
-      socket: buildSocketOptions(url),
+      socket: {
+        host:           cfg.host,
+        port:           cfg.port,
+        // `tls` aquí debe ser literal `true` o ausente — no `undefined`
+        // (los types de node-redis rechazan undefined). Spread condicional.
+        ...(cfg.tls ? { tls: true as const } : {}),
+        connectTimeout: 5_000,
+        // Cap reintentos para que un fallo de AUTH no spinee para siempre.
+        reconnectStrategy: (retries: number) =>
+          retries >= 3
+            ? new Error(`redis: giving up after ${retries} retries`)
+            : Math.min(retries * 200, 3_000),
+      },
+      // Pasamos password explícito (sin URL-encoding intermediario) para
+      // que sea exactamente lo que Aspire pone en `password=...`. Spread
+      // condicional porque node-redis tipa password como `string`, no
+      // `string | undefined`.
+      ...(cfg.password !== undefined ? { password: cfg.password } : {}),
     });
+    client.on('connect', () => console.log('[cache] redis socket connect'));
+    client.on('ready',   () => console.log('[cache] redis ready'));
     client.on('error', (err: Error) => {
       console.warn('[cache] redis error event:', err.message);
     });
@@ -175,47 +180,8 @@ export const initCache = async (): Promise<CacheService> => {
     return instance;
   } catch (err) {
     console.warn('[cache] no se pudo conectar a redis — operando sin cache', err);
-    // Best-effort detach so the process does not keep retrying in the
-    // background forever. quit() may itself fail if not connected.
     try { await client?.quit(); } catch { /* ignore */ }
     instance = NOOP;
     return instance;
   }
-};
-
-/**
- * Build socket opts. Caso particular Aspire local:
- *   `AddAzureManagedRedis(...).RunAsContainer(...)` levanta un contenedor
- *   Redis con TLS y cert AUTOFIRMADO. El connection string trae `ssl=True`,
- *   que pasamos a `rediss://`, y el cliente Node rechaza el cert.
- *   Para hosts loopback aceptamos cert no verificado — solo en local dev,
- *   nunca contra un Azure Managed Redis real (esos llevan cert válido).
- *
- * Override manual: `REDIS_TLS_REJECT_UNAUTHORIZED=false` fuerza la
- * aceptación si tu Redis remoto también usa self-signed por algún motivo.
- */
-const buildSocketOptions = (url: string): Record<string, unknown> => {
-  const base: Record<string, unknown> = {
-    connectTimeout: 5_000,
-    // Bounded retries: returning an Error tells node-redis v5 to stop
-    // reconnecting. Without this cap, WRONGPASS/auth failures spin in an
-    // infinite reconnect loop and the outer Promise.race timeout is the
-    // only thing that can break us out. 3 attempts ≈ 1.2s — enough for
-    // transient network blips, short enough to fail-fast on real auth
-    // problems and let initCache fall through to NOOP.
-    reconnectStrategy: (retries: number) =>
-      retries >= 3
-        ? new Error(`redis: giving up after ${retries} retries`)
-        : Math.min(retries * 200, 3_000),
-  };
-  let parsed: URL;
-  try { parsed = new URL(url); } catch { return base; }
-  const isTls       = parsed.protocol === 'rediss:';
-  const isLoopback  = ['localhost', '127.0.0.1', '::1', 'host.docker.internal']
-    .includes(parsed.hostname);
-  const overrideEnv = (process.env.REDIS_TLS_REJECT_UNAUTHORIZED ?? '').toLowerCase() === 'false';
-  if (isTls && (isLoopback || overrideEnv)) {
-    return { ...base, tls: true, rejectUnauthorized: false };
-  }
-  return base;
 };
