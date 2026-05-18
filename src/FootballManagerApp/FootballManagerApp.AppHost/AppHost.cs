@@ -85,6 +85,28 @@ var nodeBackend = builder.AddNpmApp("node-backend", "../../../backend-node", scr
 // "node-backend" cluster in YARP config.
 gateway.WithReference(nodeBackend);
 
+// CORBA news subsystem (backend-corba/) — Java 8 servidor CORBA + adaptador
+// Spring Boot 2.7. El servidor expone IIOP (1050) y Naming Service (9000); el
+// adapter habla CORBA con el servidor y publica REST en 8080. El Gateway YARP
+// solo conoce al adapter (HTTP). El toggle TRWM/DWSC NO aplica a noticias.
+var corbaServer = builder
+    .AddDockerfile("corba-server", "../../../backend-corba", "server/Dockerfile")
+    .WithEndpoint(targetPort: 1050, port: 1050, scheme: "tcp", name: "iiop")
+    .WithEndpoint(targetPort: 9000, port: 9000, scheme: "tcp", name: "naming")
+    .WithEnvironment("NEWS_MAX_SIZE", "50")
+    .WithEnvironment("CORBA_SERVER_HOST", "corba-server");
+
+var newsAdapter = builder
+    .AddDockerfile("news-adapter", "../../../backend-corba", "adapter/Dockerfile")
+    .WithHttpEndpoint(targetPort: 8080, name: "http")
+    .WithEnvironment("CORBA_NAMING_HOST", "corba-server")
+    .WithEnvironment("CORBA_NAMING_PORT", "9000")
+    .WithEnvironment("CORBA_SERVANT_NAME", "ServicioNoticias")
+    .WithEnvironment("ADMIN_ENFORCE_AUTH", "false")
+    .WaitFor(corbaServer);
+
+gateway.WithReference(newsAdapter.GetEndpoint("http"));
+
 var frontend = builder.AddNpmApp("ionic-app", "../../../frontend", scriptName: "start")
     .WithReference(gateway)
     .WithHttpEndpoint(targetPort: 80)
