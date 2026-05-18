@@ -86,11 +86,10 @@ internal sealed class FakeCommentsClient : ICommentsClient
 
 internal sealed class FakeApiFootballService : IApiFootballService
 {
-    public Task<ApiFootballSearchPage> SearchProfilesAsync(
-        string query, int page, CancellationToken ct) =>
-        Task.FromResult(new ApiFootballSearchPage(
-            Items: Array.Empty<ApiFootballProfileSummary>(),
-            Page: page, TotalPages: 1, TotalResults: 0));
+    public Task<IReadOnlyList<ApiFootballProfileSummary>> SearchProfilesAsync(
+        string query, CancellationToken ct) =>
+        Task.FromResult<IReadOnlyList<ApiFootballProfileSummary>>(
+            Array.Empty<ApiFootballProfileSummary>());
 
     public Task<IReadOnlyList<int>> GetSeasonsAsync(int apiFootballId, CancellationToken ct) =>
         Task.FromResult<IReadOnlyList<int>>(Array.Empty<int>());
