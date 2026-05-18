@@ -151,11 +151,41 @@ jobs:
           tenant-id: ${{ env.AZURE_TENANT_ID }}
           subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
+      # ── BOOTSTRAP AZD ENV ────────────────────────────────────
+      # The runner starts with no local .azure/ state, so `azd env get-value`
+      # would fail with "environment 'staging' does not exist" — leaking the
+      # error string into $GITHUB_OUTPUT and breaking the next step's output
+      # parsing.
+      #
+      # Create the env locally if missing (idempotent) and refresh it from
+      # Azure to pull deployment outputs like AZURE_CONTAINER_REGISTRY_ENDPOINT.
+      # If `azd env refresh` cannot find a remote backend (no prior deploy,
+      # remote state never enabled), we fall back to `az acr list` against the
+      # resource group that Aspire provisions (`rg-<env-name>`).
+      - name: Bootstrap azd environment
+        continue-on-error: true
+        run: |
+          azd env select "$AZURE_ENV_NAME" 2>/dev/null \
+            || azd env new "$AZURE_ENV_NAME" \
+                 --location "$AZURE_LOCATION" \
+                 --subscription "$AZURE_SUBSCRIPTION_ID" \
+                 --no-prompt
+          azd env refresh --no-prompt 2>/dev/null || true
+
       - name: Discover ACR endpoint (si los recursos existen)
         id: acr
         continue-on-error: true
         run: |
           ENDPOINT=$(azd env get-value AZURE_CONTAINER_REGISTRY_ENDPOINT 2>/dev/null || echo "")
+
+          # Fallback: query Azure directly when azd env still has no value
+          # (first deploy, or refresh could not read remote state).
+          if [ -z "$ENDPOINT" ]; then
+            ENDPOINT=$(az acr list \
+              --resource-group "rg-$AZURE_ENV_NAME" \
+              --query "[0].loginServer" -o tsv 2>/dev/null || echo "")
+          fi
+
           echo "endpoint=$ENDPOINT" >> "$GITHUB_OUTPUT"
           if [ -n "$ENDPOINT" ]; then
             REGISTRY_NAME=$(echo "$ENDPOINT" | cut -d'.' -f1)
