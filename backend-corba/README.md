@@ -57,14 +57,25 @@ Formato de respuesta uniforme:
 
 ## Postman
 
-Importar la colección + uno de los dos environments y ejecutar entera (*Runner → Run*). Cubre los 9 pasos del SDD §7.2 incluyendo verificación automática del FIFO (límite=3, crear 4, comprobar que la 1ª desapareció). La colección usa variables `{{host}}`, `{{newsPath}}` y `{{adminPath}}` para que el mismo set de requests sirva contra el adapter directo o vía Gateway.
+Colección lista para usar contra el **API Gateway** (`http://localhost:5000`), un endpoint por request. URLs hardcoded, sin environments ni variables — la importas y le das a "Send".
 
-| Modo | Cuándo | Environment | Cómo arrancar el backend |
-|------|--------|-------------|--------------------------|
-| **Direct** (adapter) | Fase 1 / smoke local del adapter aislado | `Direct.postman_environment.json` → `http://localhost:8080/news` | `docker compose up --build` en `backend-corba/` |
-| **Gateway** | Fase 2 / validar la cadena real `Gateway → adapter → CORBA` | `Gateway.postman_environment.json` → `http://localhost:5000/api/news` | `aspire run` (o `dotnet run`) en `src/FootballManagerApp/FootballManagerApp.AppHost/` |
+1. Arranca el backend con `aspire run` (o `dotnet run`) desde `src/FootballManagerApp/FootballManagerApp.AppHost/`.
+2. Importa `postman/FootballManager-CORBA.postman_collection.json`.
+3. Ejecuta las requests individualmente o todas con el Runner.
 
-Ambos environments hacen pasar los **mismos** tests sin cambios. Verificado el 2026-05-18: 9/9 pasos verdes vía Gateway YARP con `dotnet run` del AppHost.
+| Request | Qué hace |
+|---------|----------|
+| `GET /api/news`                              | Listar todas |
+| `POST /api/news`                             | Publicar (devuelve el id; se guarda en `{{lastId}}`) |
+| `GET /api/news/{{lastId}}`                   | Detalle (usa el id del POST anterior) |
+| `DELETE /api/news/{{lastId}}`                | Eliminar |
+| `GET /api/news-admin/status`                 | Estado del repositorio |
+| `POST /api/news-admin/reset`                 | Vaciar todo |
+| `PUT /api/news-admin/config/max-size`        | Cambiar el límite FIFO |
+
+Validado el 2026-05-18 vía newman: 12 requests, 28/28 asserts verdes contra el Gateway con Aspire arriba.
+
+> Si solo quieres probar el **adapter aislado** (sin Aspire), levanta `docker compose up` en este directorio y cambia el host de las requests a `http://localhost:8080` quitando el prefijo `/api` (`/news` y `/admin` en vez de `/api/news` y `/api/news-admin`).
 
 ## Build local (sin Docker)
 
