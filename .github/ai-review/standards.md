@@ -242,10 +242,13 @@ regression and should be flagged `critical` under `frontend.backend-strategy-mis
 - Parallel `PlayerDotnetService` / `PlayerNodeService` style services
   reintroduced. The Strategy/Factory pattern in the frontend is reserved
   for **image sources** (`shared/strategies/image-source/`), nothing else.
-- Hardcoded gateway URL, Firebase key, or any secret outside
-  `src/environments/environment*.ts`. Even inside environment files, real
-  production secrets must come from Key Vault at build/deploy time, never
-  committed.
+- Hardcoded gateway URL anywhere — in code OR in environment files. The
+  frontend hits the same origin with relative paths (`/api/...`); the
+  gateway location is resolved at runtime by `proxy.conf.js` (dev, reads
+  the env var that Aspire injects) or by the ingress (prod). The
+  `gatewayUrl` field in `environment*.ts` MUST stay empty.
+- Hardcoded Firebase key or any secret in environment files committed to
+  the repo. Secrets come from Key Vault at build/deploy time.
 - `zone.js` reintroduced as a polyfill in `angular.json`. The project is
   zoneless by design — re-enabling Zone breaks the signal-based change
   detection contract.
@@ -270,8 +273,11 @@ regression and should be flagged `critical` under `frontend.backend-strategy-mis
   `HttpClient` wrapped with `firstValueFrom`.
 - HTTP call made directly from a component / page instead of going
   through a `core/api/*.api.ts` wrapper.
-- Hardcoded URL inside an `*.api.ts` file. The base URL must be the
-  `GATEWAY_URL` injection token sourced from `environment.gatewayUrl`.
+- Hardcoded URL inside an `*.api.ts` file. API clients build their URLs
+  from `GATEWAY_URL` (the injection token sourced from
+  `environment.gatewayUrl`, which is empty by default → relative paths).
+  Any absolute `http://...` / `https://...` literal in an `*.api.ts` is a
+  finding.
 - Interceptor, guard, or resolver declared as a class instead of a
   functional one (`HttpInterceptorFn`, `CanActivateFn`, `ResolveFn`).
 - New feature route added without lazy loading (`loadComponent` or
