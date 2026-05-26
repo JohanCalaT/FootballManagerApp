@@ -222,25 +222,82 @@ contract violations escalate to `major` or `critical`.
 
 ### 4.3 Angular / Ionic stack (`frontend/**`)
 
+Reference skill: `angular-ionic-architecture` (base skill for the frontend).
+The frontend is **Angular 20 + Ionic 8, zoneless, signals-first**. Rules
+below mirror that skill — when in doubt, the skill is the source of truth.
+
+The backend toggle (`.NET` vs Node) is **absorbed by the YARP Gateway** via
+the `X-Backend-Target` header. The frontend NEVER chooses backend in code;
+a single HTTP interceptor stamps the header based on a global signal. Any
+PR that introduces parallel service implementations to pick a backend (e.g.
+`PlayerDotnetService` + `PlayerNodeService` + factory) is a design
+regression and should be flagged `critical` under `frontend.backend-strategy-misplaced`.
+
 **Critical**
-- `any` in TypeScript.
-- `if`/`else` selecting backend (`.NET` vs Node) inside a component —
-  must go through the Strategy/Factory in `core/services/strategies`.
-- Secrets / API keys in environment files committed.
+- `any` in TypeScript production code under `frontend/src/**` (test files
+  excepted). Use `unknown` + narrowing or a precise type.
+- `if`/`switch` selecting backend inside a component, service, or guard.
+  The selection lives in `core/http/backend-target.interceptor.ts` —
+  nowhere else.
+- Parallel `PlayerDotnetService` / `PlayerNodeService` style services
+  reintroduced. The Strategy/Factory pattern in the frontend is reserved
+  for **image sources** (`shared/strategies/image-source/`), nothing else.
+- Hardcoded gateway URL anywhere — in code OR in environment files. The
+  frontend hits the same origin with relative paths (`/api/...`); the
+  gateway location is resolved at runtime by `proxy.conf.js` (dev, reads
+  the env var that Aspire injects) or by the ingress (prod). The
+  `gatewayUrl` field in `environment*.ts` MUST stay empty.
+- Hardcoded Firebase key or any secret in environment files committed to
+  the repo. Secrets come from Key Vault at build/deploy time.
+- `zone.js` reintroduced as a polyfill in `angular.json`. The project is
+  zoneless by design — re-enabling Zone breaks the signal-based change
+  detection contract.
+- `NgModule` introduced anywhere. The project is 100% standalone.
 
 **Major**
-- Non-standalone component introduced.
-- `*ngIf` / `*ngFor` / `*ngSwitch` used instead of the new `@if` / `@for` /
-  `@switch` control flow.
-- State managed with `BehaviorSubject` instead of `signal` for a new
-  feature.
-- New component or service without a Jasmine/Karma spec.
-- `frontend.missing-spec`: a new `*.component.ts` or `*.service.ts` under
-  `frontend/src/**` is added without its sibling `*.spec.ts` in the same
-  diff.
+- Non-standalone component (`standalone: false`, or missing the flag
+  while inheriting from a module).
+- `*ngIf` / `*ngFor` / `*ngSwitch` used instead of the native
+  `@if` / `@for` / `@switch` control flow. `@for` must include a
+  `track` expression.
+- `@Input()` / `@Output()` decorators used in new code. Use the signal
+  APIs `input()`, `input.required()`, `output()`, `model()`.
+- Constructor injection (`constructor(private foo: Foo) {}`) used in new
+  code. Use `inject(Foo)` instead.
+- State managed with `BehaviorSubject` / `Subject` for UI state on a new
+  feature. Use `signal`, `computed`, `linkedSignal`. RxJS is allowed only
+  for real streams (router events without a native signal, SignalR,
+  websockets) and must be bridged with `toSignal()`.
+- `HttpClient.get(...).subscribe(...)` mutating component fields. Reactive
+  GETs must use `httpResource()`; mutations (POST/PUT/DELETE) use
+  `HttpClient` wrapped with `firstValueFrom`.
+- HTTP call made directly from a component / page instead of going
+  through a `core/api/*.api.ts` wrapper.
+- Hardcoded URL inside an `*.api.ts` file. API clients build their URLs
+  from `GATEWAY_URL` (the injection token sourced from
+  `environment.gatewayUrl`, which is empty by default → relative paths).
+  Any absolute `http://...` / `https://...` literal in an `*.api.ts` is a
+  finding.
+- Interceptor, guard, or resolver declared as a class instead of a
+  functional one (`HttpInterceptorFn`, `CanActivateFn`, `ResolveFn`).
+- New feature route added without lazy loading (`loadComponent` or
+  `loadChildren`).
+- HATEOAS-gated action button (edit/delete) rendered unconditionally
+  instead of conditionally on `hasLink(response, 'rel')`.
+- `frontend.missing-spec`: a new component or service under
+  `frontend/src/app/features/**` is added without its sibling `*.spec.ts`
+  in the same diff. **Exempted** (no spec required): files under
+  `core/models/**`, `core/tokens/**`, `core/api/**` (thin HTTP wrappers),
+  `shared/strategies/**` (covered through their consumer), and any file
+  whose only logic is type declarations or DI plumbing.
 
 **Minor**
-- Missing lazy-loading wiring for a new feature module.
+- Missing `track` clause on a `@for` over a small static list (UX-safe
+  but a habit worth keeping).
+- `console.log` left in production code. Allowed in `main.ts` bootstrap
+  failure handlers and in the global error interceptor's fallback path.
+- New environment variable consumed in code but missing from
+  `src/environments/environment.ts` placeholder shape.
 
 ### 4.4 Infra / CI (`.github/**`, `infra/**`, Dockerfiles)
 

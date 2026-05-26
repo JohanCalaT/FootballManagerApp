@@ -51,6 +51,17 @@ Thumbs.db
 # --- Local-only design docs (SDDs) ---
 # Notas de diseño que viven en la máquina del autor. No se publican al repo.
 docs/
+DESIGN.md
+
+# --- Stitch design exports (referencia local, no se versionan) ---
+stitch-export/
+
+# --- Design assets droppeados en la raíz para drag&drop, no se versionan ---
+# El asset real vive en frontend/src/assets/.
+/*.svg
+/*.png
+/*.jpg
+/*.jpeg
 
 # --- Firebase service account (si se descarga, nunca al repo) ---
 **/firebase-adminsdk*.json

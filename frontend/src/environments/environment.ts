@@ -1,16 +1,27 @@
-// This file can be replaced during build by using the `fileReplacements` array.
-// `ng build` replaces `environment.ts` with `environment.prod.ts`.
-// The list of file replacements can be found in `angular.json`.
-
-export const environment = {
-  production: false
-};
-
-/*
- * For easier debugging in development mode, you can import the following file
- * to ignore zone related error stack frames such as `zone.run`, `zoneDelegate.invokeTask`.
+/**
+ * IMPORTANT — `gatewayUrl` is empty ON PURPOSE.
  *
- * This import should be commented out in production mode because it will have a negative impact
- * on performance if an error is thrown.
+ * The frontend always hits the SAME origin with relative paths
+ * (e.g. `/api/players`). The actual gateway URL is resolved at runtime:
+ *
+ *   - In dev, by `proxy.conf.js`, which reads the env var that Aspire
+ *     injects into the npm app (`services__gateway__http__0`).
+ *   - In prod (Azure Container Apps), by the ingress in front of the
+ *     frontend container.
+ *
+ * Do NOT hardcode the gateway URL here. If you need to override it from
+ * the outside (Capacitor native build, integration tests against a remote
+ * env), pass it via build-time replacement.
  */
-// import 'zone.js/plugins/zone-error';  // Included with Angular CLI.
+export const environment = {
+  production: false,
+  gatewayUrl: '',
+  firebase: {
+    apiKey: '',
+    authDomain: '',
+    projectId: '',
+    storageBucket: '',
+    messagingSenderId: '',
+    appId: '',
+  },
+};
