@@ -1,0 +1,28 @@
+# Default: let git auto-detect text and normalize line endings on commit.
+* text=auto
+
+# Shell scripts and Dockerfiles MUST keep LF endings even when checked out
+# on Windows — they run inside Linux containers where CRLF breaks the
+# shebang (e.g. `/bin/sh^M: bad interpreter`).
+*.sh           text eol=lf
+Dockerfile     text eol=lf
+*.Dockerfile   text eol=lf
+
+# Common Unix-only file types — keep LF.
+*.bash         text eol=lf
+*.zsh          text eol=lf
+
+# Windows-only files — keep CRLF.
+*.bat          text eol=crlf
+*.cmd          text eol=crlf
+*.ps1          text eol=crlf
+
+# Binary assets — never touch.
+*.png          binary
+*.jpg          binary
+*.jpeg         binary
+*.gif          binary
+*.ico          binary
+*.pdf          binary
+*.zip          binary
+*.jar          binary
