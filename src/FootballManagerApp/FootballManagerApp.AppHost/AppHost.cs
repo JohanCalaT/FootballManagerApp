@@ -124,9 +124,13 @@ var newsAdapter = builder
 
 gateway.WithReference(newsAdapter.GetEndpoint("http"));
 
+// AddNpmApp: Aspire allocates a random host port, exposes it as the PORT
+// env var, and the npm `start` script forwards it to `ionic serve --port`.
+// Both the Aspire dashboard URL and the actual dev server end up on the
+// same port, so opening the dashboard link reaches the running app.
 var frontend = builder.AddNpmApp("ionic-app", "../../../frontend", scriptName: "start")
     .WithReference(gateway)
-    .WithHttpEndpoint(targetPort: 80)
+    .WithHttpEndpoint(env: "PORT")
     .WithExternalHttpEndpoints()
     .WaitFor(gateway)
     .PublishAsDockerFile();
