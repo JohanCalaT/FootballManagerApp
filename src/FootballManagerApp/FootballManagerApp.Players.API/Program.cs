@@ -7,18 +7,25 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-// Force TLS on the Npgsql connection string. Aspire's published Azure
-// Postgres connection string omits SslMode, and Azure Database for
-// PostgreSQL Flexible Server rejects plaintext with
-// "no pg_hba.conf entry ... no encryption".
+// Force TLS on the Npgsql connection string only when the target server
+// is remote. Azure Database for PostgreSQL Flexible Server rejects
+// plaintext, but the local Docker container Aspire spins up for dev does
+// not have SSL enabled, so requesting it there breaks the connection.
 builder.AddNpgsqlDbContext<PlayersDbContext>("playersdb", configureSettings: s =>
 {
-    var csb = new Npgsql.NpgsqlConnectionStringBuilder(s.ConnectionString)
+    var csb = new Npgsql.NpgsqlConnectionStringBuilder(s.ConnectionString);
+    if (!IsLocalHost(csb.Host))
     {
-        SslMode = Npgsql.SslMode.Require,
-    };
-    s.ConnectionString = csb.ConnectionString;
+        csb.SslMode = Npgsql.SslMode.Require;
+        s.ConnectionString = csb.ConnectionString;
+    }
 });
+
+static bool IsLocalHost(string? host) =>
+    string.IsNullOrEmpty(host)
+    || string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
+    || host == "127.0.0.1"
+    || host == "::1";
 builder.AddRedisDistributedCache("redis");
 
 builder.Services.AddControllers();
