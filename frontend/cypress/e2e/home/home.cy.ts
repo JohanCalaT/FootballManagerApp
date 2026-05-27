@@ -64,7 +64,16 @@ describe('Players · Home', () => {
   it('shows the coming-soon toast when a tile is clicked', () => {
     cy.visitApp('/players');
     cy.wait('@listPage1');
-    cy.get('[data-testid=player-card]').first().click();
+    // Stencil registers <fma-player-card> lazily via defineCustomElements, so
+    // its first render — which is when the host onClick handler gets wired —
+    // happens a microtask AFTER Angular puts the element in the DOM. Waiting
+    // for role="button" (only set once Stencil's render runs with
+    // interactive=true) guarantees the click below actually triggers the
+    // playerSelected emission instead of landing on an un-upgraded host.
+    cy.get('[data-testid=player-card]')
+      .first()
+      .should('have.attr', 'role', 'button')
+      .click();
     cy.contains('Detalle de jugador').should('be.visible');
   });
 
