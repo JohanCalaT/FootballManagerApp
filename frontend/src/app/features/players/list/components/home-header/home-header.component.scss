@@ -26,16 +26,11 @@
 }
 
 .home-header__logo {
-  display: inline-grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--app-radius);
-  background: linear-gradient(135deg, var(--app-primary), var(--app-secondary));
-  color: var(--app-on-primary);
-  font-size: 18px;
-  box-shadow: var(--app-glow-primary-soft);
-  flex: 0 0 32px;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(0, 228, 120, 0.35));
 }
 
 .home-header__wordmark {
