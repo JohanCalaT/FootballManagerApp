@@ -1,6 +1,16 @@
-// Shared layout for /auth/* pages. Implements the dark-glassmorphism +
-// neon-futurism shell from DESIGN.md (radial glow floor, glass card,
-// inputs with neon focus). Both login and register components import this.
+// Shared layout for /auth/* pages — dark glassmorphism + neon-futurism
+// shell from DESIGN.md.
+//
+// Structure:
+//   .auth-shell        radial-glow background + centering
+//     .auth-shell__glow  layered radial gradients (atmosphere)
+//     .auth-card         glass panel (backdrop-filter blur)
+//       .auth-logo
+//       .auth-card__head
+//       .auth-form       fields + errors + primary CTA
+//       .auth-divider
+//       .auth-button--ghost  (Google etc.)
+//       .auth-card__footer
 
 .auth-content {
   --background: var(--app-bg);
@@ -20,11 +30,15 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 18% 12%, rgba(0, 228, 120, 0.18) 0%, transparent 50%),
-    radial-gradient(circle at 82% 88%, rgba(0, 228, 120, 0.12) 0%, transparent 55%);
+    radial-gradient(circle at 18% 12%, rgba(0, 228, 120, 0.22) 0%, transparent 50%),
+    radial-gradient(circle at 82% 88%, rgba(0, 228, 120, 0.14) 0%, transparent 55%);
   pointer-events: none;
   z-index: 0;
 }
+
+// ---------------------------------------------------------------------------
+// Card — glass panel that smears the neon glow behind it (backdrop blur).
+// ---------------------------------------------------------------------------
 
 .auth-card {
   position: relative;
@@ -32,37 +46,80 @@
   width: 100%;
   max-width: 420px;
   padding: var(--app-space-6) var(--app-space-5);
-  background:
-    linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-floor) 100%);
-  border: 1px solid var(--app-outline-variant);
+  background: rgba(27, 27, 32, 0.62);
+  backdrop-filter: blur(var(--app-glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--app-glass-blur)) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--app-radius-md);
   display: flex;
   flex-direction: column;
   gap: var(--app-space-5);
-  box-shadow: var(--app-glow-primary-soft);
+  box-shadow:
+    var(--app-glow-primary-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  animation: auth-card-enter 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+@keyframes auth-card-enter {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 380px) {
+  .auth-card {
+    padding: var(--app-space-5) var(--app-space-4);
+    gap: var(--app-space-4);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Logo — same neon drop-shadow and pulse rhythm as the splash, smaller.
+// ---------------------------------------------------------------------------
+
+.auth-logo {
+  align-self: center;
+  width: 5rem;
+  height: 5rem;
+  margin-bottom: calc(-1 * var(--app-space-2));
+  animation: auth-logo-pulse 2.8s ease-in-out infinite;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 18px var(--app-primary-glow));
+  }
+}
+
+@keyframes auth-logo-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.03); opacity: 0.92; }
+}
+
+// ---------------------------------------------------------------------------
+// Head — eyebrow / title / subtitle.
+// ---------------------------------------------------------------------------
 
 .auth-card__head {
   display: flex;
   flex-direction: column;
   gap: var(--app-space-2);
-  align-items: flex-start;
-}
-
-.auth-card__eyebrow {
-  color: var(--app-primary);
-  margin: 0;
+  align-items: center;
+  text-align: center;
 }
 
 .auth-card__title {
   margin: 0;
   color: var(--app-on-surface);
-  text-transform: uppercase;
+  // Lowercase verbs feel less aggressive than ALL-CAPS while keeping the
+  // condensed Bebas Neue character.
+  text-transform: none;
 }
 
 .auth-card__subtitle {
   margin: 0;
   color: var(--app-on-surface-soft);
+  max-width: 32ch;
 }
 
 .auth-card__footer {
@@ -71,7 +128,9 @@
   text-align: center;
 }
 
-// ---- Form -----------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Form
+// ---------------------------------------------------------------------------
 
 .auth-form {
   display: flex;
@@ -85,8 +144,31 @@
   gap: var(--app-space-2);
 }
 
+.auth-field__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--app-space-3);
+}
+
 .auth-field__label {
   color: var(--app-on-surface-soft);
+}
+
+.auth-field__help {
+  margin: 0;
+  color: var(--app-on-surface-soft);
+
+  &--inline {
+    font-size: 11px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+}
+
+// Wrapper that contains the input + optional trailing button (password toggle).
+.auth-input-wrap {
+  position: relative;
 }
 
 .auth-input {
@@ -101,9 +183,7 @@
   line-height: 20px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
-  &::placeholder {
-    color: var(--app-on-surface-faint);
-  }
+  &::placeholder { color: var(--app-on-surface-faint); }
 
   &:focus {
     outline: none;
@@ -115,9 +195,103 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
+
+  &.auth-input--with-toggle {
+    padding-right: 44px;
+  }
+
+  &.auth-input--invalid {
+    border-color: var(--app-error);
+    box-shadow: 0 0 0 4px rgba(255, 180, 171, 0.15);
+  }
 }
 
-// ---- Buttons --------------------------------------------------------------
+.auth-input__toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--app-on-surface-faint);
+  padding: 6px;
+  border-radius: var(--app-radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background-color 0.15s ease;
+
+  &:hover { color: var(--app-on-surface); background: rgba(255, 255, 255, 0.04); }
+  &:focus-visible {
+    outline: none;
+    color: var(--app-primary);
+    box-shadow: 0 0 0 2px var(--app-primary-glow-soft);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Field-level + form-level errors
+// ---------------------------------------------------------------------------
+
+.auth-field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--app-space-2);
+  margin: 0;
+  color: var(--app-error);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 16px;
+  animation: auth-error-enter 180ms ease-out;
+}
+
+.auth-form-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--app-space-2);
+  margin: 0;
+  padding: 10px 12px;
+  background: rgba(147, 0, 10, 0.18);
+  border: 1px solid var(--app-error-container);
+  border-radius: var(--app-radius);
+  color: var(--app-error);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  animation: auth-error-enter 220ms ease-out;
+}
+
+.auth-form-success {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--app-space-2);
+  margin: 0;
+  padding: 10px 12px;
+  background: rgba(0, 228, 120, 0.10);
+  border: 1px solid rgba(0, 228, 120, 0.45);
+  border-radius: var(--app-radius);
+  color: var(--app-primary-bright);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  animation: auth-error-enter 220ms ease-out;
+}
+
+.auth-error-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+@keyframes auth-error-enter {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ---------------------------------------------------------------------------
+// Buttons
+// ---------------------------------------------------------------------------
 
 .auth-button {
   appearance: none;
@@ -133,16 +307,15 @@
   align-items: center;
   justify-content: center;
   gap: var(--app-space-2);
+  min-height: 44px;
   transition: transform 0.1s ease, box-shadow 0.15s ease,
     background-color 0.15s ease, border-color 0.15s ease;
 
-  &:active {
-    transform: translateY(1px);
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.55;
+  &:active { transform: translateY(1px); }
+  &:disabled { cursor: not-allowed; opacity: 0.55; }
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--app-primary-glow-soft);
   }
 }
 
@@ -159,7 +332,7 @@
 
 .auth-button--ghost {
   background: transparent;
-  color: var(--app-secondary);
+  color: var(--app-on-surface);
   border: 1px solid var(--app-secondary);
 
   &:not(:disabled):hover {
@@ -167,11 +340,56 @@
   }
 }
 
-.auth-button__icon {
-  display: block;
+.auth-button--link {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--app-primary);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+
+  &:hover { text-decoration: underline; }
+  &:focus-visible {
+    outline: none;
+    text-decoration: underline;
+  }
 }
 
-// ---- Divider --------------------------------------------------------------
+.auth-button__icon { display: block; }
+
+// ---------------------------------------------------------------------------
+// 3-dot loader — same rhythm as the splash bouncing dots.
+// Used inside primary buttons while submitting.
+// ---------------------------------------------------------------------------
+
+.auth-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: currentColor;
+    animation: auth-loader-bounce 1.2s ease-in-out infinite;
+  }
+  span:nth-child(2) { animation-delay: 0.15s; }
+  span:nth-child(3) { animation-delay: 0.30s; }
+}
+
+@keyframes auth-loader-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40%           { transform: translateY(-4px); opacity: 1; }
+}
+
+// ---------------------------------------------------------------------------
+// Divider
+// ---------------------------------------------------------------------------
 
 .auth-divider {
   display: flex;
@@ -188,26 +406,18 @@
   }
 }
 
-// ---- Inline status / errors ----------------------------------------------
-
-.auth-error {
-  margin: 0;
-  padding: 10px 12px;
-  background: rgba(147, 0, 10, 0.18);
-  border: 1px solid var(--app-error-container);
-  border-radius: var(--app-radius);
-  color: var(--app-error);
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
-  line-height: 18px;
-}
+// ---------------------------------------------------------------------------
+// Inline anchor
+// ---------------------------------------------------------------------------
 
 .auth-link {
   color: var(--app-primary);
   text-decoration: none;
   font-weight: 600;
 
-  &:hover {
+  &:hover { text-decoration: underline; }
+  &:focus-visible {
+    outline: none;
     text-decoration: underline;
   }
 }

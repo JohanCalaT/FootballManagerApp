@@ -5,6 +5,7 @@ import {
   User,
   createUserWithEmailAndPassword,
   onIdTokenChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -59,6 +60,11 @@ export class AuthService {
 
   async signOut(): Promise<void> {
     await signOut(this.auth);
+  }
+
+  /** Send a password reset email to the given address (Firebase handles delivery). */
+  async sendPasswordReset(email: string): Promise<void> {
+    await sendPasswordResetEmail(this.auth, email);
   }
 
   /** Force-refresh the ID token. Use after a custom claim change (e.g. admin promotion). */

@@ -3,8 +3,11 @@
     <div class="auth-shell__glow" aria-hidden="true"></div>
 
     <main class="auth-card" data-testid="register-form">
+      <div class="auth-logo" aria-hidden="true">
+        <img src="assets/img/logo-football-manager.png" alt="" />
+      </div>
+
       <header class="auth-card__head">
-        <p class="t-label-sm auth-card__eyebrow">Football Manager</p>
         <h1 class="t-headline-lg auth-card__title">Crear cuenta</h1>
         <p class="t-body-md auth-card__subtitle">
           Regístrate para gestionar jugadores, comentarios y tu equipo ideal.
@@ -18,6 +21,7 @@
             type="text"
             class="auth-input"
             autocomplete="name"
+            autofocus
             required
             [value]="displayName()"
             (input)="onNameInput($event)"
@@ -30,6 +34,7 @@
           <input
             type="email"
             class="auth-input"
+            [class.auth-input--invalid]="emailError() !== null"
             autocomplete="email"
             inputmode="email"
             required
@@ -37,24 +42,79 @@
             (input)="onEmailInput($event)"
             data-testid="register-email-input"
           />
+          @if (emailError(); as message) {
+            <p class="auth-field-error" role="alert" data-testid="register-email-error">
+              <svg class="auth-error-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5" />
+                <path d="M8 4.5v4.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                <circle cx="8" cy="11.2" r="0.9" fill="currentColor" />
+              </svg>
+              {{ message }}
+            </p>
+          }
         </label>
 
         <label class="auth-field">
-          <span class="t-label-lg auth-field__label">Contraseña</span>
-          <input
-            type="password"
-            class="auth-input"
-            autocomplete="new-password"
-            minlength="6"
-            required
-            [value]="password()"
-            (input)="onPasswordInput($event)"
-            data-testid="register-password-input"
-          />
+          <div class="auth-field__row">
+            <span class="t-label-lg auth-field__label">Contraseña</span>
+            <span class="auth-field__help auth-field__help--inline">mín. 6 caracteres</span>
+          </div>
+          <div class="auth-input-wrap">
+            <input
+              [type]="showPassword() ? 'text' : 'password'"
+              class="auth-input auth-input--with-toggle"
+              [class.auth-input--invalid]="passwordError() !== null"
+              autocomplete="new-password"
+              minlength="6"
+              required
+              [value]="password()"
+              (input)="onPasswordInput($event)"
+              data-testid="register-password-input"
+            />
+            <button
+              type="button"
+              class="auth-input__toggle"
+              tabindex="-1"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              data-testid="register-password-toggle"
+            >
+              @if (showPassword()) {
+                <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+                  <path d="M3 3l14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M10 4.5c4 0 7.2 2.8 8 5.5-.5 1.7-1.7 3.2-3.2 4.3M5.4 5.6C3.7 6.7 2.4 8.3 2 10c.8 2.7 4 5.5 8 5.5 1.1 0 2.1-.2 3-.6"
+                        fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+              } @else {
+                <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+                  <path d="M2 10c.8-2.7 4-5.5 8-5.5s7.2 2.8 8 5.5c-.8 2.7-4 5.5-8 5.5S2.8 12.7 2 10z"
+                        fill="none" stroke="currentColor" stroke-width="1.6" />
+                  <circle cx="10" cy="10" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6" />
+                </svg>
+              }
+            </button>
+          </div>
+          @if (passwordError(); as message) {
+            <p class="auth-field-error" role="alert" data-testid="register-password-error">
+              <svg class="auth-error-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5" />
+                <path d="M8 4.5v4.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                <circle cx="8" cy="11.2" r="0.9" fill="currentColor" />
+              </svg>
+              {{ message }}
+            </p>
+          }
         </label>
 
-        @if (errorMessage(); as message) {
-          <p class="auth-error" role="alert" data-testid="register-error">{{ message }}</p>
+        @if (formError(); as message) {
+          <p class="auth-form-error" role="alert" data-testid="register-error">
+            <svg class="auth-error-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5" />
+              <path d="M8 4.5v4.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              <circle cx="8" cy="11.2" r="0.9" fill="currentColor" />
+            </svg>
+            <span>{{ message }}</span>
+          </p>
         }
 
         <button
@@ -63,7 +123,14 @@
           [disabled]="!canSubmit()"
           data-testid="register-submit-button"
         >
-          {{ loading() ? 'Creando…' : 'Crear cuenta' }}
+          @if (loading()) {
+            <span class="auth-loader" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </span>
+            <span>Creando</span>
+          } @else {
+            <span>Crear cuenta</span>
+          }
         </button>
       </form>
 
