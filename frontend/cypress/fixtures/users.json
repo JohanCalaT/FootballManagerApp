@@ -1,0 +1,12 @@
+{
+  "seeded": {
+    "email": "cypress-existing@example.com",
+    "password": "cypress-seeded-123",
+    "displayName": "Cypress Tester"
+  },
+  "fresh": {
+    "email": "cypress-fresh@example.com",
+    "password": "cypress-fresh-123",
+    "displayName": "Fresh User"
+  }
+}
