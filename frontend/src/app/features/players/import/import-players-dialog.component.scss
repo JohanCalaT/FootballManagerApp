@@ -89,3 +89,51 @@
 .import-dialog__hint--error {
   color: var(--app-error);
 }
+
+.import-dialog__load-more {
+  appearance: none;
+  margin-top: var(--app-space-2);
+  min-height: 44px;
+  padding: 0 var(--app-space-4);
+  border-radius: var(--app-radius-full);
+  background: transparent;
+  color: var(--app-primary);
+  border: 1px solid var(--app-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--app-space-2);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 228, 120, 0.06);
+    box-shadow: var(--app-glow-primary-soft);
+  }
+  &:disabled { opacity: 0.6; cursor: progress; }
+}
+
+.import-dialog__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--app-radius-full);
+  animation: import-dialog-spin 0.7s linear infinite;
+}
+
+@keyframes import-dialog-spin {
+  to { transform: rotate(360deg); }
+}
+
+.import-dialog__end {
+  margin-top: var(--app-space-3);
+  text-align: center;
+  color: var(--app-on-surface-faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

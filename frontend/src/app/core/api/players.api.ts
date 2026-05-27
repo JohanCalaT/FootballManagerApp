@@ -64,11 +64,15 @@ export class PlayersApi {
   // import flow store which orchestrates manual selection + auto-resolution
   // of the season per player and can't lean on httpResource's URL-driven
   // recomputation.
-  async searchExternalOnce(query: string): Promise<ApiResponse<ApiFootballProfile[]>> {
+  async searchExternalOnce(
+    query: string,
+    page: number,
+    limit: number,
+  ): Promise<PagedResponse<ApiFootballProfile>> {
     return firstValueFrom(
-      this.http.get<ApiResponse<ApiFootballProfile[]>>(
+      this.http.get<PagedResponse<ApiFootballProfile>>(
         `${this.base}/api/players/search-external`,
-        { params: { query } },
+        { params: { query, page, limit } },
       ),
     );
   }

@@ -47,6 +47,10 @@ export class ImportPlayersDialogComponent {
     void this.store.toggle(apiFootballId);
   }
 
+  protected onLoadMore(): void {
+    void this.store.loadMoreResults();
+  }
+
   protected onSubmit(): void {
     void this.store.submit();
   }

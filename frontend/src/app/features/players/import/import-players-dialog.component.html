@@ -49,6 +49,26 @@
             [disabled]="store.atCap() && !store.isSelected(p.apiFootballId)"
             (toggled)="onCardToggled($event)" />
         }
+
+        @if (store.hasMoreResults() || store.searchLoading()) {
+          <button
+            type="button"
+            class="import-dialog__load-more"
+            [disabled]="store.searchLoading()"
+            (click)="onLoadMore()"
+            data-testid="import-load-more">
+            @if (store.searchLoading()) {
+              <span class="import-dialog__spinner" aria-hidden="true"></span>
+              Cargando…
+            } @else {
+              Cargar más ({{ store.searchResults().length }} de {{ store.searchTotal() }})
+            }
+          </button>
+        } @else if (store.searchResults().length > 0) {
+          <p class="import-dialog__end" data-testid="import-load-more-end">
+            Has visto los {{ store.searchResults().length }} resultados
+          </p>
+        }
       }
     </div>
   }

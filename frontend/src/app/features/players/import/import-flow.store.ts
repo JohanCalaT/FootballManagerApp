@@ -35,10 +35,22 @@ export class ImportFlowStore {
   private readonly api = inject(PlayersApi);
 
   // ── Search ───────────────────────────────────────────────────────────────
+  /** How many profiles we request per page from the backend. */
+  static readonly SEARCH_PAGE_SIZE = 10;
+
   readonly query = signal<string>('');
   readonly searchResults = signal<ApiFootballProfile[]>([]);
   readonly searchLoading = signal(false);
   readonly searchError = signal<string | null>(null);
+  /** Page already loaded into `searchResults` (1-based). 0 = nothing loaded. */
+  readonly searchPage = signal(0);
+  /** Total profiles matching the query across all pages. */
+  readonly searchTotal = signal<number | null>(null);
+
+  readonly hasMoreResults = computed(() => {
+    const total = this.searchTotal();
+    return total !== null && this.searchResults().length < total;
+  });
 
   // ── Selection ────────────────────────────────────────────────────────────
   /** apiFootballId → state (pending / resolved season / unavailable). */
@@ -78,22 +90,50 @@ export class ImportFlowStore {
   );
 
   // ── Search action ────────────────────────────────────────────────────────
+  /**
+   * Run a fresh query: clear results, reset paging and fetch page 1.
+   * Empty string just clears the list (used by the search bar's clear button).
+   */
   async search(query: string): Promise<void> {
     const trimmed = query.trim();
     this.query.set(trimmed);
-    if (!trimmed) {
-      this.searchResults.set([]);
-      this.searchError.set(null);
-      return;
-    }
+    this.searchResults.set([]);
+    this.searchPage.set(0);
+    this.searchTotal.set(null);
+    this.searchError.set(null);
+    if (!trimmed) return;
+    await this.fetchSearchPage(1);
+  }
+
+  /**
+   * Append the next page of results to the current list. No-op if we're
+   * loading, if there's no active query, or if the total has already been
+   * reached.
+   */
+  async loadMoreResults(): Promise<void> {
+    if (this.searchLoading() || !this.query() || !this.hasMoreResults()) return;
+    await this.fetchSearchPage(this.searchPage() + 1);
+  }
+
+  private async fetchSearchPage(page: number): Promise<void> {
     this.searchLoading.set(true);
     this.searchError.set(null);
     try {
-      const response = await this.api.searchExternalOnce(trimmed);
-      this.searchResults.set(response.data ?? []);
+      const response = await this.api.searchExternalOnce(
+        this.query(),
+        page,
+        ImportFlowStore.SEARCH_PAGE_SIZE,
+      );
+      const newPage = response.data ?? [];
+      this.searchResults.update((prev) => (page === 1 ? newPage : [...prev, ...newPage]));
+      this.searchTotal.set(response.total);
+      this.searchPage.set(page);
     } catch (err) {
       this.searchError.set(this.extractMessage(err, 'No se pudo buscar'));
-      this.searchResults.set([]);
+      if (page === 1) {
+        this.searchResults.set([]);
+        this.searchTotal.set(null);
+      }
     } finally {
       this.searchLoading.set(false);
     }

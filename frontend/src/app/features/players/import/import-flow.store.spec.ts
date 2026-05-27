@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { PlayersApi } from '../../../core/api/players.api';
-import { ApiResponse } from '../../../core/models/api-response.model';
+import { ApiResponse, PagedResponse } from '../../../core/models/api-response.model';
 import {
   ApiFootballProfile,
   ImportResult,
@@ -35,6 +35,15 @@ function ok<T>(data: T, status = 200, message = 'OK'): ApiResponse<T> {
   return { status, message, data, _links: {} };
 }
 
+function paged<T>(
+  data: T[],
+  total: number,
+  page = 1,
+  limit = 10,
+): PagedResponse<T> {
+  return { status: 200, message: 'OK', data, page, limit, total, _links: {} };
+}
+
 describe('resolveDefaultSeason', () => {
   it('returns the most recent overlap with the free-plan window', () => {
     expect(resolveDefaultSeason([2020, 2022, 2023, 2024])).toBe(2024);
@@ -66,12 +75,16 @@ describe('ImportFlowStore', () => {
   });
 
   it('search populates results and clears them on empty query', async () => {
-    api.searchExternalOnce.and.resolveTo(ok([profile(1), profile(2)]));
+    api.searchExternalOnce.and.resolveTo(paged([profile(1), profile(2)], 2));
     await store.search('messi');
     expect(store.searchResults().length).toBe(2);
+    expect(store.searchPage()).toBe(1);
+    expect(store.searchTotal()).toBe(2);
+    expect(store.hasMoreResults()).toBeFalse();
 
     await store.search('   ');
     expect(store.searchResults()).toEqual([]);
+    expect(store.searchPage()).toBe(0);
     expect(api.searchExternalOnce).toHaveBeenCalledTimes(1);
   });
 
@@ -80,6 +93,38 @@ describe('ImportFlowStore', () => {
     await store.search('x');
     expect(store.searchError()).toBe('boom');
     expect(store.searchResults()).toEqual([]);
+  });
+
+  it('loadMoreResults appends the next page and tracks paging state', async () => {
+    api.searchExternalOnce.and.callFake((_q, page) =>
+      Promise.resolve(
+        paged([profile(page * 100), profile(page * 100 + 1)], 6, page, 2),
+      ),
+    );
+    await store.search('neymar');
+    expect(store.searchResults().length).toBe(2);
+    expect(store.hasMoreResults()).toBeTrue();
+
+    await store.loadMoreResults();
+    expect(store.searchResults().length).toBe(4);
+    expect(store.searchPage()).toBe(2);
+
+    await store.loadMoreResults();
+    expect(store.searchResults().length).toBe(6);
+    expect(store.hasMoreResults()).toBeFalse();
+  });
+
+  it('loadMoreResults is a no-op when no query is active', async () => {
+    api.searchExternalOnce.and.resolveTo(paged([profile(1)], 1));
+    await store.loadMoreResults();
+    expect(api.searchExternalOnce).not.toHaveBeenCalled();
+  });
+
+  it('loadMoreResults is a no-op when all results are loaded', async () => {
+    api.searchExternalOnce.and.resolveTo(paged([profile(1)], 1));
+    await store.search('mes');
+    await store.loadMoreResults();
+    expect(api.searchExternalOnce).toHaveBeenCalledTimes(1);
   });
 
   it('toggle resolves the most recent free-plan season for the player', async () => {

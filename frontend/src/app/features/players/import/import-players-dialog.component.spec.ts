@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ModalController } from '@ionic/angular/standalone';
 
 import { PlayersApi } from '../../../core/api/players.api';
-import { ApiResponse } from '../../../core/models/api-response.model';
+import { ApiResponse, PagedResponse } from '../../../core/models/api-response.model';
 import { ApiFootballProfile, ImportResult } from '../../../core/models/api-football.model';
 
 import { ImportPlayersDialogComponent } from './import-players-dialog.component';
@@ -18,6 +18,9 @@ function profile(id: number, name = `P-${id}`): ApiFootballProfile {
 }
 function ok<T>(data: T, status = 200, message = 'OK'): ApiResponse<T> {
   return { status, message, data, _links: {} };
+}
+function paged<T>(data: T[], total: number): PagedResponse<T> {
+  return { status: 200, message: 'OK', data, page: 1, limit: 10, total, _links: {} };
 }
 
 describe('ImportPlayersDialogComponent', () => {
@@ -49,7 +52,7 @@ describe('ImportPlayersDialogComponent', () => {
   });
 
   it('renders the result summary after a successful submit', async () => {
-    api.searchExternalOnce.and.resolveTo(ok([profile(1)]));
+    api.searchExternalOnce.and.resolveTo(paged([profile(1)], 1));
     api.seasonsOfOnce.and.resolveTo(ok([2024]));
     const result: ImportResult = { imported: [{ id: 'x', name: 'Messi', team: 'Inter Miami' } as never], failed: [] };
     api.import.and.resolveTo(ok(result, 201));
