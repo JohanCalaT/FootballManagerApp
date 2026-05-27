@@ -1,0 +1,64 @@
+<ion-content class="import-dialog" [scrollEvents]="true">
+  <header class="import-dialog__header" data-testid="import-modal">
+    <button
+      type="button"
+      class="import-dialog__close"
+      (click)="close()"
+      aria-label="Cerrar"
+      data-testid="import-modal-close">
+      ✕
+    </button>
+    <h1 class="import-dialog__title t-headline-sm">Importar jugadores</h1>
+  </header>
+
+  @if (store.submitState() === 'success' || store.submitState() === 'partial' || store.submitState() === 'error') {
+    <app-import-result-summary
+      [result]="store.result() ?? { imported: [], failed: [] }"
+      [error]="store.submitError()"
+      (closeRequested)="close()" />
+  } @else {
+    <div class="import-dialog__banner" data-testid="import-plan-free-banner">
+      ℹ Solo temporadas 2022–2024 disponibles (plan free de API-Football).
+    </div>
+
+    <div class="import-dialog__search">
+      <app-import-search-bar (queryChange)="onSearchQuery($event)" />
+    </div>
+
+    <div class="import-dialog__list">
+      @if (store.searchLoading()) {
+        @for (slot of skeletonSlots; track $index) {
+          <div class="import-dialog__skeleton" aria-hidden="true"></div>
+        }
+      } @else if (emptyKind() === 'idle') {
+        <div class="import-dialog__hint">Busca un jugador por nombre.</div>
+      } @else if (emptyKind() === 'no-results') {
+        <div class="import-dialog__hint">
+          Sin resultados para «{{ store.query() }}». Prueba otra ortografía.
+        </div>
+      } @else if (emptyKind() === 'error') {
+        <div class="import-dialog__hint import-dialog__hint--error"
+          data-testid="import-search-error">
+          {{ store.searchError() }}
+        </div>
+      } @else {
+        @for (p of store.searchResults(); track trackByApiId($index, p)) {
+          <app-import-player-card
+            [profile]="p"
+            [state]="store.stateOf(p.apiFootballId)"
+            [disabled]="store.atCap() && !store.isSelected(p.apiFootballId)"
+            (toggled)="onCardToggled($event)" />
+        }
+      }
+    </div>
+  }
+</ion-content>
+
+@if (store.submitState() !== 'success' && store.submitState() !== 'partial' && store.submitState() !== 'error') {
+  <app-import-summary-footer
+    [selectedCount]="store.selectedCount()"
+    [submitting]="store.submitState() === 'submitting'"
+    [canSubmit]="store.canSubmit()"
+    (submitRequested)="onSubmit()"
+    (clearRequested)="onClear()" />
+}
