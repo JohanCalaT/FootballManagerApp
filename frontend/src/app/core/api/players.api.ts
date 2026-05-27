@@ -58,6 +58,29 @@ export class PlayersApi {
     });
   }
 
+  // Promise-shaped variants used by the home page paged store, which needs
+  // append-on-load semantics that httpResource (replace-on-URL-change) does
+  // not provide out of the box.
+  async listPage(page: number, limit: number): Promise<PagedResponse<Player>> {
+    return firstValueFrom(
+      this.http.get<PagedResponse<Player>>(`${this.base}/api/players`, {
+        params: { page, limit },
+      }),
+    );
+  }
+
+  async searchPage(
+    name: string,
+    page: number,
+    limit: number,
+  ): Promise<PagedResponse<Player>> {
+    return firstValueFrom(
+      this.http.get<PagedResponse<Player>>(`${this.base}/api/players/search`, {
+        params: { name, page, limit },
+      }),
+    );
+  }
+
   async create(payload: CreatePlayerRequest): Promise<ApiResponse<Player>> {
     return firstValueFrom(
       this.http.post<ApiResponse<Player>>(`${this.base}/api/players`, payload),
