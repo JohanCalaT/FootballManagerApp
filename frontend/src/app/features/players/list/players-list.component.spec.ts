@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ModalController } from '@ionic/angular/standalone';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { ComingSoonService } from '../../../core/services/coming-soon.service';
@@ -49,6 +50,10 @@ describe('PlayersListComponent (home container)', () => {
         {
           provide: AuthService,
           useValue: { signOut: jasmine.createSpy('signOut').and.resolveTo() },
+        },
+        {
+          provide: ModalController,
+          useValue: jasmine.createSpyObj('ModalController', ['create', 'dismiss']),
         },
         {
           provide: ActivatedRoute,
@@ -108,7 +113,8 @@ describe('PlayersListComponent (home container)', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    fixture.componentInstance['onImport']();
+    // onImport now opens a real modal — covered by its own spec; we only
+    // verify the remaining placeholder buttons still notify coming-soon.
     fixture.componentInstance['onInsert']();
     fixture.componentInstance['onIdealTeam']();
     fixture.componentInstance['onPublishNews']();
@@ -117,7 +123,6 @@ describe('PlayersListComponent (home container)', () => {
 
     const calls = comingSoon.notify.calls.allArgs().map((c) => c[0]);
     expect(calls).toEqual([
-      'Importar jugadores',
       'Insertar jugador',
       'Equipo Ideal',
       'Publicar noticia',
