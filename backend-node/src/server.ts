@@ -7,9 +7,9 @@ import { initCache } from './services/cache.service';
 
 const PORT = process.env.PORT ?? 3000;
 
-// Redirect raíz → Swagger
+// Redirect raíz → Swagger UI (mounted under /docs/node for Gateway routing).
 app.get('/', (_req, res) => {
-  res.redirect('/api-docs');
+  res.redirect('/docs/node');
 });
 
 app.get('/health', (_req, res) =>

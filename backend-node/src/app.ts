@@ -25,8 +25,12 @@ app.use(populateAuthContext);
 // Contador de peticiones para el panel /status (matrícula TRWM)
 app.use(countRequest);
 
-// Swagger
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Swagger — mounted under /docs/node to match the Scalar mounts of the
+// .NET microservices (/docs/players, /docs/comments). The Gateway YARP
+// proxies these paths from a single public origin; using a unique base
+// path per backend keeps the assets that swagger-ui-express serves
+// (swagger-ui.css, swagger-ui-bundle.js) un-conflicted under the gateway.
+app.use('/docs/node', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
 app.use('/', routes);
