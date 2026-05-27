@@ -7,6 +7,18 @@ export const routes: Routes = [
       import('./features/splash/splash.component').then((m) => m.SplashComponent),
   },
   {
+    path: 'auth/login',
+    loadComponent: () =>
+      import('./features/auth/login/login.component').then((m) => m.LoginComponent),
+  },
+  {
+    path: 'auth/register',
+    loadComponent: () =>
+      import('./features/auth/register/register.component').then(
+        (m) => m.RegisterComponent,
+      ),
+  },
+  {
     path: 'players',
     loadComponent: () =>
       import('./features/players/list/players-list.component').then(

@@ -1,0 +1,78 @@
+<ion-content [fullscreen]="true" class="auth-content">
+  <div class="auth-shell">
+    <div class="auth-shell__glow" aria-hidden="true"></div>
+
+    <main class="auth-card" data-testid="register-form">
+      <header class="auth-card__head">
+        <p class="t-label-sm auth-card__eyebrow">Football Manager</p>
+        <h1 class="t-headline-lg auth-card__title">Crear cuenta</h1>
+        <p class="t-body-md auth-card__subtitle">
+          Regístrate para gestionar jugadores, comentarios y tu equipo ideal.
+        </p>
+      </header>
+
+      <form class="auth-form" (submit)="submit($event)" novalidate>
+        <label class="auth-field">
+          <span class="t-label-lg auth-field__label">Nombre visible</span>
+          <input
+            type="text"
+            class="auth-input"
+            autocomplete="name"
+            required
+            [value]="displayName()"
+            (input)="onNameInput($event)"
+            data-testid="register-name-input"
+          />
+        </label>
+
+        <label class="auth-field">
+          <span class="t-label-lg auth-field__label">Correo</span>
+          <input
+            type="email"
+            class="auth-input"
+            autocomplete="email"
+            inputmode="email"
+            required
+            [value]="email()"
+            (input)="onEmailInput($event)"
+            data-testid="register-email-input"
+          />
+        </label>
+
+        <label class="auth-field">
+          <span class="t-label-lg auth-field__label">Contraseña</span>
+          <input
+            type="password"
+            class="auth-input"
+            autocomplete="new-password"
+            minlength="6"
+            required
+            [value]="password()"
+            (input)="onPasswordInput($event)"
+            data-testid="register-password-input"
+          />
+        </label>
+
+        @if (errorMessage(); as message) {
+          <p class="auth-error" role="alert" data-testid="register-error">{{ message }}</p>
+        }
+
+        <button
+          type="submit"
+          class="auth-button auth-button--primary"
+          [disabled]="!canSubmit()"
+          data-testid="register-submit-button"
+        >
+          {{ loading() ? 'Creando…' : 'Crear cuenta' }}
+        </button>
+      </form>
+
+      <p class="t-body-md auth-card__footer">
+        ¿Ya tienes cuenta?
+        <a routerLink="/auth/login" class="auth-link" data-testid="register-login-link">
+          Iniciar sesión
+        </a>
+      </p>
+    </main>
+  </div>
+</ion-content>

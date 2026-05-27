@@ -1,0 +1,213 @@
+// Shared layout for /auth/* pages. Implements the dark-glassmorphism +
+// neon-futurism shell from DESIGN.md (radial glow floor, glass card,
+// inputs with neon focus). Both login and register components import this.
+
+.auth-content {
+  --background: var(--app-bg);
+}
+
+.auth-shell {
+  position: relative;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--app-space-5) var(--app-space-4);
+  overflow: hidden;
+}
+
+.auth-shell__glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(0, 228, 120, 0.18) 0%, transparent 50%),
+    radial-gradient(circle at 82% 88%, rgba(0, 228, 120, 0.12) 0%, transparent 55%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  padding: var(--app-space-6) var(--app-space-5);
+  background:
+    linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-floor) 100%);
+  border: 1px solid var(--app-outline-variant);
+  border-radius: var(--app-radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-5);
+  box-shadow: var(--app-glow-primary-soft);
+}
+
+.auth-card__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-2);
+  align-items: flex-start;
+}
+
+.auth-card__eyebrow {
+  color: var(--app-primary);
+  margin: 0;
+}
+
+.auth-card__title {
+  margin: 0;
+  color: var(--app-on-surface);
+  text-transform: uppercase;
+}
+
+.auth-card__subtitle {
+  margin: 0;
+  color: var(--app-on-surface-soft);
+}
+
+.auth-card__footer {
+  margin: 0;
+  color: var(--app-on-surface-soft);
+  text-align: center;
+}
+
+// ---- Form -----------------------------------------------------------------
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-4);
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-2);
+}
+
+.auth-field__label {
+  color: var(--app-on-surface-soft);
+}
+
+.auth-input {
+  width: 100%;
+  background: #050505;
+  color: var(--app-on-surface);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--app-radius);
+  padding: 12px 14px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 20px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &::placeholder {
+    color: var(--app-on-surface-faint);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--app-primary);
+    box-shadow: 0 0 0 4px var(--app-primary-glow-soft);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// ---- Buttons --------------------------------------------------------------
+
+.auth-button {
+  appearance: none;
+  border: none;
+  border-radius: var(--app-radius);
+  padding: 12px 18px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--app-space-2);
+  transition: transform 0.1s ease, box-shadow 0.15s ease,
+    background-color 0.15s ease, border-color 0.15s ease;
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.auth-button--primary {
+  background: var(--app-primary);
+  color: var(--app-on-primary);
+  text-transform: uppercase;
+
+  &:not(:disabled):hover {
+    background: var(--app-primary-bright);
+    box-shadow: var(--app-glow-primary);
+  }
+}
+
+.auth-button--ghost {
+  background: transparent;
+  color: var(--app-secondary);
+  border: 1px solid var(--app-secondary);
+
+  &:not(:disabled):hover {
+    background: rgba(255, 219, 60, 0.08);
+  }
+}
+
+.auth-button__icon {
+  display: block;
+}
+
+// ---- Divider --------------------------------------------------------------
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-3);
+  color: var(--app-on-surface-faint);
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--app-outline-variant);
+  }
+}
+
+// ---- Inline status / errors ----------------------------------------------
+
+.auth-error {
+  margin: 0;
+  padding: 10px 12px;
+  background: rgba(147, 0, 10, 0.18);
+  border: 1px solid var(--app-error-container);
+  border-radius: var(--app-radius);
+  color: var(--app-error);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.auth-link {
+  color: var(--app-primary);
+  text-decoration: none;
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

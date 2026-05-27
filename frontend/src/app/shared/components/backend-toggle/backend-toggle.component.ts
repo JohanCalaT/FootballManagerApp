@@ -7,12 +7,13 @@ import { backendChoice, toggleBackend } from '../../../core/state/backend-choice
   standalone: true,
   imports: [IonItem, IonLabel, IonToggle],
   template: `
-    <ion-item lines="none">
-      <ion-label>Backend: {{ backend() }}</ion-label>
+    <ion-item lines="none" data-testid="backend-toggle">
+      <ion-label data-testid="backend-toggle-label">Backend: {{ backend() }}</ion-label>
       <ion-toggle
         slot="end"
         [checked]="backend() === 'node'"
-        (ionChange)="onToggle()" />
+        (ionChange)="onToggle()"
+        data-testid="backend-toggle-switch" />
     </ion-item>
   `,
 })
