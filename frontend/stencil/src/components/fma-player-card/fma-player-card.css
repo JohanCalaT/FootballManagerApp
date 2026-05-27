@@ -1,0 +1,270 @@
+/*
+ * <fma-player-card> styles — Gridiron Neon (see DESIGN.md).
+ *
+ * The component is Shadow DOM, but CSS custom properties (--app-*)
+ * inherit from the host through shadow boundaries. The host (Angular,
+ * the dev-server preview, or any future consumer) defines the design
+ * tokens once; we just reference them here. Local fallbacks are provided
+ * so the component still renders something sensible if it is mounted in
+ * a host that lacks the tokens (e.g. Storybook, raw HTML demo).
+ */
+
+:host {
+  /* Fallbacks mirror frontend/src/theme/variables.scss. The :host rules
+     below take effect ONLY when the consumer has not defined --app-*. */
+  --_bg-start:        var(--app-surface, #1f1f25);
+  --_bg-end:          var(--app-surface-floor, #0e0e13);
+  --_on-surface:      var(--app-on-surface, #e4e1e9);
+  --_on-surface-soft: var(--app-on-surface-soft, rgba(228, 225, 233, 0.64));
+  --_on-surface-faint:var(--app-on-surface-faint, rgba(228, 225, 233, 0.38));
+  --_outline:         var(--app-outline-variant, #3b4b3d);
+  --_primary:         var(--app-primary, #00e478);
+  --_primary-bright:  var(--app-primary-bright, #00ff87);
+  --_primary-glow:    var(--app-primary-glow-soft, rgba(0, 228, 120, 0.18));
+  --_secondary:       var(--app-secondary, #ffdb3c);
+  --_radius:          var(--app-radius-md, 0.75rem);
+  --_radius-sm:       var(--app-radius, 0.5rem);
+
+  display: block;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--_on-surface);
+}
+
+.card__inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  background:
+    linear-gradient(180deg, var(--_bg-start) 0%, var(--_bg-end) 100%);
+  border: 1px solid var(--_outline);
+  border-radius: var(--_radius);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* ---- Interactive states ---- */
+
+:host(.card--interactive) .card__inner {
+  cursor: pointer;
+}
+
+:host(.card--interactive:hover) .card__inner {
+  transform: translateY(-1px);
+  border-color: var(--_primary);
+  box-shadow:
+    0 0 0 1px var(--_primary-glow),
+    0 12px 24px -12px var(--_primary-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+:host(.card--interactive:focus-visible) {
+  outline: none;
+}
+:host(.card--interactive:focus-visible) .card__inner {
+  border-color: var(--_primary);
+  box-shadow:
+    0 0 0 3px var(--_primary-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+:host(.card--interactive:active) .card__inner {
+  transform: translateY(0);
+}
+
+/* ---- Media (image / initials fallback) ---- */
+
+.card__media {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--_radius-sm);
+  overflow: hidden;
+  background: #050505;
+  border: 1px solid var(--_outline);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+.card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.card__initials {
+  font-family: 'Bebas Neue', system-ui, sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.06em;
+  color: var(--_on-surface-faint);
+}
+
+/* ---- Body (text content) ---- */
+
+.card__body {
+  min-width: 0; /* Allow text-overflow: ellipsis within grid */
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card__eyebrow {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--_on-surface-soft);
+}
+
+.card__position {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--_outline);
+  border-radius: 9999px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--_primary);
+  background: rgba(0, 228, 120, 0.06);
+}
+
+.card__dot {
+  color: var(--_on-surface-faint);
+}
+
+.card__league {
+  color: var(--_on-surface-soft);
+}
+
+.card__name {
+  margin: 0;
+  font-family: 'Bebas Neue', system-ui, sans-serif;
+  font-size: 22px;
+  line-height: 24px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--_on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card__team {
+  margin: 0;
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--_on-surface-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Rating pill (tier-based) ---- */
+
+.card__rating {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  padding: 8px 10px;
+  border-radius: var(--_radius-sm);
+  font-family: 'Bebas Neue', system-ui, sans-serif;
+  line-height: 1;
+  border: 1px solid transparent;
+  background: var(--_bg-end);
+  letter-spacing: 0.04em;
+}
+
+.card__rating-value {
+  font-size: 22px;
+  letter-spacing: 0.02em;
+}
+
+.card__rating-tier {
+  margin-top: 2px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.card__rating--bronze {
+  color: #d6a17b;
+  border-color: rgba(214, 161, 123, 0.4);
+  background: linear-gradient(180deg, rgba(214, 161, 123, 0.08), transparent);
+}
+.card__rating--silver {
+  color: #d6d8de;
+  border-color: rgba(214, 216, 222, 0.35);
+  background: linear-gradient(180deg, rgba(214, 216, 222, 0.08), transparent);
+}
+.card__rating--gold {
+  color: var(--_secondary);
+  border-color: rgba(255, 219, 60, 0.45);
+  background: linear-gradient(180deg, rgba(255, 219, 60, 0.08), transparent);
+  text-shadow: 0 0 8px rgba(255, 219, 60, 0.35);
+}
+.card__rating--icon {
+  color: var(--_primary);
+  border-color: rgba(0, 228, 120, 0.55);
+  background:
+    linear-gradient(180deg, rgba(0, 228, 120, 0.14), transparent);
+  text-shadow: 0 0 10px rgba(0, 228, 120, 0.55);
+}
+
+/* When the card itself is tier-icon, add a subtle neon halo around the
+ * whole frame on hover to reinforce the "elite" status. */
+:host(.card--tier-icon.card--interactive:hover) .card__inner {
+  box-shadow:
+    0 0 0 1px rgba(0, 228, 120, 0.35),
+    0 14px 32px -14px rgba(0, 228, 120, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ---- Slot for host-injected actions ---- */
+
+.card__actions {
+  display: none;
+}
+.card__actions:has(*) {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+}
+
+/* ---- Responsive: stack media+rating tighter on very narrow ---- */
+
+@media (max-width: 380px) {
+  .card__inner {
+    gap: 12px;
+    padding: 12px 14px;
+  }
+  .card__media {
+    width: 56px;
+    height: 56px;
+  }
+  .card__name {
+    font-size: 20px;
+  }
+  .card__rating {
+    min-width: 44px;
+    padding: 6px 8px;
+  }
+  .card__rating-value {
+    font-size: 18px;
+  }
+}

@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FMA · Stencil component preview</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" />
+
+    <!-- Stencil's dev server picks up the bundle from /build/ automatically. -->
+    <script type="module" src="/build/football-manager-stencil.esm.js"></script>
+
+    <style>
+      /*
+       * Mirror of the Gridiron Neon design tokens — same values as
+       * frontend/src/theme/variables.scss. The Stencil component
+       * inherits these via CSS custom properties; this preview page
+       * provides them so the card renders identically to how it will
+       * inside the Angular host.
+       */
+      :root {
+        --app-bg:                  #131318;
+        --app-surface-floor:       #0e0e13;
+        --app-surface:             #1f1f25;
+        --app-on-surface:          #e4e1e9;
+        --app-on-surface-soft:     rgba(228, 225, 233, 0.64);
+        --app-on-surface-faint:    rgba(228, 225, 233, 0.38);
+        --app-outline-variant:     #3b4b3d;
+        --app-primary:             #00e478;
+        --app-primary-bright:      #00ff87;
+        --app-primary-glow:        rgba(0, 228, 120, 0.45);
+        --app-primary-glow-soft:   rgba(0, 228, 120, 0.18);
+        --app-secondary:           #ffdb3c;
+        --app-radius:              0.5rem;
+        --app-radius-md:           0.75rem;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--app-bg);
+        color: var(--app-on-surface);
+        font-family: 'Inter', system-ui, sans-serif;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(circle at 18% 12%, rgba(0, 228, 120, 0.18) 0%, transparent 50%),
+          radial-gradient(circle at 82% 88%, rgba(0, 228, 120, 0.12) 0%, transparent 55%);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .shell {
+        position: relative;
+        z-index: 1;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 48px 16px 64px;
+      }
+
+      .eyebrow {
+        margin: 0;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--app-primary);
+      }
+
+      h1 {
+        margin: 4px 0 24px;
+        font-family: 'Bebas Neue', system-ui, sans-serif;
+        font-size: 36px;
+        font-weight: 400;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      h2 {
+        font-family: 'Bebas Neue', system-ui, sans-serif;
+        font-size: 20px;
+        font-weight: 400;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--app-on-surface-soft);
+        margin: 32px 0 12px;
+      }
+
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .selection-log {
+        margin-top: 32px;
+        padding: 12px 16px;
+        background: var(--app-surface-floor);
+        border: 1px dashed var(--app-outline-variant);
+        border-radius: var(--app-radius-md);
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 12px;
+        color: var(--app-on-surface-soft);
+      }
+      .selection-log strong {
+        color: var(--app-primary);
+        font-weight: 600;
+      }
+
+      .action-btn {
+        appearance: none;
+        border: 1px solid var(--app-outline-variant);
+        background: transparent;
+        color: var(--app-on-surface);
+        padding: 6px 12px;
+        border-radius: var(--app-radius);
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .action-btn:hover { border-color: var(--app-secondary); color: var(--app-secondary); }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <p class="eyebrow">Football Manager · Stencil</p>
+      <h1>&lt;fma-player-card&gt;</h1>
+
+      <h2>Tier · icon (rating ≥ 8.5)</h2>
+      <div class="stack">
+        <fma-player-card
+          player-id="player-1"
+          name="Lionel Messi"
+          team="Inter Miami CF"
+          league="Major League Soccer"
+          position="Attacker"
+          image-url="https://media.api-sports.io/football/players/154.png"
+          rating="9.1"></fma-player-card>
+      </div>
+
+      <h2>Tier · gold (rating 7.5–8.4)</h2>
+      <div class="stack">
+        <fma-player-card
+          player-id="player-2"
+          name="Pedri González"
+          team="FC Barcelona"
+          league="La Liga"
+          position="Midfielder"
+          image-url="https://media.api-sports.io/football/players/284324.png"
+          rating="8.21"></fma-player-card>
+      </div>
+
+      <h2>Tier · silver (rating 6.5–7.4)</h2>
+      <div class="stack">
+        <fma-player-card
+          player-id="player-3"
+          name="Diego Llorente"
+          team="AS Roma"
+          league="Serie A"
+          position="Defender"
+          image-url="https://media.api-sports.io/football/players/2459.png"
+          rating="7.05"></fma-player-card>
+      </div>
+
+      <h2>Tier · bronze (rating &lt; 6.5)</h2>
+      <div class="stack">
+        <fma-player-card
+          player-id="player-4"
+          name="Jugador Reserva"
+          team="Real Sociedad B"
+          league="Segunda Federación"
+          position="Goalkeeper"
+          rating="5.8"></fma-player-card>
+      </div>
+
+      <h2>Sin rating (jugador manual recién insertado)</h2>
+      <div class="stack">
+        <fma-player-card
+          player-id="player-5"
+          name="Nuevo Fichaje"
+          team="CD Almería"
+          league="La Liga 2"
+          position="Midfielder"></fma-player-card>
+      </div>
+
+      <h2>Sin imagen (fallback de iniciales)</h2>
+      <div class="stack">
+        <fma-player-card
+          player-id="player-6"
+          name="Mikel Oyarzabal"
+          team="Real Sociedad"
+          league="La Liga"
+          position="Attacker"
+          rating="7.92"></fma-player-card>
+      </div>
+
+      <h2>Con slot "actions" (rol admin)</h2>
+      <div class="stack">
+        <fma-player-card
+          player-id="player-7"
+          name="Robert Lewandowski"
+          team="FC Barcelona"
+          league="La Liga"
+          position="Attacker"
+          image-url="https://media.api-sports.io/football/players/521.png"
+          rating="8.65">
+          <button slot="actions" class="action-btn"
+                  onclick="event.stopPropagation(); alert('Editar — solo admin');">
+            Editar
+          </button>
+        </fma-player-card>
+      </div>
+
+      <h2>No interactivo (display puro)</h2>
+      <div class="stack">
+        <fma-player-card
+          name="Display Only"
+          team="Demo FC"
+          league="Demo League"
+          position="Attacker"
+          rating="8.0"
+          interactive="false"></fma-player-card>
+      </div>
+
+      <div id="log" class="selection-log">
+        Click cualquier carta interactiva para ver el evento <code>playerSelected</code>.
+      </div>
+    </main>
+
+    <script>
+      const log = document.getElementById('log');
+      document.addEventListener('playerSelected', (ev) => {
+        const { playerId, name } = ev.detail;
+        log.innerHTML =
+          '<strong>playerSelected</strong> · playerId=' +
+          (playerId ?? '(none)') +
+          ' · name=' + name +
+          ' · time=' + new Date().toLocaleTimeString();
+      });
+    </script>
+  </body>
+</html>
