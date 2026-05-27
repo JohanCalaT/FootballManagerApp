@@ -1,15 +1,25 @@
+using System.Security.Claims;
+
 namespace FootballManagerApp.Gateway.Middleware;
 
 /// <summary>
-/// Normalizes and propagates identity / geolocation headers towards the
-/// downstream backends. In Fase 1 the Gateway does NOT validate JWTs — it
-/// trusts <c>X-User-Id</c> and <c>X-User-Admin</c> as they come from the
-/// frontend. <c>Authorization</c> is stripped so backends never assume any
-/// validation has happened upstream.
+/// Translates the validated Firebase principal into trusted identity headers
+/// for downstream microservices.
+///
+/// Rules:
+/// <list type="bullet">
+///   <item>Any incoming <c>X-User-Id</c> / <c>X-User-Admin</c> is stripped —
+///         the Gateway is the only source of truth.</item>
+///   <item>If the request carries a <c>Bearer</c> token that failed
+///         validation, respond 401 (silent acceptance would let bad tokens
+///         pass through as anonymous).</item>
+///   <item>If the principal is authenticated, stamp <c>X-User-Id</c> from
+///         the <c>user_id</c>/<c>sub</c> claim and <c>X-User-Admin</c> from
+///         the <c>admin</c> custom claim.</item>
+///   <item>The raw <c>Authorization</c> header is stripped before forwarding
+///         so backends never see the JWT.</item>
+/// </list>
 /// </summary>
-// TODO: JWT Firebase validation — once enabled, this middleware should
-//       translate the validated principal's claims into X-User-* headers
-//       INSTEAD of trusting the incoming values.
 public sealed class HeaderForwardingMiddleware
 {
     public const string UserIdHeader = "X-User-Id";
@@ -23,41 +33,64 @@ public sealed class HeaderForwardingMiddleware
     {
         var headers = context.Request.Headers;
 
-        headers.Remove("Authorization");
+        // Untrusted: strip whatever the client tried to send.
+        headers.Remove(UserIdHeader);
+        headers.Remove(UserAdminHeader);
 
-        NormalizeUserId(headers);
-        NormalizeUserAdmin(headers);
+        var hasBearer = HasBearerToken(headers);
+        var isAuthenticated = context.User.Identity?.IsAuthenticated == true;
+
+        if (hasBearer && !isAuthenticated)
+        {
+            // Token supplied but rejected by the JwtBearer handler — refuse
+            // to forward as anonymous so a bad token never silently downgrades.
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
+        if (isAuthenticated)
+        {
+            var uid = context.User.FindFirstValue("user_id")
+                      ?? context.User.FindFirstValue("sub")
+                      ?? context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!string.IsNullOrEmpty(uid))
+            {
+                headers[UserIdHeader] = uid;
+            }
+
+            var adminClaim = context.User.FindFirstValue("admin");
+            if (string.Equals(adminClaim, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                headers[UserAdminHeader] = "true";
+            }
+        }
+
+        // Never forward the raw token — downstream trusts X-User-* only.
+        headers.Remove("Authorization");
 
         await _next(context);
     }
 
-    private static void NormalizeUserId(IHeaderDictionary headers)
+    private static bool HasBearerToken(IHeaderDictionary headers)
     {
-        if (!headers.TryGetValue(UserIdHeader, out var raw))
-            return;
-
-        var trimmed = raw.ToString().Trim();
-        if (string.IsNullOrEmpty(trimmed))
-            headers.Remove(UserIdHeader);
-        else
-            headers[UserIdHeader] = trimmed;
-    }
-
-    private static void NormalizeUserAdmin(IHeaderDictionary headers)
-    {
-        if (!headers.TryGetValue(UserAdminHeader, out var raw))
-            return;
-
-        var trimmed = raw.ToString().Trim();
-        if (string.IsNullOrEmpty(trimmed))
+        if (!headers.TryGetValue("Authorization", out var values))
         {
-            headers.Remove(UserAdminHeader);
-            return;
+            return false;
         }
 
-        headers[UserAdminHeader] =
-            string.Equals(trimmed, "true", StringComparison.OrdinalIgnoreCase)
-                ? "true"
-                : "false";
+        foreach (var value in values)
+        {
+            if (value is null)
+            {
+                continue;
+            }
+            if (value.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) &&
+                value.Length > "Bearer ".Length)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -1,39 +1,58 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+
 namespace FootballManagerApp.Gateway.Extensions;
 
 /// <summary>
-/// Scaffold for Firebase JWT validation. NOT wired in Fase 1 — kept here so
-/// the future activation is a 3-line change in <c>Program.cs</c>:
-/// <code>
-///   builder.Services.AddFirebaseAuth(builder.Configuration);
-///   app.UseAuthentication();
-///   app.UseAuthorization();
-/// </code>
+/// Wires Firebase ID token validation on the Gateway. Downstream
+/// microservices never see raw tokens — they trust the
+/// <c>X-User-Id</c> / <c>X-User-Admin</c> headers stamped by
+/// <see cref="Middleware.HeaderForwardingMiddleware"/> from the validated
+/// principal. See CLAUDE.md ("Validar JWT en microservicios — Gateway lo hace").
 /// </summary>
 public static class AuthenticationExtensions
 {
-    // TODO: JWT Firebase validation
-    //
-    // Real implementation will:
-    //   1. Read Firebase:ProjectId from configuration (Key Vault in cloud).
-    //   2. AddAuthentication("Bearer").AddJwtBearer(options => {
-    //        options.Authority = $"https://securetoken.google.com/{projectId}";
-    //        options.TokenValidationParameters = new() {
-    //          ValidateIssuer   = true,
-    //          ValidIssuer      = $"https://securetoken.google.com/{projectId}",
-    //          ValidateAudience = true,
-    //          ValidAudience    = projectId,
-    //          ValidateLifetime = true,
-    //        };
-    //        // OnTokenValidated → translate claims into X-User-Id / X-User-Admin
-    //      });
-    //   3. AddAuthorization with an "Admin" policy requiring claim "admin"="true".
-    //
-    // When activated, HeaderForwardingMiddleware must switch from "trust client
-    // headers" mode to "write headers from validated principal" mode.
     public static IServiceCollection AddFirebaseAuth(
         this IServiceCollection services, IConfiguration configuration)
     {
-        _ = configuration;
+        var projectId = configuration["Firebase:ProjectId"];
+        if (string.IsNullOrWhiteSpace(projectId))
+        {
+            // Anonymous-only mode (smoke tests, local without AppHost). The
+            // gateway still works but Authorization headers are ignored.
+            return services;
+        }
+
+        var issuer = $"https://securetoken.google.com/{projectId}";
+
+        services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                // Authority triggers OIDC discovery at
+                // {issuer}/.well-known/openid-configuration which exposes the
+                // JWKS URI — no need to hardcode Google's signing-key endpoint.
+                options.Authority = issuer;
+                options.RequireHttpsMetadata = true;
+
+                // Preserve original claim names (user_id, admin, …). Without
+                // this, sub gets remapped to ClaimTypes.NameIdentifier and the
+                // header forwarder cannot find user_id.
+                options.MapInboundClaims = false;
+
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = issuer,
+                    ValidateAudience = true,
+                    ValidAudience = projectId,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    NameClaimType = "user_id",
+                };
+            });
+
+        services.AddAuthorization();
         return services;
     }
 }
