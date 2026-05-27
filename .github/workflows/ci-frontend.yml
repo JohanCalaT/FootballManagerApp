@@ -60,3 +60,60 @@ jobs:
           path: frontend/coverage/
           retention-days: 14
           if-no-files-found: warn
+
+  e2e:
+    name: E2E · Cypress (Chrome + Edge)
+    runs-on: ubuntu-latest
+    # Runs in parallel with build-test-lint — no `needs`. The two jobs touch
+    # different concerns (unit vs end-to-end) and a failure in one should
+    # not gate feedback on the other.
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # Cypress' binary (~250 MB) lives outside node_modules, so the npm
+      # cache above does NOT cover it. Without this, every run re-downloads
+      # the binary and adds ~30s.
+      - name: Cache Cypress binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: cypress-${{ runner.os }}-
+
+      # Edge is not preinstalled on ubuntu-latest runners. browser-actions
+      # is the canonical action used by Cypress' own examples.
+      - name: Setup Microsoft Edge
+        uses: browser-actions/setup-edge@v1
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `npm run e2e:*` spins up the Firebase Auth Emulator (uses the
+      # preinstalled OpenJDK on ubuntu-latest) + the ionic dev server +
+      # cypress, then tears them down. See frontend/cypress.config.ts.
+      - name: E2E · Chrome
+        run: npm run e2e:chrome
+
+      - name: E2E · Edge
+        # Run Edge even if Chrome failed, so the report shows whether the
+        # regression is browser-specific or universal.
+        if: success() || failure()
+        run: npm run e2e:edge
+
+      - name: Upload Cypress screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: frontend/cypress/screenshots/
+          if-no-files-found: ignore
+          retention-days: 14
