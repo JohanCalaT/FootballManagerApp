@@ -1,0 +1,27 @@
+{
+  "name": "@football-manager/stencil",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Web Components (Stencil) for FootballManager — DWSC rubric.",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.js",
+  "es2017": "dist/esm/index.mjs",
+  "types": "dist/types/components.d.ts",
+  "collection": "dist/collection/collection-manifest.json",
+  "collection:main": "dist/collection/index.js",
+  "unpkg": "dist/football-manager-stencil/football-manager-stencil.esm.js",
+  "files": [
+    "dist/",
+    "loader/"
+  ],
+  "scripts": {
+    "build": "stencil build",
+    "start": "stencil build --dev --watch --serve",
+    "test": "stencil test --spec --e2e",
+    "test.watch": "stencil test --spec --e2e --watchAll",
+    "prepare": "stencil build"
+  },
+  "devDependencies": {
+    "@stencil/core": "^4.20.0"
+  }
+}
