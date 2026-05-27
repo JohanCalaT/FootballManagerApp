@@ -43,12 +43,12 @@ app.UseMiddleware<ExceptionMiddleware>();
 // /docs/players so the YARP Gateway can multiplex Players and Comments
 // docs without their default /openapi/v1.json paths colliding.
 app.MapOpenApi("/openapi/players/{documentName}.json");
-app.MapScalarApiReference("/docs/players/{documentName}", options =>
+app.MapScalarApiReference("/docs/players", options =>
 {
     options.OpenApiRoutePattern = "/openapi/players/{documentName}.json";
 });
 
-app.MapGet("/", () => Results.Redirect("/docs/players/v1"))
+app.MapGet("/", () => Results.Redirect("/docs/players"))
    .ExcludeFromDescription();
 
 app.UseHttpsRedirection();
