@@ -21,7 +21,7 @@
         [attr.league]="player.league"
         [attr.position]="player.position"
         [attr.image-url]="player.imageUrl"
-        [attr.rating]="bestRating(player)"
+        [attr.rating]="player.rating"
         (playerSelected)="onCardSelected(player)"
         data-testid="player-card">
         @if (canEdit(player)) {

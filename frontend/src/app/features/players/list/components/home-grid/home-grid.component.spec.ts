@@ -1,39 +1,24 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { Player } from '../../../../../core/models/player.model';
+import { PlayerListItem } from '../../../../../core/models/player.model';
 
 import { HomeGridComponent } from './home-grid.component';
 
-function basePlayer(id: string, overrides: Partial<Player> = {}): Player {
+function basePlayer(id: string, overrides: Partial<PlayerListItem> = {}): PlayerListItem {
   return {
     id,
-    apiFootballId: null,
     name: `Player ${id}`,
-    firstName: null,
-    lastName: null,
-    nationality: null,
-    birthDate: null,
-    birthPlace: null,
-    birthCountry: null,
-    height: null,
-    weight: null,
-    position: null,
-    shirtNumber: null,
-    injured: false,
-    imageUrl: null,
-    imageSource: null,
     team: 'T',
     league: 'L',
+    position: null,
+    imageUrl: null,
+    rating: null,
     registeredAt: '2026-01-01',
-    createdByUserId: 'u',
-    clientGeolocation: null,
-    playerGeolocation: null,
-    statistics: [],
     ...overrides,
   };
 }
 
-function withLinks(player: Player, links: Record<string, unknown>): Player {
+function withLinks(player: PlayerListItem, links: Record<string, unknown>): PlayerListItem {
   return Object.assign({}, player, { _links: links });
 }
 

@@ -2,39 +2,24 @@ import { TestBed } from '@angular/core/testing';
 
 import { PlayersApi } from '../../../core/api/players.api';
 import { PagedResponse } from '../../../core/models/api-response.model';
-import { Player } from '../../../core/models/player.model';
+import { PlayerListItem } from '../../../core/models/player.model';
 
 import { PlayersPagedStore } from './players-paged.store';
 
-function makePlayer(id: string, name: string): Player {
+function makePlayer(id: string, name: string): PlayerListItem {
   return {
     id,
-    apiFootballId: null,
     name,
-    firstName: null,
-    lastName: null,
-    nationality: null,
-    birthDate: null,
-    birthPlace: null,
-    birthCountry: null,
-    height: null,
-    weight: null,
-    position: null,
-    shirtNumber: null,
-    injured: false,
-    imageUrl: null,
-    imageSource: null,
     team: 'Team',
     league: 'League',
+    position: null,
+    imageUrl: null,
+    rating: null,
     registeredAt: '2026-01-01T00:00:00Z',
-    createdByUserId: 'u1',
-    clientGeolocation: null,
-    playerGeolocation: null,
-    statistics: [],
   };
 }
 
-function pagedResponse(players: Player[], page: number, total: number): PagedResponse<Player> {
+function pagedResponse(players: PlayerListItem[], page: number, total: number): PagedResponse<PlayerListItem> {
   return {
     status: 200,
     message: 'ok',

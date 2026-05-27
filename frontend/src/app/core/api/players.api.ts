@@ -7,6 +7,7 @@ import {
   CreatePlayerRequest,
   ImportPlayerItem,
   Player,
+  PlayerListItem,
   PlayerSearchFilters,
   UpdatePlayerRequest,
 } from '../models/player.model';
@@ -61,9 +62,9 @@ export class PlayersApi {
   // Promise-shaped variants used by the home page paged store, which needs
   // append-on-load semantics that httpResource (replace-on-URL-change) does
   // not provide out of the box.
-  async listPage(page: number, limit: number): Promise<PagedResponse<Player>> {
+  async listPage(page: number, limit: number): Promise<PagedResponse<PlayerListItem>> {
     return firstValueFrom(
-      this.http.get<PagedResponse<Player>>(`${this.base}/api/players`, {
+      this.http.get<PagedResponse<PlayerListItem>>(`${this.base}/api/players`, {
         params: { page, limit },
       }),
     );
@@ -73,9 +74,9 @@ export class PlayersApi {
     name: string,
     page: number,
     limit: number,
-  ): Promise<PagedResponse<Player>> {
+  ): Promise<PagedResponse<PlayerListItem>> {
     return firstValueFrom(
-      this.http.get<PagedResponse<Player>>(`${this.base}/api/players/search`, {
+      this.http.get<PagedResponse<PlayerListItem>>(`${this.base}/api/players/search`, {
         params: { name, page, limit },
       }),
     );

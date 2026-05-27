@@ -1,20 +1,13 @@
-import {
-  Component,
-  DestroyRef,
-  OnInit,
-  computed,
-  inject,
-} from '@angular/core';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonContent, type InfiniteScrollCustomEvent } from '@ionic/angular/standalone';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { ComingSoonService } from '../../../core/services/coming-soon.service';
-import { Player } from '../../../core/models/player.model';
+import { PlayerListItem } from '../../../core/models/player.model';
 import { isAuthenticated } from '../../../core/state/auth.signal';
 
 import { HomeActionBarComponent } from './components/home-action-bar/home-action-bar.component';
-import { HomeEmptyStateComponent } from './components/home-empty-state/home-empty-state.component';
 import { HomeGridComponent } from './components/home-grid/home-grid.component';
 import { HomeHeaderComponent } from './components/home-header/home-header.component';
 import { HomeHeroComponent } from './components/home-hero/home-hero.component';
@@ -31,7 +24,6 @@ import { PlayersPagedStore } from './players-paged.store';
     HomeActionBarComponent,
     HomeSearchComponent,
     HomeGridComponent,
-    HomeEmptyStateComponent,
   ],
   providers: [PlayersPagedStore],
   templateUrl: './players-list.component.html',
@@ -41,7 +33,6 @@ export class PlayersListComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly comingSoon = inject(ComingSoonService);
-  private readonly destroyRef = inject(DestroyRef);
   protected readonly store = inject(PlayersPagedStore);
 
   protected readonly isAuthenticated = isAuthenticated;
@@ -51,13 +42,11 @@ export class PlayersListComponent implements OnInit {
     void this.store.reload(this.store.query());
   }
 
-  // ---- Search ----
   protected onSearchQueryChange(query: string): void {
     if (query === this.store.query()) return;
     void this.store.reload(query);
   }
 
-  // ---- Header ----
   protected goToLogin(): void {
     void this.router.navigate(['/auth/login']);
   }
@@ -68,7 +57,6 @@ export class PlayersListComponent implements OnInit {
     await this.auth.signOut();
   }
 
-  // ---- Action bar ----
   protected onImport(): void {
     void this.comingSoon.notify('Importar jugadores');
   }
@@ -82,14 +70,13 @@ export class PlayersListComponent implements OnInit {
     void this.comingSoon.notify('Publicar noticia');
   }
 
-  // ---- Grid ----
-  protected onPlayerSelected(_player: Player): void {
+  protected onPlayerSelected(_player: PlayerListItem): void {
     void this.comingSoon.notify('Detalle de jugador');
   }
-  protected onEditPlayer(_player: Player): void {
+  protected onEditPlayer(_player: PlayerListItem): void {
     void this.comingSoon.notify('Editar jugador');
   }
-  protected onDeletePlayer(_player: Player): void {
+  protected onDeletePlayer(_player: PlayerListItem): void {
     void this.comingSoon.notify('Eliminar jugador');
   }
 

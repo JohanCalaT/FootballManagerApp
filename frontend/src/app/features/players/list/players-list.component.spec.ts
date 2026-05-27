@@ -5,41 +5,26 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ComingSoonService } from '../../../core/services/coming-soon.service';
 import { PlayersApi } from '../../../core/api/players.api';
 import { PagedResponse } from '../../../core/models/api-response.model';
-import { Player } from '../../../core/models/player.model';
+import { PlayerListItem } from '../../../core/models/player.model';
 import { AuthUser } from '../../../core/models/user.model';
 import { clearSession, setSession } from '../../../core/state/auth.signal';
 
 import { PlayersListComponent } from './players-list.component';
 
-function makePlayer(id: string): Player {
+function makePlayer(id: string): PlayerListItem {
   return {
     id,
-    apiFootballId: null,
     name: `P-${id}`,
-    firstName: null,
-    lastName: null,
-    nationality: null,
-    birthDate: null,
-    birthPlace: null,
-    birthCountry: null,
-    height: null,
-    weight: null,
-    position: null,
-    shirtNumber: null,
-    injured: false,
-    imageUrl: null,
-    imageSource: null,
     team: 'T',
     league: 'L',
+    position: null,
+    imageUrl: null,
+    rating: null,
     registeredAt: '2026-01-01',
-    createdByUserId: 'u',
-    clientGeolocation: null,
-    playerGeolocation: null,
-    statistics: [],
   };
 }
 
-function paged(items: Player[], total: number, page = 1): PagedResponse<Player> {
+function paged(items: PlayerListItem[], total: number, page = 1): PagedResponse<PlayerListItem> {
   return { status: 200, message: 'ok', data: items, page, limit: 20, total, _links: {} };
 }
 

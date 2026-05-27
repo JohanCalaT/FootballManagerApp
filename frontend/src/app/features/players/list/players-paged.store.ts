@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { PlayersApi } from '../../../core/api/players.api';
-import { Player } from '../../../core/models/player.model';
+import { PlayerListItem } from '../../../core/models/player.model';
 
 /**
  * Append-on-load paginated store for the players home grid.
@@ -15,7 +15,7 @@ import { Player } from '../../../core/models/player.model';
 export class PlayersPagedStore {
   private readonly api = inject(PlayersApi);
 
-  readonly players = signal<Player[]>([]);
+  readonly players = signal<PlayerListItem[]>([]);
   readonly page = signal(1);
   readonly total = signal<number | null>(null);
   readonly loading = signal(false);

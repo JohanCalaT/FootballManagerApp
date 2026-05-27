@@ -1,7 +1,27 @@
 import { Geolocation } from './geolocation.model';
+import { HateoasLinks } from './hateoas-link.model';
 
 export type PlayerPosition = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker';
 export type ImageSource = 'blob' | 'api' | 'url';
+
+/**
+ * Flat list-item DTO returned by `GET /api/players` and `/api/players/search`.
+ * Mirrors .NET `PlayerListItemDto` — `rating` is precomputed by the backend
+ * (best of statistics), so the frontend never has to traverse statistics[] for
+ * a roster card. Carries per-item HATEOAS `_links` so the home grid can show
+ * admin affordances driven by the response, not by client-side role checks.
+ */
+export interface PlayerListItem {
+  id: string;
+  name: string;
+  team: string;
+  league: string;
+  position: string | null;
+  imageUrl: string | null;
+  rating: number | null;
+  registeredAt: string;
+  _links?: HateoasLinks;
+}
 
 export interface PlayerStatistics {
   id: string;
