@@ -1,0 +1,25 @@
+<div class="home-empty" [attr.data-kind]="kind()" data-testid="home-grid-empty">
+  <div class="home-empty__hex" aria-hidden="true">
+    <span class="home-empty__hex-glyph">{{ icon() }}</span>
+  </div>
+  <h2 class="home-empty__title t-headline-md">{{ title() }}</h2>
+  <p class="home-empty__subtitle t-body-md">{{ subtitle() }}</p>
+
+  @if (kind() === 'error') {
+    <button
+      type="button"
+      class="home-empty__cta"
+      (click)="retryRequested.emit()"
+      data-testid="home-empty-retry">
+      Reintentar
+    </button>
+  } @else if (kind() === 'no-data' && canRegister()) {
+    <button
+      type="button"
+      class="home-empty__cta"
+      (click)="registerRequested.emit()"
+      data-testid="home-empty-cta-register">
+      Crear cuenta
+    </button>
+  }
+</div>
