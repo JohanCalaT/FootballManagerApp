@@ -1,0 +1,39 @@
+<nav class="home-action-bar" data-testid="home-action-bar" aria-label="Acciones rápidas">
+  <button
+    type="button"
+    class="home-action-bar__btn"
+    (click)="importRequested.emit()"
+    data-testid="home-import-button">
+    <span class="home-action-bar__btn-icon" aria-hidden="true">⇣</span>
+    Importar
+  </button>
+
+  <button
+    type="button"
+    class="home-action-bar__btn"
+    (click)="insertRequested.emit()"
+    data-testid="home-insert-button">
+    <span class="home-action-bar__btn-icon" aria-hidden="true">+</span>
+    Insertar
+  </button>
+
+  <button
+    type="button"
+    class="home-action-bar__btn"
+    (click)="idealTeamRequested.emit()"
+    data-testid="home-ideal-team-button">
+    <span class="home-action-bar__btn-icon" aria-hidden="true">★</span>
+    Equipo ideal
+  </button>
+
+  @if (isAdmin()) {
+    <button
+      type="button"
+      class="home-action-bar__btn home-action-bar__btn--admin"
+      (click)="publishNewsRequested.emit()"
+      data-testid="home-publish-news-button">
+      <span class="home-action-bar__btn-icon" aria-hidden="true">◈</span>
+      Publicar noticia
+    </button>
+  }
+</nav>
