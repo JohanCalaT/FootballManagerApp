@@ -39,3 +39,19 @@ body {
   background: var(--app-bg);
   color: var(--app-on-surface);
 }
+
+// Gridiron Neon toast — used by ComingSoonService and any future global notice.
+// Lives here because Ionic renders ion-toast in an overlay outside the component
+// tree, so a scoped style cannot reach the shadow root.
+.fma-toast {
+  --background: var(--app-surface-floor);
+  --color: var(--app-on-surface);
+  --border-color: var(--app-outline-variant);
+  --border-style: solid;
+  --border-width: 1px;
+  --border-radius: var(--app-radius);
+  --box-shadow: var(--app-glow-primary-soft);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
