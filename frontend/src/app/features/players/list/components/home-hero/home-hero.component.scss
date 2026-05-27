@@ -1,0 +1,35 @@
+:host {
+  display: block;
+}
+
+.home-hero {
+  position: relative;
+  padding: var(--app-space-6) var(--app-space-4) var(--app-space-5);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.home-hero__glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(0, 228, 120, 0.18) 0%, transparent 55%),
+    radial-gradient(circle at 88% 100%, rgba(255, 219, 60, 0.10) 0%, transparent 60%);
+  z-index: -1;
+}
+
+.home-hero__eyebrow {
+  color: var(--app-primary);
+  margin: 0 0 var(--app-space-2);
+}
+
+.home-hero__title {
+  color: var(--app-on-surface);
+  text-transform: uppercase;
+  margin: 0 0 var(--app-space-2);
+}
+
+.home-hero__subtitle {
+  color: var(--app-on-surface-soft);
+  margin: 0;
+}

@@ -3,6 +3,7 @@ import {
   PreloadAllModules,
   RouteReuseStrategy,
   provideRouter,
+  withInMemoryScrolling,
   withPreloading,
 } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
@@ -20,7 +21,14 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     provideIonicAngular({ mode: 'md' }),
-    provideRouter(routes, withPreloading(PreloadAllModules)),
+    provideRouter(
+      routes,
+      withPreloading(PreloadAllModules),
+      withInMemoryScrolling({
+        scrollPositionRestoration: 'enabled',
+        anchorScrolling: 'enabled',
+      }),
+    ),
     provideHttpClient(
       withFetch(),
       withInterceptors([authInterceptor, backendTargetInterceptor, errorInterceptor]),

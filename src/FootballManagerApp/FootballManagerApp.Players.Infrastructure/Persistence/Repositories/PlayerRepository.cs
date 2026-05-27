@@ -22,7 +22,14 @@ public class PlayerRepository : IPlayerRepository
     public async Task<(IEnumerable<Player> Players, int Total)> GetAllAsync(
         int page, int limit, CancellationToken ct)
     {
-        var query = _db.Players.AsNoTracking().OrderByDescending(p => p.RegisteredAt);
+        // Include Statistics so the list-item mapper can derive the latest-season
+        // Rating without doing a second per-row trip to the DB. Without this the
+        // home grid receives rating=null for every player and the <fma-player-card>
+        // tier rings never colour.
+        var query = _db.Players
+            .AsNoTracking()
+            .Include(p => p.Statistics)
+            .OrderByDescending(p => p.RegisteredAt);
         var total = await query.CountAsync(ct);
         var items = await query
             .Skip((page - 1) * limit)
@@ -41,7 +48,7 @@ public class PlayerRepository : IPlayerRepository
         int limit,
         CancellationToken ct)
     {
-        var query = _db.Players.AsNoTracking().AsQueryable();
+        var query = _db.Players.AsNoTracking().Include(p => p.Statistics).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(name))
         {

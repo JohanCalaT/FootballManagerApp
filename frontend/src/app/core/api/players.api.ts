@@ -7,6 +7,7 @@ import {
   CreatePlayerRequest,
   ImportPlayerItem,
   Player,
+  PlayerListItem,
   PlayerSearchFilters,
   UpdatePlayerRequest,
 } from '../models/player.model';
@@ -56,6 +57,29 @@ export class PlayersApi {
       const id = apiFootballId();
       return id != null ? `${this.base}/api/players/seasons/${id}` : undefined;
     });
+  }
+
+  // Promise-shaped variants used by the home page paged store, which needs
+  // append-on-load semantics that httpResource (replace-on-URL-change) does
+  // not provide out of the box.
+  async listPage(page: number, limit: number): Promise<PagedResponse<PlayerListItem>> {
+    return firstValueFrom(
+      this.http.get<PagedResponse<PlayerListItem>>(`${this.base}/api/players`, {
+        params: { page, limit },
+      }),
+    );
+  }
+
+  async searchPage(
+    name: string,
+    page: number,
+    limit: number,
+  ): Promise<PagedResponse<PlayerListItem>> {
+    return firstValueFrom(
+      this.http.get<PagedResponse<PlayerListItem>>(`${this.base}/api/players/search`, {
+        params: { name, page, limit },
+      }),
+    );
   }
 
   async create(payload: CreatePlayerRequest): Promise<ApiResponse<Player>> {

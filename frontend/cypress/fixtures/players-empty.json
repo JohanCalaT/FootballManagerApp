@@ -1,0 +1,11 @@
+{
+  "status": 200,
+  "message": "OK",
+  "data": [],
+  "page": 1,
+  "limit": 20,
+  "total": 0,
+  "_links": {
+    "self": { "href": "/api/players?page=1&limit=20", "rel": "self", "method": "GET" }
+  }
+}
