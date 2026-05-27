@@ -7,20 +7,34 @@
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
     /**
-     * Player summary card — used in /players list and search results.
+     * Player roster tile — used in /players list and search results.
      * Inputs map 1:1 to PlayerListItemDto from the .NET backend (and the
      * mirrored Node response): name, team, league, position, image-url,
-     * rating. Anonymous and registered users see the same component; admin
+     * rating. Anonymous and registered users see the same tile; admin
      * action affordances are exposed through the `actions` slot so this
      * component stays role-agnostic.
-     * Clicking the card emits a `playerSelected` CustomEvent with the
+     * Clicking the tile emits a `playerSelected` CustomEvent with the
      * normalized payload, so the host can route to the detail page or
-     * trigger any other navigation without the card knowing about it.
-     * Design language (Gridiron Neon, see DESIGN.md / frontend
-     * theme/variables.scss): glass surface gradient, neon-green primary on
-     * focus/hover, rating as a tier-coloured pill (bronze/silver/gold/icon).
-     * The component reads --app-* CSS custom properties from the host so the
-     * design tokens are inherited automatically; no token duplication.
+     * trigger any other navigation without the tile knowing about it.
+     * Layout — square-ish tile (~1 : 1.15 aspect), designed for 2 columns
+     * on a 360-420px mobile viewport and 3-5 columns on tablet/desktop via
+     * `repeat(auto-fill, minmax(180px, 1fr))` on the host grid.
+     * Design language ("Stadium control room HUD", Gridiron Neon palette
+     * from DESIGN.md / frontend theme/variables.scss):
+     *   - Circular player tokens with multi-layer glowing rings (ring color
+     *     signals tier — bronze / silver / gold / icon) sit at the top.
+     *   - Rating badge orbits the token at the 4-5 o'clock position.
+     *   - Hexagonal grid backdrop + radial tier glow concentrated on the
+     *     token area give the surface a premium simulator depth.
+     *   - A thin tier accent stripe at the bottom edge reinforces the tier
+     *     when the user scrolls a long grid.
+     *   - The component reads --app-* CSS custom properties from the host
+     *     so the design tokens are inherited automatically through the
+     *     shadow boundary; no token duplication.
+     * `league` is kept on the prop surface for forward-compat with the DTO
+     * but intentionally not rendered in the tile — at 180px wide there is
+     * no room for it without truncating something more important. The
+     * league is still available on the player detail page.
      */
     interface FmaPlayerCard {
         /**
@@ -28,14 +42,14 @@ export namespace Components {
          */
         "imageUrl"?: string;
         /**
-          * When true, the whole card is keyboard-interactive and emits playerSelected on click / Enter / Space. Defaults to true; flip to false for purely-display contexts (e.g. inside a pop-up).
+          * When true, the whole tile is keyboard-interactive and emits playerSelected on click / Enter / Space. Defaults to true; flip to false for purely-display contexts (e.g. inside a pop-up).
           * @default true
          */
         "interactive": boolean;
         /**
-          * League name (required).
+          * League name. Accepted for DTO parity, not displayed in the tile.
          */
-        "league": string;
+        "league"?: string;
         /**
           * Player display name (required).
          */
@@ -49,7 +63,7 @@ export namespace Components {
          */
         "position"?: string;
         /**
-          * Overall rating (0–10, decimal). Renders the tier pill if present.
+          * Overall rating (0–10, decimal). Renders the orbital badge if present.
          */
         "rating"?: number;
         /**
@@ -67,20 +81,34 @@ declare global {
         "playerSelected": { playerId?: string; name: string };
     }
     /**
-     * Player summary card — used in /players list and search results.
+     * Player roster tile — used in /players list and search results.
      * Inputs map 1:1 to PlayerListItemDto from the .NET backend (and the
      * mirrored Node response): name, team, league, position, image-url,
-     * rating. Anonymous and registered users see the same component; admin
+     * rating. Anonymous and registered users see the same tile; admin
      * action affordances are exposed through the `actions` slot so this
      * component stays role-agnostic.
-     * Clicking the card emits a `playerSelected` CustomEvent with the
+     * Clicking the tile emits a `playerSelected` CustomEvent with the
      * normalized payload, so the host can route to the detail page or
-     * trigger any other navigation without the card knowing about it.
-     * Design language (Gridiron Neon, see DESIGN.md / frontend
-     * theme/variables.scss): glass surface gradient, neon-green primary on
-     * focus/hover, rating as a tier-coloured pill (bronze/silver/gold/icon).
-     * The component reads --app-* CSS custom properties from the host so the
-     * design tokens are inherited automatically; no token duplication.
+     * trigger any other navigation without the tile knowing about it.
+     * Layout — square-ish tile (~1 : 1.15 aspect), designed for 2 columns
+     * on a 360-420px mobile viewport and 3-5 columns on tablet/desktop via
+     * `repeat(auto-fill, minmax(180px, 1fr))` on the host grid.
+     * Design language ("Stadium control room HUD", Gridiron Neon palette
+     * from DESIGN.md / frontend theme/variables.scss):
+     *   - Circular player tokens with multi-layer glowing rings (ring color
+     *     signals tier — bronze / silver / gold / icon) sit at the top.
+     *   - Rating badge orbits the token at the 4-5 o'clock position.
+     *   - Hexagonal grid backdrop + radial tier glow concentrated on the
+     *     token area give the surface a premium simulator depth.
+     *   - A thin tier accent stripe at the bottom edge reinforces the tier
+     *     when the user scrolls a long grid.
+     *   - The component reads --app-* CSS custom properties from the host
+     *     so the design tokens are inherited automatically through the
+     *     shadow boundary; no token duplication.
+     * `league` is kept on the prop surface for forward-compat with the DTO
+     * but intentionally not rendered in the tile — at 180px wide there is
+     * no room for it without truncating something more important. The
+     * league is still available on the player detail page.
      */
     interface HTMLFmaPlayerCardElement extends Components.FmaPlayerCard, HTMLStencilElement {
         addEventListener<K extends keyof HTMLFmaPlayerCardElementEventMap>(type: K, listener: (this: HTMLFmaPlayerCardElement, ev: FmaPlayerCardCustomEvent<HTMLFmaPlayerCardElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
@@ -104,20 +132,34 @@ declare namespace LocalJSX {
     type OneOf<K extends string, PropT, AttrT = PropT> = { [P in K]: PropT } & { [P in `attr:${K}` | `prop:${K}`]?: never } | { [P in `attr:${K}`]: AttrT } & { [P in K | `prop:${K}`]?: never } | { [P in `prop:${K}`]: PropT } & { [P in K | `attr:${K}`]?: never };
 
     /**
-     * Player summary card — used in /players list and search results.
+     * Player roster tile — used in /players list and search results.
      * Inputs map 1:1 to PlayerListItemDto from the .NET backend (and the
      * mirrored Node response): name, team, league, position, image-url,
-     * rating. Anonymous and registered users see the same component; admin
+     * rating. Anonymous and registered users see the same tile; admin
      * action affordances are exposed through the `actions` slot so this
      * component stays role-agnostic.
-     * Clicking the card emits a `playerSelected` CustomEvent with the
+     * Clicking the tile emits a `playerSelected` CustomEvent with the
      * normalized payload, so the host can route to the detail page or
-     * trigger any other navigation without the card knowing about it.
-     * Design language (Gridiron Neon, see DESIGN.md / frontend
-     * theme/variables.scss): glass surface gradient, neon-green primary on
-     * focus/hover, rating as a tier-coloured pill (bronze/silver/gold/icon).
-     * The component reads --app-* CSS custom properties from the host so the
-     * design tokens are inherited automatically; no token duplication.
+     * trigger any other navigation without the tile knowing about it.
+     * Layout — square-ish tile (~1 : 1.15 aspect), designed for 2 columns
+     * on a 360-420px mobile viewport and 3-5 columns on tablet/desktop via
+     * `repeat(auto-fill, minmax(180px, 1fr))` on the host grid.
+     * Design language ("Stadium control room HUD", Gridiron Neon palette
+     * from DESIGN.md / frontend theme/variables.scss):
+     *   - Circular player tokens with multi-layer glowing rings (ring color
+     *     signals tier — bronze / silver / gold / icon) sit at the top.
+     *   - Rating badge orbits the token at the 4-5 o'clock position.
+     *   - Hexagonal grid backdrop + radial tier glow concentrated on the
+     *     token area give the surface a premium simulator depth.
+     *   - A thin tier accent stripe at the bottom edge reinforces the tier
+     *     when the user scrolls a long grid.
+     *   - The component reads --app-* CSS custom properties from the host
+     *     so the design tokens are inherited automatically through the
+     *     shadow boundary; no token duplication.
+     * `league` is kept on the prop surface for forward-compat with the DTO
+     * but intentionally not rendered in the tile — at 180px wide there is
+     * no room for it without truncating something more important. The
+     * league is still available on the player detail page.
      */
     interface FmaPlayerCard {
         /**
@@ -125,14 +167,14 @@ declare namespace LocalJSX {
          */
         "imageUrl"?: string;
         /**
-          * When true, the whole card is keyboard-interactive and emits playerSelected on click / Enter / Space. Defaults to true; flip to false for purely-display contexts (e.g. inside a pop-up).
+          * When true, the whole tile is keyboard-interactive and emits playerSelected on click / Enter / Space. Defaults to true; flip to false for purely-display contexts (e.g. inside a pop-up).
           * @default true
          */
         "interactive"?: boolean;
         /**
-          * League name (required).
+          * League name. Accepted for DTO parity, not displayed in the tile.
          */
-        "league": string;
+        "league"?: string;
         /**
           * Player display name (required).
          */
@@ -147,7 +189,7 @@ declare namespace LocalJSX {
          */
         "position"?: string;
         /**
-          * Overall rating (0–10, decimal). Renders the tier pill if present.
+          * Overall rating (0–10, decimal). Renders the orbital badge if present.
          */
         "rating"?: number;
         /**
@@ -168,7 +210,7 @@ declare namespace LocalJSX {
     }
 
     interface IntrinsicElements {
-        "fma-player-card": Omit<FmaPlayerCard, keyof FmaPlayerCardAttributes> & { [K in keyof FmaPlayerCard & keyof FmaPlayerCardAttributes]?: FmaPlayerCard[K] } & { [K in keyof FmaPlayerCard & keyof FmaPlayerCardAttributes as `attr:${K}`]?: FmaPlayerCardAttributes[K] } & { [K in keyof FmaPlayerCard & keyof FmaPlayerCardAttributes as `prop:${K}`]?: FmaPlayerCard[K] } & OneOf<"name", FmaPlayerCard["name"], FmaPlayerCardAttributes["name"]> & OneOf<"team", FmaPlayerCard["team"], FmaPlayerCardAttributes["team"]> & OneOf<"league", FmaPlayerCard["league"], FmaPlayerCardAttributes["league"]>;
+        "fma-player-card": Omit<FmaPlayerCard, keyof FmaPlayerCardAttributes> & { [K in keyof FmaPlayerCard & keyof FmaPlayerCardAttributes]?: FmaPlayerCard[K] } & { [K in keyof FmaPlayerCard & keyof FmaPlayerCardAttributes as `attr:${K}`]?: FmaPlayerCardAttributes[K] } & { [K in keyof FmaPlayerCard & keyof FmaPlayerCardAttributes as `prop:${K}`]?: FmaPlayerCard[K] } & OneOf<"name", FmaPlayerCard["name"], FmaPlayerCardAttributes["name"]> & OneOf<"team", FmaPlayerCard["team"], FmaPlayerCardAttributes["team"]>;
     }
 }
 export { LocalJSX as JSX };
@@ -176,20 +218,34 @@ declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
             /**
-             * Player summary card — used in /players list and search results.
+             * Player roster tile — used in /players list and search results.
              * Inputs map 1:1 to PlayerListItemDto from the .NET backend (and the
              * mirrored Node response): name, team, league, position, image-url,
-             * rating. Anonymous and registered users see the same component; admin
+             * rating. Anonymous and registered users see the same tile; admin
              * action affordances are exposed through the `actions` slot so this
              * component stays role-agnostic.
-             * Clicking the card emits a `playerSelected` CustomEvent with the
+             * Clicking the tile emits a `playerSelected` CustomEvent with the
              * normalized payload, so the host can route to the detail page or
-             * trigger any other navigation without the card knowing about it.
-             * Design language (Gridiron Neon, see DESIGN.md / frontend
-             * theme/variables.scss): glass surface gradient, neon-green primary on
-             * focus/hover, rating as a tier-coloured pill (bronze/silver/gold/icon).
-             * The component reads --app-* CSS custom properties from the host so the
-             * design tokens are inherited automatically; no token duplication.
+             * trigger any other navigation without the tile knowing about it.
+             * Layout — square-ish tile (~1 : 1.15 aspect), designed for 2 columns
+             * on a 360-420px mobile viewport and 3-5 columns on tablet/desktop via
+             * `repeat(auto-fill, minmax(180px, 1fr))` on the host grid.
+             * Design language ("Stadium control room HUD", Gridiron Neon palette
+             * from DESIGN.md / frontend theme/variables.scss):
+             *   - Circular player tokens with multi-layer glowing rings (ring color
+             *     signals tier — bronze / silver / gold / icon) sit at the top.
+             *   - Rating badge orbits the token at the 4-5 o'clock position.
+             *   - Hexagonal grid backdrop + radial tier glow concentrated on the
+             *     token area give the surface a premium simulator depth.
+             *   - A thin tier accent stripe at the bottom edge reinforces the tier
+             *     when the user scrolls a long grid.
+             *   - The component reads --app-* CSS custom properties from the host
+             *     so the design tokens are inherited automatically through the
+             *     shadow boundary; no token duplication.
+             * `league` is kept on the prop surface for forward-compat with the DTO
+             * but intentionally not rendered in the tile — at 180px wide there is
+             * no room for it without truncating something more important. The
+             * league is still available on the player detail page.
              */
             "fma-player-card": LocalJSX.IntrinsicElements["fma-player-card"] & JSXBase.HTMLAttributes<HTMLFmaPlayerCardElement>;
         }
