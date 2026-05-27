@@ -1,0 +1,93 @@
+:host {
+  display: block;
+  padding: var(--app-space-5) var(--app-space-4);
+}
+
+.import-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-4);
+}
+
+.import-result__banner {
+  padding: var(--app-space-3);
+  border-radius: var(--app-radius);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  text-align: center;
+}
+
+.import-result__banner--error {
+  background: rgba(255, 180, 171, 0.08);
+  border: 1px solid var(--app-error);
+  color: var(--app-error);
+}
+
+.import-result__section {
+  padding: var(--app-space-3);
+  border-radius: var(--app-radius-md);
+  border: 1px solid var(--app-outline-variant);
+}
+
+.import-result__section--ok {
+  border-color: var(--app-primary);
+  background: rgba(0, 228, 120, 0.04);
+}
+
+.import-result__section--fail {
+  border-color: var(--app-secondary);
+  background: rgba(255, 219, 60, 0.04);
+}
+
+.import-result__title {
+  margin: 0 0 var(--app-space-2);
+  color: var(--app-on-surface-soft);
+}
+
+.import-result__section--ok .import-result__title { color: var(--app-primary); }
+.import-result__section--fail .import-result__title { color: var(--app-secondary); }
+
+.import-result__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-2);
+}
+
+.import-result__list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--app-space-2);
+  border-radius: var(--app-radius-sm);
+  background: var(--app-surface-low);
+}
+
+.import-result__name {
+  color: var(--app-on-surface);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.import-result__meta {
+  color: var(--app-on-surface-soft);
+  font-size: 11px;
+}
+
+.import-result__back {
+  appearance: none;
+  margin-top: var(--app-space-3);
+  min-height: 44px;
+  border-radius: var(--app-radius-full);
+  background: var(--app-primary);
+  color: var(--app-on-primary);
+  border: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+
+  &:hover { box-shadow: var(--app-glow-primary); }
+}

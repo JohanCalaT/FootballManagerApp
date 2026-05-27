@@ -3,6 +3,7 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { GATEWAY_URL } from '../tokens/gateway-url.token';
 import { ApiResponse, PagedResponse } from '../models/api-response.model';
+import { ApiFootballProfile, ImportResult } from '../models/api-football.model';
 import {
   CreatePlayerRequest,
   ImportPlayerItem,
@@ -46,9 +47,9 @@ export class PlayersApi {
   }
 
   searchExternal(query: Signal<string | null>) {
-    return httpResource<ApiResponse<Player[]>>(() => {
+    return httpResource<ApiResponse<ApiFootballProfile[]>>(() => {
       const q = query();
-      return q ? `${this.base}/api/players/search-external?search=${encodeURIComponent(q)}` : undefined;
+      return q ? `${this.base}/api/players/search-external?query=${encodeURIComponent(q)}` : undefined;
     });
   }
 
@@ -57,6 +58,31 @@ export class PlayersApi {
       const id = apiFootballId();
       return id != null ? `${this.base}/api/players/seasons/${id}` : undefined;
     });
+  }
+
+  // Promise-shaped variants of the API-Football proxy endpoints, used by the
+  // import flow store which orchestrates manual selection + auto-resolution
+  // of the season per player and can't lean on httpResource's URL-driven
+  // recomputation.
+  async searchExternalOnce(
+    query: string,
+    page: number,
+    limit: number,
+  ): Promise<PagedResponse<ApiFootballProfile>> {
+    return firstValueFrom(
+      this.http.get<PagedResponse<ApiFootballProfile>>(
+        `${this.base}/api/players/search-external`,
+        { params: { query, page, limit } },
+      ),
+    );
+  }
+
+  async seasonsOfOnce(apiFootballId: number): Promise<ApiResponse<number[]>> {
+    return firstValueFrom(
+      this.http.get<ApiResponse<number[]>>(
+        `${this.base}/api/players/seasons/${apiFootballId}`,
+      ),
+    );
   }
 
   // Promise-shaped variants used by the home page paged store, which needs
@@ -88,9 +114,9 @@ export class PlayersApi {
     );
   }
 
-  async import(items: ImportPlayerItem[]): Promise<ApiResponse<Player[]>> {
+  async import(items: ImportPlayerItem[]): Promise<ApiResponse<ImportResult>> {
     return firstValueFrom(
-      this.http.post<ApiResponse<Player[]>>(`${this.base}/api/players/import`, items),
+      this.http.post<ApiResponse<ImportResult>>(`${this.base}/api/players/import`, items),
     );
   }
 

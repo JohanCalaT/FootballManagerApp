@@ -1,12 +1,17 @@
 import { Component, OnInit, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonContent, type InfiniteScrollCustomEvent } from '@ionic/angular/standalone';
+import {
+  IonContent,
+  ModalController,
+  type InfiniteScrollCustomEvent,
+} from '@ionic/angular/standalone';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { ComingSoonService } from '../../../core/services/coming-soon.service';
 import { PlayerListItem } from '../../../core/models/player.model';
 import { isAuthenticated } from '../../../core/state/auth.signal';
 
+import { ImportPlayersDialogComponent } from '../import/import-players-dialog.component';
 import { HomeActionBarComponent } from './components/home-action-bar/home-action-bar.component';
 import { HomeGridComponent } from './components/home-grid/home-grid.component';
 import { HomeHeaderComponent } from './components/home-header/home-header.component';
@@ -33,6 +38,7 @@ export class PlayersListComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly comingSoon = inject(ComingSoonService);
+  private readonly modalCtrl = inject(ModalController);
   protected readonly store = inject(PlayersPagedStore);
 
   protected readonly isAuthenticated = isAuthenticated;
@@ -57,8 +63,16 @@ export class PlayersListComponent implements OnInit {
     await this.auth.signOut();
   }
 
-  protected onImport(): void {
-    void this.comingSoon.notify('Importar jugadores');
+  protected async onImport(): Promise<void> {
+    const modal = await this.modalCtrl.create({
+      component: ImportPlayersDialogComponent,
+      cssClass: 'fma-fullscreen-modal',
+    });
+    await modal.present();
+    const { data } = await modal.onWillDismiss<{ importedCount: number }>();
+    if ((data?.importedCount ?? 0) > 0) {
+      await this.store.reload(this.store.query());
+    }
   }
   protected onInsert(): void {
     void this.comingSoon.notify('Insertar jugador');
