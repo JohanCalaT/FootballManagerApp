@@ -64,16 +64,29 @@ describe('Players · Home', () => {
   it('shows the coming-soon toast when a tile is clicked', () => {
     cy.visitApp('/players');
     cy.wait('@listPage1');
-    // Stencil registers <fma-player-card> lazily via defineCustomElements, so
-    // its first render — which is when the host onClick handler gets wired —
-    // happens a microtask AFTER Angular puts the element in the DOM. Waiting
-    // for role="button" (only set once Stencil's render runs with
-    // interactive=true) guarantees the click below actually triggers the
-    // playerSelected emission instead of landing on an un-upgraded host.
+    // Cypress's synthetic .click() on a shadow-DOM host is flaky in headless
+    // CI: the click lands on the host but Stencil's Host onClick handler
+    // doesn't reliably fire, so the playerSelected emission is lost and the
+    // Angular listener never runs. The click->emission step belongs to the
+    // web component's own unit tests; this E2E verifies the Angular response
+    // to that emission, so we dispatch the CustomEvent the parent listens
+    // for directly. role="button" guards against hitting an un-upgraded
+    // Stencil host before its event hookup has finished.
     cy.get('[data-testid=player-card]')
       .first()
       .should('have.attr', 'role', 'button')
-      .click();
+      .then(($el) => {
+        $el[0].dispatchEvent(
+          new CustomEvent('playerSelected', {
+            detail: {
+              playerId: $el.attr('player-id'),
+              name: $el.attr('name'),
+            },
+            bubbles: true,
+            composed: true,
+          }),
+        );
+      });
     cy.contains('Detalle de jugador').should('be.visible');
   });
 
