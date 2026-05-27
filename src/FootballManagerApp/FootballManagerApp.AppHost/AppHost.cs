@@ -52,6 +52,19 @@ var geminiApiKey   = builder.AddParameter("GeminiApiKey",   secret: true);
 // con credenciales (Atlas admin) y nombre de BD `football-manager`.
 var mongoDbUri = builder.AddParameter("MongoDbUri", secret: true);
 
+// Firebase web app config — NO son secretos reales (el apiKey de Firebase es
+// público por diseño: la seguridad viene de Authorized Domains + Security Rules
+// + validación del JWT en el Gateway). Los pasamos por AppHost igual que el
+// resto para tener una sola fuente de verdad entre local (user-secrets) y
+// cloud (Key Vault). projectId además lo consume el Gateway para validar JWTs.
+var firebaseApiKey            = builder.AddParameter("FirebaseApiKey");
+var firebaseAuthDomain        = builder.AddParameter("FirebaseAuthDomain");
+var firebaseProjectId         = builder.AddParameter("FirebaseProjectId");
+var firebaseStorageBucket     = builder.AddParameter("FirebaseStorageBucket");
+var firebaseMessagingSenderId = builder.AddParameter("FirebaseMessagingSenderId");
+var firebaseAppId             = builder.AddParameter("FirebaseAppId");
+var firebaseMeasurementId     = builder.AddParameter("FirebaseMeasurementId");
+
 // Migration workers — run once per deploy, exit, gate the APIs via WaitForCompletion.
 var playersMigrations = builder
     .AddProject<Projects.FootballManagerApp_Players_MigrationService>("players-migrations")
@@ -81,6 +94,7 @@ var playersApi = builder.AddProject<Projects.FootballManagerApp_Players_API>("pl
 var gateway = builder.AddProject<Projects.FootballManagerApp_Gateway>("gateway")
     .WithReference(playersApi)
     .WithReference(commentsApi)
+    .WithEnvironment("Firebase__ProjectId", firebaseProjectId)
     .WithExternalHttpEndpoints();
 
 // Node consume el mismo Redis que .NET para compartir cache de API-Football
@@ -131,6 +145,15 @@ gateway.WithReference(newsAdapter.GetEndpoint("http"));
 var frontend = builder.AddNpmApp("ionic-app", "../../../frontend", scriptName: "start")
     .WithReference(gateway)
     .WithHttpEndpoint(env: "PORT")
+    // Firebase web config — leído por scripts/write-config.js (prestart) y
+    // materializado en src/assets/config.json antes de arrancar Ionic.
+    .WithEnvironment("FIREBASE_API_KEY",             firebaseApiKey)
+    .WithEnvironment("FIREBASE_AUTH_DOMAIN",         firebaseAuthDomain)
+    .WithEnvironment("FIREBASE_PROJECT_ID",          firebaseProjectId)
+    .WithEnvironment("FIREBASE_STORAGE_BUCKET",      firebaseStorageBucket)
+    .WithEnvironment("FIREBASE_MESSAGING_SENDER_ID", firebaseMessagingSenderId)
+    .WithEnvironment("FIREBASE_APP_ID",              firebaseAppId)
+    .WithEnvironment("FIREBASE_MEASUREMENT_ID",      firebaseMeasurementId)
     .WithExternalHttpEndpoints()
     .WaitFor(gateway)
     .PublishAsDockerFile();

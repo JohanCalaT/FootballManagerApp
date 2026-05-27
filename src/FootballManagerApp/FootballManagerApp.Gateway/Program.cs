@@ -11,15 +11,17 @@ builder.Services.AddReverseProxy()
 
 builder.Services.AddBackendStrategies();
 builder.Services.AddControllers();
-
-// TODO: JWT Firebase validation — activar cuando se implemente
-// builder.Services.AddFirebaseAuth(builder.Configuration);
+builder.Services.AddFirebaseAuth(builder.Configuration);
 
 var app = builder.Build();
 
-// TODO: JWT Firebase validation
-// app.UseAuthentication();
-// app.UseAuthorization();
+// Authentication must run BEFORE HeaderForwardingMiddleware so the
+// middleware sees a populated ClaimsPrincipal and can stamp X-User-* from
+// the validated claims. Authorization is registered but no [Authorize]
+// attributes exist on the Gateway itself — downstream services gate on
+// the forwarded headers.
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseMiddleware<UpstreamErrorResponseMiddleware>();
 app.UseMiddleware<HeaderForwardingMiddleware>();

@@ -33,7 +33,11 @@
                 "output": "assets"
               }
             ],
-            "styles": ["src/global.scss", "src/theme/variables.scss"],
+            "styles": [
+              "src/global.scss",
+              "src/theme/variables.scss",
+              "src/app/features/auth/auth-shell.scss"
+            ],
             "scripts": [],
             "browser": "src/main.ts"
           },
@@ -110,7 +114,11 @@
                 "output": "assets"
               }
             ],
-            "styles": ["src/global.scss", "src/theme/variables.scss"],
+            "styles": [
+              "src/global.scss",
+              "src/theme/variables.scss",
+              "src/app/features/auth/auth-shell.scss"
+            ],
             "scripts": []
           },
           "configurations": {
