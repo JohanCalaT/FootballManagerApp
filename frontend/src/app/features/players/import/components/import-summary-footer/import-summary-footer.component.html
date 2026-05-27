@@ -1,0 +1,31 @@
+<footer class="import-footer" data-testid="import-summary-footer">
+  <span class="import-footer__counter t-label-sm" data-testid="import-summary-counter">
+    {{ selectedCount() }}
+    jugador{{ selectedCount() === 1 ? '' : 'es' }}
+    seleccionado{{ selectedCount() === 1 ? '' : 's' }}
+  </span>
+
+  @if (selectedCount() > 0 && !submitting()) {
+    <button
+      type="button"
+      class="import-footer__link"
+      (click)="clearRequested.emit()"
+      data-testid="import-summary-clear">
+      Limpiar
+    </button>
+  }
+
+  <button
+    type="button"
+    class="import-footer__cta"
+    [disabled]="!canSubmit()"
+    (click)="submitRequested.emit()"
+    data-testid="import-submit-button">
+    @if (submitting()) {
+      <span class="import-footer__spinner" aria-hidden="true"></span>
+      Importando…
+    } @else {
+      Importar ➜
+    }
+  </button>
+</footer>
