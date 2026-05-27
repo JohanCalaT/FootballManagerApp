@@ -1,0 +1,19 @@
+{
+  "name": "Football Manager",
+  "short_name": "FM",
+  "description": "Gestión de jugadores y estadísticas — Máster UAL.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#00e478",
+  "background_color": "#131318",
+  "icons": [
+    { "src": "assets/icons/icon-72.webp",  "sizes": "72x72",   "type": "image/webp" },
+    { "src": "assets/icons/icon-96.webp",  "sizes": "96x96",   "type": "image/webp" },
+    { "src": "assets/icons/icon-128.webp", "sizes": "128x128", "type": "image/webp" },
+    { "src": "assets/icons/icon-192.webp", "sizes": "192x192", "type": "image/webp", "purpose": "any" },
+    { "src": "assets/icons/icon-256.webp", "sizes": "256x256", "type": "image/webp" },
+    { "src": "assets/icons/icon-512.webp", "sizes": "512x512", "type": "image/webp", "purpose": "any maskable" }
+  ]
+}
