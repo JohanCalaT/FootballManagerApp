@@ -1,0 +1,79 @@
+:host {
+  display: block;
+  padding: var(--app-space-4);
+}
+
+.home-grid {
+  display: grid;
+  gap: var(--app-space-3);
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+
+.home-grid__skeleton {
+  aspect-ratio: 1 / 1.15;
+  border-radius: var(--app-radius-md);
+  background:
+    linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(255, 255, 255, 0.06) 50%,
+      rgba(255, 255, 255, 0.03) 100%
+    ),
+    var(--app-surface-low);
+  background-size: 200% 100%;
+  animation: home-grid-shimmer 1.4s ease-in-out infinite;
+  border: 1px solid var(--app-outline-variant);
+}
+
+@keyframes home-grid-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.home-grid__end {
+  margin-top: var(--app-space-5);
+  text-align: center;
+  color: var(--app-on-surface-faint);
+}
+
+// Slotted admin action buttons inside <fma-player-card>. The web component
+// reserves a top-right anchored area for the `actions` slot; these styles
+// shape the button visually. Because slotted children render in the LIGHT
+// DOM, normal global styles reach them.
+.card-action {
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--app-radius-full);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.65);
+  color: var(--app-on-surface);
+  border: 1px solid var(--app-outline-variant);
+  transition: transform 0.1s ease, color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--app-primary-glow-soft);
+  }
+}
+
+.card-action--edit:hover {
+  color: var(--app-secondary);
+  border-color: var(--app-secondary);
+}
+
+.card-action--delete:hover {
+  color: var(--app-error);
+  border-color: var(--app-error);
+}
