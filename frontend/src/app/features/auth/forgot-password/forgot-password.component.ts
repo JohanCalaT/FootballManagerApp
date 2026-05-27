@@ -14,7 +14,10 @@ import {
   standalone: true,
   imports: [IonContent, RouterLink],
   templateUrl: './forgot-password.component.html',
-  styleUrls: ['../auth-shell.scss', './forgot-password.component.scss'],
+  // auth-shell.scss is loaded globally via angular.json (shared across the
+  // three auth pages, kept out of each lazy chunk to fit the production
+  // anyComponentStyle budget).
+  styleUrls: ['./forgot-password.component.scss'],
 })
 export class ForgotPasswordComponent {
   private readonly auth = inject(AuthService);

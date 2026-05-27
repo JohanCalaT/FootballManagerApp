@@ -14,7 +14,10 @@ import {
   standalone: true,
   imports: [IonContent, RouterLink],
   templateUrl: './register.component.html',
-  styleUrls: ['../auth-shell.scss', './register.component.scss'],
+  // auth-shell.scss is loaded globally via angular.json (shared across the
+  // three auth pages, kept out of each lazy chunk to fit the production
+  // anyComponentStyle budget).
+  styleUrls: ['./register.component.scss'],
 })
 export class RegisterComponent {
   private readonly auth = inject(AuthService);
