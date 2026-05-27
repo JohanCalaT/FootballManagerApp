@@ -1,0 +1,52 @@
+<button
+  type="button"
+  class="import-card"
+  [class.is-selected]="isSelected() && !isUnavailable()"
+  [class.is-unavailable]="isUnavailable()"
+  [disabled]="disabled() && !isSelected()"
+  (click)="onClick()"
+  [attr.data-testid]="'import-player-card-' + profile().apiFootballId">
+  <span class="import-card__check"
+    [class.is-checked]="isSelected() && !isUnavailable()"
+    [class.is-unavailable]="isUnavailable()"
+    [attr.data-testid]="'import-player-checkbox-' + profile().apiFootballId"
+    aria-hidden="true">
+    @if (isUnavailable()) {
+      ⊘
+    } @else if (isSelected()) {
+      ✓
+    }
+  </span>
+
+  <span class="import-card__avatar" aria-hidden="true">
+    @if (profile().photo) {
+      <img [src]="profile().photo" alt="" loading="lazy" />
+    } @else {
+      <span class="import-card__initials">{{ initials() }}</span>
+    }
+  </span>
+
+  <span class="import-card__body">
+    <span class="import-card__name">{{ profile().name }}</span>
+    <span class="import-card__meta">
+      @if (profile().position) {
+        <span class="import-card__chip">{{ profile().position }}</span>
+      }
+      @if (profile().nationality) {
+        <span class="import-card__nationality">{{ profile().nationality }}</span>
+      }
+    </span>
+    <span class="import-card__status"
+      [attr.data-testid]="'import-player-season-badge-' + profile().apiFootballId">
+      @if (isPending()) {
+        <span class="import-card__badge">⌛ resolviendo…</span>
+      } @else if (resolvedSeason(); as s) {
+        <span class="import-card__badge import-card__badge--season">· temporada {{ s }}</span>
+      } @else if (isUnavailable()) {
+        <span class="import-card__badge import-card__badge--unavailable">
+          Sin datos 2022–2024
+        </span>
+      }
+    </span>
+  </span>
+</button>
