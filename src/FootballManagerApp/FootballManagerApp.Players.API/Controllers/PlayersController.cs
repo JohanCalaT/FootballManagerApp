@@ -212,6 +212,16 @@ public class PlayersController : ControllerBase
         }
     }
 
+    // Path alias para alinearse con el backend Node (que expone
+    // /api/players/seasons/{id} sin el segmento "external"). El frontend
+    // usa SOLO esta ruta corta para que el mismo cliente funcione contra
+    // ambos backends sin ramificar por X-Backend-Target. La ruta antigua
+    // se mantiene para no romper consumers existentes ni la documentación
+    // OpenAPI ya publicada.
+    [HttpGet("seasons/{apiFootballId:int}", Name = "GetExternalSeasonsAlias")]
+    public Task<IActionResult> Seasons(int apiFootballId, CancellationToken ct)
+        => ExternalSeasons(apiFootballId, ct);
+
     private IActionResult MapApiFootballError<T>(ApiFootballError error)
     {
         int status = error switch
