@@ -64,29 +64,29 @@ describe('Players · Home', () => {
   it('shows the coming-soon toast when a tile is clicked', () => {
     cy.visitApp('/players');
     cy.wait('@listPage1');
-    // Cypress's synthetic .click() on a shadow-DOM host is flaky in headless
-    // CI: the click lands on the host but Stencil's Host onClick handler
-    // doesn't reliably fire, so the playerSelected emission is lost and the
-    // Angular listener never runs. The click->emission step belongs to the
-    // web component's own unit tests; this E2E verifies the Angular response
-    // to that emission, so we dispatch the CustomEvent the parent listens
-    // for directly. role="button" guards against hitting an un-upgraded
-    // Stencil host before its event hookup has finished.
+    // Mirror what a real user does: click the tile. We layer three guards
+    // because <fma-player-card> is a lazy-loaded Stencil custom element and
+    // Edge headless takes a microtask longer than Chrome to wire the host
+    // onClick handler:
+    //   - should('be.visible')                  → the chunk is painted
+    //   - should('have.attr', 'role', 'button') → Stencil's render ran with
+    //                                              interactive=true (so the
+    //                                              onClick handler is on)
+    //   - click({ force: true })                → skip Cypress's actionability
+    //                                              quirks for shadow-DOM
+    //                                              hosts that vary subtly
+    //                                              between Chrome and Edge
+    //                                              headless
+    // Once the host onClick fires, Stencil emits the playerSelected
+    // CustomEvent, Angular's (playerSelected) listener on home-grid catches
+    // it via Renderer2.listen, the grid re-emits through its output() to
+    // the container, and onPlayerSelected calls comingSoon.notify which
+    // creates the ion-toast.
     cy.get('[data-testid=player-card]')
       .first()
+      .should('be.visible')
       .should('have.attr', 'role', 'button')
-      .then(($el) => {
-        $el[0].dispatchEvent(
-          new CustomEvent('playerSelected', {
-            detail: {
-              playerId: $el.attr('player-id'),
-              name: $el.attr('name'),
-            },
-            bubbles: true,
-            composed: true,
-          }),
-        );
-      });
+      .click({ force: true });
     cy.contains('Detalle de jugador').should('be.visible');
   });
 
