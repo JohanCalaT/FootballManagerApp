@@ -1,41 +1,107 @@
-import { Component, computed, inject } from '@angular/core';
-import { Router } from '@angular/router';
 import {
-  IonContent,
-  IonHeader,
-  IonTitle,
-  IonToolbar,
-} from '@ionic/angular/standalone';
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  inject,
+} from '@angular/core';
+import { Router } from '@angular/router';
+import { IonContent, type InfiniteScrollCustomEvent } from '@ionic/angular/standalone';
 
 import { AuthService } from '../../../core/services/auth.service';
-import { currentUser, isAuthenticated } from '../../../core/state/auth.signal';
-import { BackendToggleComponent } from '../../../shared/components/backend-toggle/backend-toggle.component';
+import { ComingSoonService } from '../../../core/services/coming-soon.service';
+import { Player } from '../../../core/models/player.model';
+import { isAuthenticated } from '../../../core/state/auth.signal';
+
+import { HomeActionBarComponent } from './components/home-action-bar/home-action-bar.component';
+import { HomeEmptyStateComponent } from './components/home-empty-state/home-empty-state.component';
+import { HomeGridComponent } from './components/home-grid/home-grid.component';
+import { HomeHeaderComponent } from './components/home-header/home-header.component';
+import { HomeHeroComponent } from './components/home-hero/home-hero.component';
+import { HomeSearchComponent } from './components/home-search/home-search.component';
+import { PlayersPagedStore } from './players-paged.store';
 
 @Component({
   selector: 'app-players-list',
   standalone: true,
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, BackendToggleComponent],
+  imports: [
+    IonContent,
+    HomeHeaderComponent,
+    HomeHeroComponent,
+    HomeActionBarComponent,
+    HomeSearchComponent,
+    HomeGridComponent,
+    HomeEmptyStateComponent,
+  ],
+  providers: [PlayersPagedStore],
   templateUrl: './players-list.component.html',
   styleUrls: ['./players-list.component.scss'],
 })
-export class PlayersListComponent {
+export class PlayersListComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly comingSoon = inject(ComingSoonService);
+  private readonly destroyRef = inject(DestroyRef);
+  protected readonly store = inject(PlayersPagedStore);
 
   protected readonly isAuthenticated = isAuthenticated;
-  protected readonly greeting = computed(() => {
-    const user = currentUser();
-    if (!user) {
-      return null;
-    }
-    return user.displayName?.trim() || user.email || 'jugador';
-  });
+  protected readonly canRegister = computed(() => !this.isAuthenticated());
 
+  ngOnInit(): void {
+    void this.store.reload(this.store.query());
+  }
+
+  // ---- Search ----
+  protected onSearchQueryChange(query: string): void {
+    if (query === this.store.query()) return;
+    void this.store.reload(query);
+  }
+
+  // ---- Header ----
   protected goToLogin(): void {
     void this.router.navigate(['/auth/login']);
   }
-
+  protected goToRegister(): void {
+    void this.router.navigate(['/auth/register']);
+  }
   protected async signOut(): Promise<void> {
     await this.auth.signOut();
+  }
+
+  // ---- Action bar ----
+  protected onImport(): void {
+    void this.comingSoon.notify('Importar jugadores');
+  }
+  protected onInsert(): void {
+    void this.comingSoon.notify('Insertar jugador');
+  }
+  protected onIdealTeam(): void {
+    void this.comingSoon.notify('Equipo Ideal');
+  }
+  protected onPublishNews(): void {
+    void this.comingSoon.notify('Publicar noticia');
+  }
+
+  // ---- Grid ----
+  protected onPlayerSelected(_player: Player): void {
+    void this.comingSoon.notify('Detalle de jugador');
+  }
+  protected onEditPlayer(_player: Player): void {
+    void this.comingSoon.notify('Editar jugador');
+  }
+  protected onDeletePlayer(_player: Player): void {
+    void this.comingSoon.notify('Eliminar jugador');
+  }
+
+  protected async onLoadMore(ev: InfiniteScrollCustomEvent): Promise<void> {
+    await this.store.loadMore();
+    await ev.target.complete();
+    if (this.store.allLoaded()) {
+      ev.target.disabled = true;
+    }
+  }
+
+  protected onRetry(): void {
+    void this.store.reload(this.store.query());
   }
 }

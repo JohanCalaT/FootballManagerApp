@@ -14,10 +14,10 @@ describe('Auth · Login', () => {
     cy.get('[data-testid=login-submit-button]').click();
 
     cy.location('pathname').should('eq', '/players');
-    cy.get('[data-testid=auth-status-greeting]')
+    cy.get('[data-testid=home-user-greeting]')
       .should('be.visible')
       .and('contain', users.seeded.displayName);
-    cy.get('[data-testid=players-logout-button]').should('be.visible');
+    cy.get('[data-testid=home-logout-button]').should('be.visible');
   });
 
   it('shows a form-level error for invalid credentials', () => {
@@ -64,7 +64,7 @@ describe('Auth · Login', () => {
     cy.get('[data-testid=auth-back-button]').click();
 
     cy.location('pathname').should('eq', '/players');
-    cy.get('[data-testid=players-login-button]').should('be.visible');
-    cy.get('[data-testid=auth-status-greeting]').should('not.exist');
+    cy.get('[data-testid=home-login-button]').should('be.visible');
+    cy.get('[data-testid=home-user-greeting]').should('not.exist');
   });
 });

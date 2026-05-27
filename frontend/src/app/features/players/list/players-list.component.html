@@ -1,47 +1,32 @@
-<ion-header>
-  <ion-toolbar>
-    <ion-title>FootballManager</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content class="players-content" [scrollEvents]="true">
+  <app-home-header
+    (loginRequested)="goToLogin()"
+    (registerRequested)="goToRegister()"
+    (logoutRequested)="signOut()" />
 
-<ion-content class="players-content ion-padding">
-  <app-backend-toggle />
+  <app-home-hero [count]="store.total()" />
 
-  <section class="players-auth-card" data-testid="players-auth-card">
-    @if (isAuthenticated()) {
-      <p class="t-label-sm players-auth-card__eyebrow">Sesión iniciada</p>
-      <h2 class="t-headline-md players-auth-card__title" data-testid="auth-status-greeting">
-        Hola, {{ greeting() }}
-      </h2>
-      <button
-        type="button"
-        class="players-button players-button--ghost"
-        (click)="signOut()"
-        data-testid="players-logout-button"
-      >
-        Cerrar sesión
-      </button>
-    } @else {
-      <p class="t-label-sm players-auth-card__eyebrow">Acceso</p>
-      <h2 class="t-headline-md players-auth-card__title">Bienvenido</h2>
-      <p class="t-body-md players-auth-card__subtitle">
-        Inicia sesión para gestionar jugadores y comentar.
-      </p>
-      <button
-        type="button"
-        class="players-button players-button--primary"
-        (click)="goToLogin()"
-        data-testid="players-login-button"
-      >
-        Iniciar sesión
-      </button>
-    }
-  </section>
+  @if (isAuthenticated()) {
+    <app-home-action-bar
+      (importRequested)="onImport()"
+      (insertRequested)="onInsert()"
+      (idealTeamRequested)="onIdealTeam()"
+      (publishNewsRequested)="onPublishNews()" />
+  }
 
-  <section class="players-placeholder" data-testid="players-placeholder">
-    <h3 class="t-headline-sm players-placeholder__title">En construcción</h3>
-    <p class="t-body-md players-placeholder__body">
-      El listado de jugadores se conectará al gateway en la próxima iteración.
-    </p>
-  </section>
+  <app-home-search (queryChange)="onSearchQueryChange($event)" />
+
+  <app-home-grid
+    [players]="store.players()"
+    [loading]="store.loading()"
+    [error]="store.error()"
+    [query]="store.query()"
+    [allLoaded]="store.allLoaded()"
+    [canRegister]="canRegister()"
+    (playerSelected)="onPlayerSelected($event)"
+    (editRequested)="onEditPlayer($event)"
+    (deleteRequested)="onDeletePlayer($event)"
+    (loadMoreRequested)="onLoadMore($event)"
+    (retryRequested)="onRetry()"
+    (registerRequested)="goToRegister()" />
 </ion-content>
