@@ -1,0 +1,45 @@
+<header class="home-header" data-testid="home-header">
+  <div class="home-header__brand" data-testid="home-logo">
+    <span class="home-header__logo" aria-hidden="true">⚡</span>
+    <span class="home-header__wordmark t-headline-sm">Football Manager</span>
+  </div>
+
+  <div class="home-header__toggle" data-testid="home-toggle">
+    <app-backend-toggle />
+  </div>
+
+  <div class="home-header__auth">
+    @if (isAuthenticated()) {
+      <span class="home-header__greeting t-body-md" data-testid="home-user-greeting">
+        Hola, <strong>{{ greeting() }}</strong>
+      </span>
+      @if (isAdmin()) {
+        <span class="home-header__badge t-label-sm" data-testid="home-user-badge-admin">
+          Admin
+        </span>
+      }
+      <button
+        type="button"
+        class="home-header__btn home-header__btn--ghost"
+        (click)="onLogout()"
+        data-testid="home-logout-button">
+        Salir
+      </button>
+    } @else {
+      <button
+        type="button"
+        class="home-header__btn home-header__btn--ghost"
+        (click)="onLogin()"
+        data-testid="home-login-button">
+        Iniciar sesión
+      </button>
+      <button
+        type="button"
+        class="home-header__btn home-header__btn--primary"
+        (click)="onRegister()"
+        data-testid="home-register-button">
+        Crear cuenta
+      </button>
+    }
+  </div>
+</header>
