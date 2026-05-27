@@ -100,6 +100,49 @@ describe('GET /api/players', () => {
     });
   });
 
+  describe('HATEOAS per-item links (Richardson L3)', () => {
+    it('anonymous request emits self but no update/delete on each item', async () => {
+      await seedPlayers(2);
+
+      const res = await request(app).get('/api/players');
+
+      expect(res.status).toBe(200);
+      for (const item of res.body.data) {
+        expect(item._links).toBeDefined();
+        expect(item._links.self).toEqual({
+          href: `/api/players/${item.id}`,
+          rel: 'self',
+          method: 'GET',
+        });
+        expect(item._links.update).toBeUndefined();
+        expect(item._links.delete).toBeUndefined();
+      }
+    });
+
+    it('admin request emits update + delete on each item', async () => {
+      await seedPlayers(2);
+
+      const res = await request(app)
+        .get('/api/players')
+        .set('X-User-Admin', 'true');
+
+      expect(res.status).toBe(200);
+      for (const item of res.body.data) {
+        expect(item._links.self.method).toBe('GET');
+        expect(item._links.update).toEqual({
+          href: `/api/players/${item.id}`,
+          rel: 'update',
+          method: 'PUT',
+        });
+        expect(item._links.delete).toEqual({
+          href: `/api/players/${item.id}`,
+          rel: 'delete',
+          method: 'DELETE',
+        });
+      }
+    });
+  });
+
   describe('forma del item', () => {
     it('list items expose id (no _id) and only the listing fields', async () => {
       await PlayerModel.create({

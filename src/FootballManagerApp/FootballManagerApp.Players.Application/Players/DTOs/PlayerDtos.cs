@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using FootballManagerApp.Players.Application.Common.DTOs;
+using FootballManagerApp.Shared.Responses;
 
 namespace FootballManagerApp.Players.Application.Players.DTOs;
 
@@ -10,7 +12,17 @@ public record PlayerListItemDto(
     string? Position,
     string? ImageUrl,
     decimal? Rating,
-    DateTime RegisteredAt);
+    DateTime RegisteredAt)
+{
+    /// <summary>
+    /// Per-item HATEOAS affordances. Populated by the controller after the
+    /// handler returns, so the handler stays unaware of HTTP. Includes
+    /// <c>self</c> always and <c>update</c>/<c>delete</c> when the caller
+    /// is admin (<c>X-User-Admin: true</c> as stamped by the Gateway).
+    /// </summary>
+    [JsonPropertyName("_links")]
+    public Dictionary<string, HateoasLink>? Links { get; init; }
+}
 
 public record PlayerStatisticsDto(
     int Season,

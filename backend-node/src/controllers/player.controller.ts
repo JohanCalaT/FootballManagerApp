@@ -3,7 +3,7 @@ import * as playerService from '../services/player.service';
 import {
   ApiResponse, created, multiStatus, ok, paged,
 } from '../utils/apiResponse';
-import { buildPagedLinks, buildPlayerLinks } from '../utils/hateoas';
+import { buildPagedLinks, buildPlayerLinks, buildPlayerItemLinks } from '../utils/hateoas';
 import { parseClientGeo } from '../utils/clientGeo';
 import { ImageSource, PlayerPosition } from '../models/player.model';
 import { ApiFootballError } from '../errors/apiFootball.errors';
@@ -63,9 +63,17 @@ export const getAll = async (
     );
     const result = await playerService.list(page, limit);
 
+    // Decorate each item with its own HATEOAS affordances so the frontend
+    // can decide which actions to render per row (Richardson L3). Mirrors
+    // PlayersController.EnrichItems in the .NET backend.
+    const enriched = result.items.map((item) => ({
+      ...item,
+      _links: buildPlayerItemLinks(item.id, req.isAdmin),
+    }));
+
     const links = buildPagedLinks('/api/players', result.page, result.limit, result.total);
     const message = result.total === 0 ? 'No hay jugadores' : 'OK';
-    const resp = paged(result.items, result.page, result.limit, result.total, message, links);
+    const resp = paged(enriched, result.page, result.limit, result.total, message, links);
 
     res.status(resp.status).json(resp);
   } catch (err) {
@@ -95,6 +103,12 @@ export const search = async (
     if (criteria.from)   linkExtras.from   = criteria.from.toISOString();
     if (criteria.to)     linkExtras.to     = criteria.to.toISOString();
 
+    // Decorate each item with its own HATEOAS affordances (Richardson L3).
+    const enriched = result.items.map((item) => ({
+      ...item,
+      _links: buildPlayerItemLinks(item.id, req.isAdmin),
+    }));
+
     const links = buildPagedLinks(
       '/api/players/search',
       result.page,
@@ -103,7 +117,7 @@ export const search = async (
       linkExtras,
     );
     const message = result.total === 0 ? 'Sin resultados' : 'OK';
-    const resp = paged(result.items, result.page, result.limit, result.total, message, links);
+    const resp = paged(enriched, result.page, result.limit, result.total, message, links);
 
     res.status(resp.status).json(resp);
   } catch (err) {
