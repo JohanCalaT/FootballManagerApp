@@ -32,21 +32,22 @@ export function classifyAuthError(err: unknown): AuthErrorBreakdown {
   const code = String((err as { code: unknown }).code);
   switch (code) {
     case 'auth/invalid-email':
+      // Format error — safe to flag at the email field (not a credential leak).
       out.emailError = 'El correo no es válido.';
       return out;
-    case 'auth/user-not-found':
-      out.emailError = 'No encontramos una cuenta con este correo.';
-      return out;
     case 'auth/email-already-in-use':
+      // Existence-on-signup is intentionally exposed by Firebase, so it's
+      // safe to show under the email field at register time.
       out.emailError = 'Este correo ya está registrado.';
       return out;
+    case 'auth/user-not-found':
     case 'auth/wrong-password':
-      out.passwordError = 'Contraseña incorrecta.';
-      return out;
     case 'auth/invalid-credential':
-      // Newer Firebase responses collapse user-not-found + wrong-password
-      // into this single code. Without more info, blame credentials at form
-      // level so neither field is wrongly highlighted.
+      // Privacy: modern Firebase collapses these into auth/invalid-credential
+      // so the response never leaks whether the account exists or whether the
+      // password is the wrong half. We mirror that — single form-level error
+      // for any "credentials don't match" case, regardless of which legacy
+      // code the SDK or emulator surfaces.
       out.formError = 'Credenciales inválidas. Revisa correo y contraseña.';
       return out;
     case 'auth/weak-password':

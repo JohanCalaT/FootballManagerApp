@@ -29,6 +29,15 @@ firebase.json
 # `npm start` / `npm run build`. Never commit — regenerate per environment.
 frontend/src/assets/config.json
 
+# --- Cypress / Firebase Emulator runtime artifacts ---
+frontend/cypress/screenshots/
+frontend/cypress/videos/
+frontend/cypress/downloads/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+firebase-export-*/
+
 # --- Node.js / Angular / Ionic ---
 node_modules/
 dist/
