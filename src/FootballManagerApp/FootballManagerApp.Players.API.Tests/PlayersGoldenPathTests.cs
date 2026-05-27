@@ -106,6 +106,55 @@ public class PlayersGoldenPathTests : IClassFixture<PlayersApiFactory>
     }
 
     [Fact]
+    public async Task GET_list_emits_per_item_links_conditioned_by_admin()
+    {
+        // Seed one player with a unique name/team so this spec does not
+        // collide with the other tests that reuse Pedri (the test class is
+        // backed by a single shared PlayersApiFactory).
+        var seed = new CreatePlayerDto(
+            $"Hateoas Seed {Guid.NewGuid():N}", "Test FC", "Test League",
+            Position: "Midfielder",
+            ImageUrl: null, ImageSource: null,
+            Nationality: null, BirthDate: null,
+            Height: null, Weight: null, ShirtNumber: null,
+            PlayerLat: null, PlayerLng: null,
+            PlayerCity: null, PlayerCountry: null,
+            Statistics: null);
+        var createReq = new HttpRequestMessage(HttpMethod.Post, "/api/players")
+        {
+            Content = JsonContent.Create(seed),
+        };
+        createReq.Headers.Add("X-User-Id", "uid-hateoas");
+        var createResp = await _http.SendAsync(createReq);
+        createResp.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Anonymous list → each item carries self but neither update nor delete.
+        var anonList = await _http.GetFromJsonAsync<PagedResponse<PlayerListItemDto>>(
+            "/api/players?page=1&limit=10");
+        anonList!.Data.Should().NotBeEmpty();
+        var anonItem = anonList.Data.First();
+        anonItem.Links.Should().NotBeNull();
+        anonItem.Links!.Should().ContainKey("self");
+        anonItem.Links.Should().NotContainKey("update");
+        anonItem.Links.Should().NotContainKey("delete");
+
+        // Admin list → same self plus update + delete affordances.
+        var adminReq = new HttpRequestMessage(HttpMethod.Get, "/api/players?page=1&limit=10");
+        adminReq.Headers.Add("X-User-Admin", "true");
+        var adminResp = await _http.SendAsync(adminReq);
+        adminResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var adminList = await adminResp.Content
+            .ReadFromJsonAsync<PagedResponse<PlayerListItemDto>>();
+        var adminItem = adminList!.Data.First();
+        adminItem.Links.Should().NotBeNull();
+        adminItem.Links!.Should().ContainKey("self");
+        adminItem.Links.Should().ContainKey("update");
+        adminItem.Links.Should().ContainKey("delete");
+        adminItem.Links["update"].Method.Should().Be("PUT");
+        adminItem.Links["delete"].Method.Should().Be("DELETE");
+    }
+
+    [Fact]
     public async Task POST_duplicate_name_and_team_returns_409()
     {
         var req1 = new HttpRequestMessage(HttpMethod.Post, "/api/players")

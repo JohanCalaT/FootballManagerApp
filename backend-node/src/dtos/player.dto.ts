@@ -16,6 +16,14 @@ export interface PlayerListItemDto {
   imageUrl: string | null;
   rating: number | null;       // mejor rating entre statistics, o null
   registeredAt: Date;
+  /**
+   * Per-item HATEOAS affordances. Populated by the controller after the
+   * service returns, so the service stays unaware of HTTP / auth. Includes
+   * `self` always and `update`/`delete` when the caller is admin
+   * (X-User-Admin: true as stamped by the Gateway). Marshalled as `_links`
+   * in JSON to match the .NET contract bit-for-bit.
+   */
+  _links?: Record<string, { href: string; rel: string; method: string }>;
 }
 
 export interface CommentDto {

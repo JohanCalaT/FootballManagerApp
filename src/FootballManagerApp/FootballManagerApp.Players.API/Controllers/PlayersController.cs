@@ -69,7 +69,8 @@ public class PlayersController : ControllerBase
         CancellationToken ct = default)
     {
         var result = await _getAllHandler.HandleAsync(page, limit, ct);
-        var withLinks = result.WithLinks(PlayerLinks.ForList(Url, page, limit, result.Total));
+        var enriched = result with { Data = EnrichItems(result.Data) };
+        var withLinks = enriched.WithLinks(PlayerLinks.ForList(Url, page, limit, result.Total));
         return StatusCode(result.Status, withLinks);
     }
 
@@ -86,8 +87,22 @@ public class PlayersController : ControllerBase
     {
         var result = await _searchHandler.HandleAsync(
             name, team, league, from, to, page, limit, ct);
-        var withLinks = result.WithLinks(PlayerLinks.ForList(Url, page, limit, result.Total));
+        var enriched = result with { Data = EnrichItems(result.Data) };
+        var withLinks = enriched.WithLinks(PlayerLinks.ForList(Url, page, limit, result.Total));
         return StatusCode(result.Status, withLinks);
+    }
+
+    /// <summary>
+    /// Decorate each list item with its own HATEOAS affordances so the
+    /// frontend can decide which actions to render per row (Richardson L3).
+    /// Materialized to a list to avoid re-iterating the IEnumerable later.
+    /// </summary>
+    private IReadOnlyList<PlayerListItemDto> EnrichItems(IEnumerable<PlayerListItemDto> items)
+    {
+        var isAdmin = IsAdmin;
+        return items
+            .Select(p => p with { Links = PlayerLinks.ForItem(Url, p.Id, isAdmin) })
+            .ToList();
     }
 
     [HttpGet("{id:guid}", Name = "GetPlayerById")]

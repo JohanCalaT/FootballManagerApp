@@ -8,6 +8,26 @@ const buildQuery = (params: Record<string, string | number | undefined>): string
 };
 
 /**
+ * Per-item affordances for a player appearing in a list (getAll, search).
+ * Minimal set — `self` always so the frontend can navigate to the detail,
+ * plus `update`/`delete` only when the caller is admin. Kept lean to avoid
+ * blowing up the payload for paginated responses.
+ *
+ * Mirrors PlayerLinks.ForItem in the .NET backend so the two-backend
+ * contract stays bit-identical.
+ */
+export const buildPlayerItemLinks = (playerId: string, isAdmin: boolean): Links => {
+  const links: Links = {
+    self: { href: `/api/players/${playerId}`, rel: 'self', method: 'GET' },
+  };
+  if (isAdmin) {
+    links.update = { href: `/api/players/${playerId}`, rel: 'update', method: 'PUT'    };
+    links.delete = { href: `/api/players/${playerId}`, rel: 'delete', method: 'DELETE' };
+  }
+  return links;
+};
+
+/**
  * Links para `GET /api/players/:id`. Si `isAdmin` se añaden `update` y `delete`.
  */
 export const buildPlayerLinks = (playerId: string, isAdmin: boolean): Links => {

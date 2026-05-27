@@ -5,6 +5,27 @@ namespace FootballManagerApp.Players.API.Hateoas;
 
 internal static class PlayerLinks
 {
+    /// <summary>
+    /// Per-item affordances for a player appearing in a list (GetAll, Search).
+    /// Minimal set: <c>self</c> always (so the frontend can navigate to the
+    /// detail) plus <c>update</c>/<c>delete</c> only when the caller is admin.
+    /// Kept lean to avoid blowing up the payload for paginated responses.
+    /// </summary>
+    public static Dictionary<string, HateoasLink> ForItem(
+        IUrlHelper url, Guid id, bool isAdmin)
+    {
+        var links = new Dictionary<string, HateoasLink>
+        {
+            ["self"] = new(url.Link("GetPlayerById", new { id })!, "self", "GET"),
+        };
+        if (isAdmin)
+        {
+            links["update"] = new(url.Link("UpdatePlayer", new { id })!, "update", "PUT");
+            links["delete"] = new(url.Link("DeletePlayer", new { id })!, "delete", "DELETE");
+        }
+        return links;
+    }
+
     public static Dictionary<string, HateoasLink> ForDetail(
         IUrlHelper url, Guid id, bool isAdmin)
     {
