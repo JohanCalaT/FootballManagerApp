@@ -100,6 +100,10 @@ var gateway = builder.AddProject<Projects.FootballManagerApp_Gateway>("gateway")
 // Node consume el mismo Redis que .NET para compartir cache de API-Football
 // (keys af:*). WithReference inyecta ConnectionStrings__redis con la cadena
 // formato StackExchange.Redis — el cliente Node la parsea a host:port.
+// node-backend stays INTERNAL — its public surface (REST API, Swagger UI at
+// /docs/node, Pug status panel at /status) is exposed through the YARP
+// Gateway. Marking it external too would create a parallel public origin
+// outside the gateway-validated path.
 var nodeBackend = builder.AddNpmApp("node-backend", "../../../backend-node", scriptName: "dev")
     .WithHttpEndpoint(env: "PORT")
     .WithReference(redis)
@@ -107,7 +111,6 @@ var nodeBackend = builder.AddNpmApp("node-backend", "../../../backend-node", scr
     .WithEnvironment("API_FOOTBALL_KEY", apiFootballKey)
     .WithEnvironment("GEMINI_API_KEY",   geminiApiKey)
     .WaitFor(redis)
-    .WithExternalHttpEndpoints()
     .PublishAsDockerFile();
 
 // Gateway routes /api/** dynamically to either dotnet (players/comments APIs)

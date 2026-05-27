@@ -13,8 +13,9 @@ describe('GET /status (panel Pug — matrícula TRWM)', () => {
 
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toMatch(/html/);
-      expect(res.text).toContain('FootballManagerApp · Node Backend');
-      expect(res.text).toContain('No hay jugadores aún');
+      expect(res.text).toContain('Football Manager · Node Backend');
+      expect(res.text).toContain('Status panel');
+      expect(res.text).toContain('Aún no hay jugadores');
     });
 
     it('shows MongoDB connected status', async () => {
