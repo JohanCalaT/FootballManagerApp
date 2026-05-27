@@ -37,14 +37,71 @@
 }
 
 // ---------------------------------------------------------------------------
+// Stack — wraps the back chip + the glass card so they share max-width and
+// left edge. Centered horizontally by the parent shell.
+// ---------------------------------------------------------------------------
+
+.auth-stack {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-3);
+}
+
+// ---------------------------------------------------------------------------
+// Back chip — discreet pill above the card. Always returns to /players;
+// intra-auth navigation is handled by the inline links inside each card.
+// ---------------------------------------------------------------------------
+
+.auth-back {
+  align-self: flex-start;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--app-space-2);
+  padding: 8px 14px 8px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--app-on-surface-soft);
+  border: 1px solid var(--app-outline-variant);
+  border-radius: var(--app-radius-full);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
+  animation: auth-back-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  &:hover {
+    color: var(--app-on-surface);
+    border-color: var(--app-primary);
+    background: rgba(0, 228, 120, 0.06);
+  }
+  &:active { transform: translateY(1px); }
+  &:focus-visible {
+    outline: none;
+    color: var(--app-primary);
+    border-color: var(--app-primary);
+    box-shadow: 0 0 0 3px var(--app-primary-glow-soft);
+  }
+}
+
+@keyframes auth-back-enter {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+// ---------------------------------------------------------------------------
 // Card — glass panel that smears the neon glow behind it (backdrop blur).
 // ---------------------------------------------------------------------------
 
 .auth-card {
   position: relative;
-  z-index: 1;
   width: 100%;
-  max-width: 420px;
   padding: var(--app-space-6) var(--app-space-5);
   background: rgba(27, 27, 32, 0.62);
   backdrop-filter: blur(var(--app-glass-blur)) saturate(120%);

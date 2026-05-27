@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 
 import { AuthService } from '../../../core/services/auth.service';
@@ -18,6 +18,7 @@ import {
 })
 export class ForgotPasswordComponent {
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   protected readonly email = signal('');
   protected readonly loading = signal(false);
@@ -26,6 +27,10 @@ export class ForgotPasswordComponent {
 
   protected readonly emailError = computed(() => this.errors().emailError);
   protected readonly formError = computed(() => this.errors().formError);
+
+  protected goBack(): void {
+    void this.router.navigate(['/players']);
+  }
 
   protected onEmailInput(event: Event): void {
     this.email.set((event.target as HTMLInputElement).value);

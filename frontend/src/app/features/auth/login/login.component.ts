@@ -44,6 +44,10 @@ export class LoginComponent {
     this.showPassword.update((v) => !v);
   }
 
+  protected goBack(): void {
+    void this.router.navigate(['/players']);
+  }
+
   protected async submit(event: Event): Promise<void> {
     event.preventDefault();
     if (this.loading()) {
