@@ -5,9 +5,11 @@
   "homepage": "https://ionicframework.com/",
   "scripts": {
     "ng": "ng",
+    "prestart": "node scripts/write-config.js",
     "start": "run-script-os",
     "start:windows": "ionic serve --port=%PORT% --no-open",
     "start:default": "ionic serve --port=$PORT --no-open",
+    "prebuild": "node scripts/write-config.js",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
