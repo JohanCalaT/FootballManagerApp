@@ -1,0 +1,25 @@
+<label class="import-search" data-testid="import-search">
+  <svg class="import-search__icon" viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+    <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+  </svg>
+  <input
+    type="search"
+    class="import-search__input"
+    placeholder="Buscar por nombre…"
+    [value]="draft()"
+    (input)="onInput($any($event.target).value)"
+    autocomplete="off"
+    autofocus
+    data-testid="import-search-input" />
+  @if (draft()) {
+    <button
+      type="button"
+      class="import-search__clear"
+      (click)="clear()"
+      aria-label="Limpiar búsqueda"
+      data-testid="import-search-clear">
+      ✕
+    </button>
+  }
+</label>
