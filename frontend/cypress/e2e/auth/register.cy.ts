@@ -14,6 +14,7 @@ describe('Auth · Register', () => {
     cy.get('[data-testid=register-submit-button]').click();
 
     cy.location('pathname').should('eq', '/players');
+    cy.get('[data-testid=home-user-menu-trigger]').should('be.visible').click();
     cy.get('[data-testid=home-user-greeting]')
       .should('be.visible')
       .and('contain', users.fresh.displayName);
@@ -60,6 +61,6 @@ describe('Auth · Register', () => {
   it('returns to /players via the back chip', () => {
     cy.get('[data-testid=auth-back-button]').click();
     cy.location('pathname').should('eq', '/players');
-    cy.get('[data-testid=home-user-greeting]').should('not.exist');
+    cy.get('[data-testid=home-user-menu-trigger]').should('not.exist');
   });
 });

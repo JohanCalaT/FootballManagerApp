@@ -1,7 +1,6 @@
 <ion-content class="players-content" [scrollEvents]="true">
   <app-home-header
     (loginRequested)="goToLogin()"
-    (registerRequested)="goToRegister()"
     (logoutRequested)="signOut()" />
 
   <app-home-hero [count]="store.total()" />

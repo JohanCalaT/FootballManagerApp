@@ -21,7 +21,8 @@ describe('Players · Home', () => {
     cy.get('[data-testid=home-grid] [data-testid=player-card]').should('have.length', 2);
     cy.get('[data-testid=home-action-bar]').should('not.exist');
     cy.get('[data-testid=home-login-button]').should('be.visible');
-    cy.get('[data-testid=home-register-button]').should('be.visible');
+    cy.get('[data-testid=home-settings-trigger]').should('be.visible');
+    cy.get('[data-testid=home-user-menu-trigger]').should('not.exist');
   });
 
   it('shows the action bar after signing in', () => {

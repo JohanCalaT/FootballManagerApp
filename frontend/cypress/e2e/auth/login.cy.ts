@@ -14,6 +14,7 @@ describe('Auth · Login', () => {
     cy.get('[data-testid=login-submit-button]').click();
 
     cy.location('pathname').should('eq', '/players');
+    cy.get('[data-testid=home-user-menu-trigger]').should('be.visible').click();
     cy.get('[data-testid=home-user-greeting]')
       .should('be.visible')
       .and('contain', users.seeded.displayName);
@@ -65,6 +66,6 @@ describe('Auth · Login', () => {
 
     cy.location('pathname').should('eq', '/players');
     cy.get('[data-testid=home-login-button]').should('be.visible');
-    cy.get('[data-testid=home-user-greeting]').should('not.exist');
+    cy.get('[data-testid=home-user-menu-trigger]').should('not.exist');
   });
 });
