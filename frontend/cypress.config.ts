@@ -21,6 +21,16 @@ export default defineConfig({
     screenshotOnRunFailure: true,
     viewportWidth: 414,
     viewportHeight: 896,
+    // Ionic overlays (ion-toast, ion-popover, ion-modal) render inside a
+    // shadow root, so cy.contains/cy.get need to pierce it to assert their
+    // contents. Turning this on globally keeps the specs free of per-call
+    // { includeShadowDom: true } noise.
+    includeShadowDom: true,
+    // Cypress's autoscroll lands the target at the TOP of the scrollable
+    // viewport, which sits under our 56px sticky header (z-index 30). That
+    // makes the action-bar buttons impossible to click. Centering the
+    // target instead keeps them clear of any sticky overlay.
+    scrollBehavior: 'center',
     // Disable Cypress's noisy auto-XHR logging — Firebase chats a lot.
     experimentalRunAllSpecs: true,
     env: {
