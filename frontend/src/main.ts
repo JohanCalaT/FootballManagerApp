@@ -1,11 +1,17 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { connectAuthEmulator, getAuth, provideAuth } from '@angular/fire/auth';
+import { defineCustomElements } from '@football-manager/stencil/loader';
 
 import { appConfig } from './app/app.config';
 import { AppComponent } from './app/app.component';
 import { APP_CONFIG } from './app/core/config/app-config.token';
 import { AppConfig } from './app/core/config/app-config.model';
+
+// Register the Stencil-built web components (e.g. <fma-player-card>) on the
+// global custom-elements registry before Angular bootstraps, so the first
+// template that contains one of these tags can upgrade it immediately.
+defineCustomElements(window);
 
 // Fetch the runtime config materialized by scripts/write-config.js (from the
 // FIREBASE_* env vars injected by the Aspire AppHost). This runs once before

@@ -40,6 +40,7 @@
     "@capacitor/haptics": "8.0.2",
     "@capacitor/keyboard": "8.0.3",
     "@capacitor/status-bar": "8.0.2",
+    "@football-manager/stencil": "file:./stencil",
     "@ionic/angular": "^8.0.0",
     "firebase": "^12.13.0",
     "ionicons": "^7.0.0",
