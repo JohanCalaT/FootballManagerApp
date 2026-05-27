@@ -1,0 +1,20 @@
+{
+  "status": 201,
+  "message": "1 jugador(es) importado(s)",
+  "data": {
+    "imported": [
+      {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "L. Messi",
+        "team": "Inter Miami",
+        "league": "MLS",
+        "position": "Attacker",
+        "imageUrl": "https://media.api-sports.io/football/players/154.png",
+        "rating": 9.1,
+        "registeredAt": "2026-05-27T20:00:00Z"
+      }
+    ],
+    "failed": []
+  },
+  "_links": {}
+}
