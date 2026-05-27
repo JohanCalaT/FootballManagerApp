@@ -14,10 +14,27 @@
   }
 }
 
+.import-search__submit {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--app-on-surface-soft);
+  transition: color 0.15s ease;
+
+  &:hover { color: var(--app-primary); }
+  &:focus-visible {
+    outline: none;
+    color: var(--app-primary);
+  }
+}
+
 .import-search__icon {
   width: 18px;
   height: 18px;
-  color: var(--app-on-surface-soft);
   flex: 0 0 auto;
 }
 

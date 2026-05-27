@@ -8,7 +8,7 @@ describe('Players · Import', () => {
     cy.intercept('GET', '**/api/players?page=1&limit=20', {
       fixture: 'players-page-1.json',
     }).as('listPage1');
-    cy.intercept('GET', '**/api/players/search-external?**search=messi**', {
+    cy.intercept('GET', '**/api/players/search-external?**query=messi**', {
       fixture: 'import/search-messi.json',
     }).as('searchExternal');
     cy.intercept('GET', '**/api/players/seasons/154', {
@@ -46,7 +46,7 @@ describe('Players · Import', () => {
 
   it('typing in search hits the proxy and renders results', () => {
     signInAndOpen();
-    cy.get('[data-testid=import-search-input]').type('messi');
+    cy.get('[data-testid=import-search-input]').type('messi{enter}');
     cy.wait('@searchExternal');
     cy.get('[data-testid=import-player-card-154]').should('be.visible');
     cy.get('[data-testid=import-player-card-999]').should('be.visible');
@@ -54,7 +54,7 @@ describe('Players · Import', () => {
 
   it('selecting a player auto-resolves to season 2024 and counter increments', () => {
     signInAndOpen();
-    cy.get('[data-testid=import-search-input]').type('messi');
+    cy.get('[data-testid=import-search-input]').type('messi{enter}');
     cy.wait('@searchExternal');
     cy.get('[data-testid=import-player-card-154]').click();
     cy.wait('@seasons154');
@@ -64,7 +64,7 @@ describe('Players · Import', () => {
 
   it('player without free-plan seasons becomes unavailable and is excluded', () => {
     signInAndOpen();
-    cy.get('[data-testid=import-search-input]').type('messi');
+    cy.get('[data-testid=import-search-input]').type('messi{enter}');
     cy.wait('@searchExternal');
     cy.get('[data-testid=import-player-card-999]').click();
     cy.wait('@seasons999');
@@ -77,7 +77,7 @@ describe('Players · Import', () => {
       fixture: 'import/import-success.json',
     }).as('import');
     signInAndOpen();
-    cy.get('[data-testid=import-search-input]').type('messi');
+    cy.get('[data-testid=import-search-input]').type('messi{enter}');
     cy.wait('@searchExternal');
     cy.get('[data-testid=import-player-card-154]').click();
     cy.wait('@seasons154');
@@ -94,7 +94,7 @@ describe('Players · Import', () => {
       fixture: 'import/import-partial.json',
     }).as('import');
     signInAndOpen();
-    cy.get('[data-testid=import-search-input]').type('messi');
+    cy.get('[data-testid=import-search-input]').type('messi{enter}');
     cy.wait('@searchExternal');
     cy.get('[data-testid=import-player-card-154]').click();
     cy.wait('@seasons154');
@@ -110,7 +110,7 @@ describe('Players · Import', () => {
       fixture: 'import/import-quota.json',
     }).as('import');
     signInAndOpen();
-    cy.get('[data-testid=import-search-input]').type('messi');
+    cy.get('[data-testid=import-search-input]').type('messi{enter}');
     cy.wait('@searchExternal');
     cy.get('[data-testid=import-player-card-154]').click();
     cy.wait('@seasons154');

@@ -1,15 +1,15 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ImportSearchBarComponent } from './import-search-bar.component';
 
 describe('ImportSearchBarComponent', () => {
   let fixture: ComponentFixture<ImportSearchBarComponent>;
 
-  function setup() {
+  beforeEach(() => {
     TestBed.configureTestingModule({ imports: [ImportSearchBarComponent] });
     fixture = TestBed.createComponent(ImportSearchBarComponent);
-    fixture.componentRef.setInput('debounceMs', 50);
-  }
+    fixture.detectChanges();
+  });
 
   function type(value: string) {
     const input = fixture.nativeElement.querySelector('[data-testid=import-search-input]') as HTMLInputElement;
@@ -18,43 +18,46 @@ describe('ImportSearchBarComponent', () => {
     fixture.detectChanges();
   }
 
-  it('emits the trimmed value after the debounce window', fakeAsync(() => {
-    setup();
-    fixture.detectChanges();
+  function captureEmissions(): string[] {
     const emitted: string[] = [];
     fixture.componentInstance.queryChange.subscribe((v) => emitted.push(v));
+    return emitted;
+  }
 
-    type('  messi  ');
-    tick(60);
-    expect(emitted).toEqual(['messi']);
-  }));
-
-  it('coalesces rapid keystrokes into a single emission', fakeAsync(() => {
-    setup();
-    fixture.detectChanges();
-    const emitted: string[] = [];
-    fixture.componentInstance.queryChange.subscribe((v) => emitted.push(v));
-
-    type('m');
-    tick(10);
+  it('does NOT emit while the user is typing', () => {
+    const emitted = captureEmissions();
     type('me');
-    tick(10);
     type('mes');
-    tick(60);
-    expect(emitted).toEqual(['mes']);
-  }));
+    type('messi');
+    expect(emitted).toEqual([]);
+  });
 
-  it('clear button empties the input and emits empty string', fakeAsync(() => {
-    setup();
-    fixture.detectChanges();
-    const emitted: string[] = [];
-    fixture.componentInstance.queryChange.subscribe((v) => emitted.push(v));
+  it('emits the trimmed value when the form is submitted (Enter or lupa)', () => {
+    const emitted = captureEmissions();
+    type('  messi  ');
+    (fixture.nativeElement.querySelector('[data-testid=import-search]') as HTMLFormElement).requestSubmit();
+    expect(emitted).toEqual(['messi']);
+  });
 
-    type('abc');
-    tick(60);
+  it('emits when the search submit button is clicked', () => {
+    const emitted = captureEmissions();
+    type('ronaldo');
+    (fixture.nativeElement.querySelector('[data-testid=import-search-submit]') as HTMLElement).click();
+    expect(emitted).toEqual(['ronaldo']);
+  });
+
+  it('does NOT emit on submit when the input is blank', () => {
+    const emitted = captureEmissions();
+    type('   ');
+    (fixture.nativeElement.querySelector('[data-testid=import-search]') as HTMLFormElement).requestSubmit();
+    expect(emitted).toEqual([]);
+  });
+
+  it('clear button empties the input and emits an empty string', () => {
+    const emitted = captureEmissions();
+    type('messi');
+    (fixture.nativeElement.querySelector('[data-testid=import-search]') as HTMLFormElement).requestSubmit();
     (fixture.nativeElement.querySelector('[data-testid=import-search-clear]') as HTMLElement).click();
-    fixture.detectChanges();
-    tick(60);
-    expect(emitted).toEqual(['abc', '']);
-  }));
+    expect(emitted).toEqual(['messi', '']);
+  });
 });

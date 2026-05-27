@@ -49,7 +49,7 @@ export class PlayersApi {
   searchExternal(query: Signal<string | null>) {
     return httpResource<ApiResponse<ApiFootballProfile[]>>(() => {
       const q = query();
-      return q ? `${this.base}/api/players/search-external?search=${encodeURIComponent(q)}` : undefined;
+      return q ? `${this.base}/api/players/search-external?query=${encodeURIComponent(q)}` : undefined;
     });
   }
 
@@ -68,7 +68,7 @@ export class PlayersApi {
     return firstValueFrom(
       this.http.get<ApiResponse<ApiFootballProfile[]>>(
         `${this.base}/api/players/search-external`,
-        { params: { search: query } },
+        { params: { query } },
       ),
     );
   }
