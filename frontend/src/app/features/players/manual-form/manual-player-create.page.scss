@@ -4,8 +4,13 @@
 // the rest of the app (auth pages, import dialog), so the form does not
 // feel "designed by a different person" than the existing surfaces.
 
+// Do NOT set `display` on :host — the component has `class="ion-page"` on
+// the host (declared in the @Component decorator) and Ionic's `.ion-page`
+// rules apply `display: flex; flex-direction: column` so that ion-header,
+// ion-content and ion-footer stack with the footer pinned to the bottom.
+// A `:host { display: block }` here wins by specificity and breaks the
+// footer pinning — which is exactly what happened the first time around.
 :host {
-  display: block;
   --fma-surface-card: #1f1f25;
   --fma-input-bg: #050505;
   --fma-input-border: rgba(255, 255, 255, 0.12);

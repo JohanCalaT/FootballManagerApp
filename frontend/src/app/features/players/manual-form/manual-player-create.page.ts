@@ -103,18 +103,10 @@ export class ManualPlayerCreatePage {
   private readonly geo = inject(GeolocationService);
   private readonly toastCtrl = inject(ToastController);
 
+  // Positions render in English on both the form and the player card —
+  // keeping the two surfaces in sync avoids the "GK vs Portero" confusion
+  // and matches the canonical enum value the backend persists.
   protected readonly positions = PLAYER_POSITIONS;
-  /**
-   * Spanish labels for the 4 positions, shown in the 2x2 pill grid. The
-   * backend enum stays in English (mirrors API-Football), so we keep the
-   * canonical value as the form value and only translate at render time.
-   */
-  protected readonly positionLabels: Record<PlayerPosition, string> = {
-    Goalkeeper: 'Portero',
-    Defender: 'Defensa',
-    Midfielder: 'Centrocampista',
-    Attacker: 'Delantero',
-  };
   protected readonly user = currentUser;
   protected readonly ownerUid = computed(() => this.user()?.uid ?? '');
 

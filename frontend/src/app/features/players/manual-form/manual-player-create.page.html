@@ -50,7 +50,7 @@
               [attr.aria-checked]="form.controls.position.value === pos"
               (click)="selectPosition(pos)"
               [attr.data-testid]="'pos-' + pos">
-              {{ positionLabels[pos] }}
+              {{ pos }}
             </button>
           }
         </div>
