@@ -49,8 +49,8 @@ export const create = async (
       input.clientGeolocation = {
         lat: body.lat,
         lng: body.lng,
-        city: body.city,
-        country: body.country,
+        ...(body.city !== undefined && { city: body.city }),
+        ...(body.country !== undefined && { country: body.country }),
       };
     } else {
       const geo = parseClientGeo(req.headers);
