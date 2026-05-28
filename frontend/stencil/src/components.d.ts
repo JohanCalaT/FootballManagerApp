@@ -7,6 +7,94 @@
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
     /**
+     * FUT-style flippable player card — built for the "Equipo Ideal" feature.
+     * Tap / click (or Enter / Space) flips the card on its vertical axis:
+     *   - Front: tier-framed portrait, big overall, position, name, club and a
+     *     compact 6-attribute strip — the classic Ultimate Team face.
+     *   - Back:  the six attributes laid out as labelled gauges plus the AI's
+     *     justification (`reason`) for picking this player.
+     * Data-source agnostic by design: every value arrives through props, so the
+     * host can feed it mock fixtures (this preview), a future stats-bearing
+     * ideal-team response, or a per-player fetch — the component does not care.
+     * Attributes are 0–99 (FUT scale), not the app's 0–10 statistic rating; the
+     * AI is expected to emit them on the FUT scale. Tier (bronze / silver / gold
+     * / icon) is derived from `overall` using FUT thresholds and drives the frame
+     * colour, mirroring the ring tiers of <fma-player-card>.
+     * Goalkeepers swap the outfield labels (PAC/SHO/PAS/DRI/DEF/PHY) for the GK
+     * set (DIV/HAN/KIC/REF/SPD/POS) over the same six numeric slots.
+     * Inherits --app-* design tokens through the shadow boundary with local
+     * fallbacks, so it renders sensibly in a token-less host.
+     */
+    interface FmaFutCard {
+        /**
+          * Compact variant for the ideal-team pitch, where all 11 must fit on a phone. Drops the club, nationality and hint and shrinks the token so the front shows just overall + position + portrait + name; the back keeps the gauges (no justification). Tap still flips to reveal stats.
+          * @default false
+         */
+        "compact": boolean;
+        /**
+          * Defending (outfield) / Speed (GK). 0–99.
+         */
+        "def"?: number;
+        /**
+          * Dribbling (outfield) / Reflexes (GK). 0–99.
+         */
+        "dri"?: number;
+        /**
+          * Flip state. Mutable so the host can drive it (e.g. flip the whole team at once) while taps still toggle it locally. Reflected to an attribute for easy CSS hooks from the host.
+          * @default false
+         */
+        "flipped": boolean;
+        /**
+          * Player photo URL. Falls back to initials token when absent.
+         */
+        "imageUrl"?: string;
+        /**
+          * When true the card is keyboard-interactive and flips on activation. Set false for purely-decorative / externally-driven contexts.
+          * @default true
+         */
+        "interactive": boolean;
+        /**
+          * Player display name (required).
+         */
+        "name": string;
+        /**
+          * Nationality label, shown small under the overall on the front.
+         */
+        "nationality"?: string;
+        /**
+          * Overall rating on the FUT 0–99 scale. Drives the tier / frame colour.
+         */
+        "overall"?: number;
+        /**
+          * Pace (outfield) / Diving (GK). 0–99.
+         */
+        "pac"?: number;
+        /**
+          * Passing (outfield) / Kicking (GK). 0–99.
+         */
+        "pas"?: number;
+        /**
+          * Physical (outfield) / Positioning (GK). 0–99.
+         */
+        "phy"?: number;
+        /**
+          * Fine-grained position from the ideal-team response (GK, CB, ST, CAM…). Shown verbatim on the front. A leading "GK" switches the back labels to the goalkeeper set.
+         */
+        "position"?: string;
+        /**
+          * Gemini's justification for picking this player — shown on the back.
+         */
+        "reason"?: string;
+        /**
+          * Shooting (outfield) / Handling (GK). 0–99.
+         */
+        "sho"?: number;
+        /**
+          * Club / team name.
+         */
+        "team"?: string;
+    }
+    /**
      * Player roster tile — used in /players list and search results.
      * Inputs map 1:1 to PlayerListItemDto from the .NET backend (and the
      * mirrored Node response): name, team, league, position, image-url,
@@ -77,11 +165,51 @@ export namespace Components {
         "team": string;
     }
 }
+export interface FmaFutCardCustomEvent<T> extends CustomEvent<T> {
+    detail: T;
+    target: HTMLFmaFutCardElement;
+}
 export interface FmaPlayerCardCustomEvent<T> extends CustomEvent<T> {
     detail: T;
     target: HTMLFmaPlayerCardElement;
 }
 declare global {
+    interface HTMLFmaFutCardElementEventMap {
+        "flipChange": { name: string; flipped: boolean };
+    }
+    /**
+     * FUT-style flippable player card — built for the "Equipo Ideal" feature.
+     * Tap / click (or Enter / Space) flips the card on its vertical axis:
+     *   - Front: tier-framed portrait, big overall, position, name, club and a
+     *     compact 6-attribute strip — the classic Ultimate Team face.
+     *   - Back:  the six attributes laid out as labelled gauges plus the AI's
+     *     justification (`reason`) for picking this player.
+     * Data-source agnostic by design: every value arrives through props, so the
+     * host can feed it mock fixtures (this preview), a future stats-bearing
+     * ideal-team response, or a per-player fetch — the component does not care.
+     * Attributes are 0–99 (FUT scale), not the app's 0–10 statistic rating; the
+     * AI is expected to emit them on the FUT scale. Tier (bronze / silver / gold
+     * / icon) is derived from `overall` using FUT thresholds and drives the frame
+     * colour, mirroring the ring tiers of <fma-player-card>.
+     * Goalkeepers swap the outfield labels (PAC/SHO/PAS/DRI/DEF/PHY) for the GK
+     * set (DIV/HAN/KIC/REF/SPD/POS) over the same six numeric slots.
+     * Inherits --app-* design tokens through the shadow boundary with local
+     * fallbacks, so it renders sensibly in a token-less host.
+     */
+    interface HTMLFmaFutCardElement extends Components.FmaFutCard, HTMLStencilElement {
+        addEventListener<K extends keyof HTMLFmaFutCardElementEventMap>(type: K, listener: (this: HTMLFmaFutCardElement, ev: FmaFutCardCustomEvent<HTMLFmaFutCardElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLFmaFutCardElementEventMap>(type: K, listener: (this: HTMLFmaFutCardElement, ev: FmaFutCardCustomEvent<HTMLFmaFutCardElementEventMap[K]>) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof DocumentEventMap>(type: K, listener: (this: Document, ev: DocumentEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    }
+    var HTMLFmaFutCardElement: {
+        prototype: HTMLFmaFutCardElement;
+        new (): HTMLFmaFutCardElement;
+    };
     interface HTMLFmaPlayerCardElementEventMap {
         "playerSelected": { playerId?: string; name: string };
     }
@@ -130,12 +258,105 @@ declare global {
         new (): HTMLFmaPlayerCardElement;
     };
     interface HTMLElementTagNameMap {
+        "fma-fut-card": HTMLFmaFutCardElement;
         "fma-player-card": HTMLFmaPlayerCardElement;
     }
 }
 declare namespace LocalJSX {
     type OneOf<K extends string, PropT, AttrT = PropT> = { [P in K]: PropT } & { [P in `attr:${K}` | `prop:${K}`]?: never } | { [P in `attr:${K}`]: AttrT } & { [P in K | `prop:${K}`]?: never } | { [P in `prop:${K}`]: PropT } & { [P in K | `attr:${K}`]?: never };
 
+    /**
+     * FUT-style flippable player card — built for the "Equipo Ideal" feature.
+     * Tap / click (or Enter / Space) flips the card on its vertical axis:
+     *   - Front: tier-framed portrait, big overall, position, name, club and a
+     *     compact 6-attribute strip — the classic Ultimate Team face.
+     *   - Back:  the six attributes laid out as labelled gauges plus the AI's
+     *     justification (`reason`) for picking this player.
+     * Data-source agnostic by design: every value arrives through props, so the
+     * host can feed it mock fixtures (this preview), a future stats-bearing
+     * ideal-team response, or a per-player fetch — the component does not care.
+     * Attributes are 0–99 (FUT scale), not the app's 0–10 statistic rating; the
+     * AI is expected to emit them on the FUT scale. Tier (bronze / silver / gold
+     * / icon) is derived from `overall` using FUT thresholds and drives the frame
+     * colour, mirroring the ring tiers of <fma-player-card>.
+     * Goalkeepers swap the outfield labels (PAC/SHO/PAS/DRI/DEF/PHY) for the GK
+     * set (DIV/HAN/KIC/REF/SPD/POS) over the same six numeric slots.
+     * Inherits --app-* design tokens through the shadow boundary with local
+     * fallbacks, so it renders sensibly in a token-less host.
+     */
+    interface FmaFutCard {
+        /**
+          * Compact variant for the ideal-team pitch, where all 11 must fit on a phone. Drops the club, nationality and hint and shrinks the token so the front shows just overall + position + portrait + name; the back keeps the gauges (no justification). Tap still flips to reveal stats.
+          * @default false
+         */
+        "compact"?: boolean;
+        /**
+          * Defending (outfield) / Speed (GK). 0–99.
+         */
+        "def"?: number;
+        /**
+          * Dribbling (outfield) / Reflexes (GK). 0–99.
+         */
+        "dri"?: number;
+        /**
+          * Flip state. Mutable so the host can drive it (e.g. flip the whole team at once) while taps still toggle it locally. Reflected to an attribute for easy CSS hooks from the host.
+          * @default false
+         */
+        "flipped"?: boolean;
+        /**
+          * Player photo URL. Falls back to initials token when absent.
+         */
+        "imageUrl"?: string;
+        /**
+          * When true the card is keyboard-interactive and flips on activation. Set false for purely-decorative / externally-driven contexts.
+          * @default true
+         */
+        "interactive"?: boolean;
+        /**
+          * Player display name (required).
+         */
+        "name": string;
+        /**
+          * Nationality label, shown small under the overall on the front.
+         */
+        "nationality"?: string;
+        /**
+          * Emits the new flip state whenever the card turns.
+         */
+        "onFlipChange"?: (event: FmaFutCardCustomEvent<{ name: string; flipped: boolean }>) => void;
+        /**
+          * Overall rating on the FUT 0–99 scale. Drives the tier / frame colour.
+         */
+        "overall"?: number;
+        /**
+          * Pace (outfield) / Diving (GK). 0–99.
+         */
+        "pac"?: number;
+        /**
+          * Passing (outfield) / Kicking (GK). 0–99.
+         */
+        "pas"?: number;
+        /**
+          * Physical (outfield) / Positioning (GK). 0–99.
+         */
+        "phy"?: number;
+        /**
+          * Fine-grained position from the ideal-team response (GK, CB, ST, CAM…). Shown verbatim on the front. A leading "GK" switches the back labels to the goalkeeper set.
+         */
+        "position"?: string;
+        /**
+          * Gemini's justification for picking this player — shown on the back.
+         */
+        "reason"?: string;
+        /**
+          * Shooting (outfield) / Handling (GK). 0–99.
+         */
+        "sho"?: number;
+        /**
+          * Club / team name.
+         */
+        "team"?: string;
+    }
     /**
      * Player roster tile — used in /players list and search results.
      * Inputs map 1:1 to PlayerListItemDto from the .NET backend (and the
@@ -208,6 +429,24 @@ declare namespace LocalJSX {
         "team": string;
     }
 
+    interface FmaFutCardAttributes {
+        "name": string;
+        "team": string;
+        "position": string;
+        "imageUrl": string;
+        "nationality": string;
+        "overall": number;
+        "pac": number;
+        "sho": number;
+        "pas": number;
+        "dri": number;
+        "def": number;
+        "phy": number;
+        "reason": string;
+        "flipped": boolean;
+        "interactive": boolean;
+        "compact": boolean;
+    }
     interface FmaPlayerCardAttributes {
         "name": string;
         "team": string;
@@ -221,6 +460,7 @@ declare namespace LocalJSX {
     }
 
     interface IntrinsicElements {
+        "fma-fut-card": Omit<FmaFutCard, keyof FmaFutCardAttributes> & { [K in keyof FmaFutCard & keyof FmaFutCardAttributes]?: FmaFutCard[K] } & { [K in keyof FmaFutCard & keyof FmaFutCardAttributes as `attr:${K}`]?: FmaFutCardAttributes[K] } & { [K in keyof FmaFutCard & keyof FmaFutCardAttributes as `prop:${K}`]?: FmaFutCard[K] } & OneOf<"name", FmaFutCard["name"], FmaFutCardAttributes["name"]>;
         "fma-player-card": Omit<FmaPlayerCard, keyof FmaPlayerCardAttributes> & { [K in keyof FmaPlayerCard & keyof FmaPlayerCardAttributes]?: FmaPlayerCard[K] } & { [K in keyof FmaPlayerCard & keyof FmaPlayerCardAttributes as `attr:${K}`]?: FmaPlayerCardAttributes[K] } & { [K in keyof FmaPlayerCard & keyof FmaPlayerCardAttributes as `prop:${K}`]?: FmaPlayerCard[K] } & OneOf<"name", FmaPlayerCard["name"], FmaPlayerCardAttributes["name"]> & OneOf<"team", FmaPlayerCard["team"], FmaPlayerCardAttributes["team"]>;
     }
 }
@@ -228,6 +468,26 @@ export { LocalJSX as JSX };
 declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
+            /**
+             * FUT-style flippable player card — built for the "Equipo Ideal" feature.
+             * Tap / click (or Enter / Space) flips the card on its vertical axis:
+             *   - Front: tier-framed portrait, big overall, position, name, club and a
+             *     compact 6-attribute strip — the classic Ultimate Team face.
+             *   - Back:  the six attributes laid out as labelled gauges plus the AI's
+             *     justification (`reason`) for picking this player.
+             * Data-source agnostic by design: every value arrives through props, so the
+             * host can feed it mock fixtures (this preview), a future stats-bearing
+             * ideal-team response, or a per-player fetch — the component does not care.
+             * Attributes are 0–99 (FUT scale), not the app's 0–10 statistic rating; the
+             * AI is expected to emit them on the FUT scale. Tier (bronze / silver / gold
+             * / icon) is derived from `overall` using FUT thresholds and drives the frame
+             * colour, mirroring the ring tiers of <fma-player-card>.
+             * Goalkeepers swap the outfield labels (PAC/SHO/PAS/DRI/DEF/PHY) for the GK
+             * set (DIV/HAN/KIC/REF/SPD/POS) over the same six numeric slots.
+             * Inherits --app-* design tokens through the shadow boundary with local
+             * fallbacks, so it renders sensibly in a token-less host.
+             */
+            "fma-fut-card": LocalJSX.IntrinsicElements["fma-fut-card"] & JSXBase.HTMLAttributes<HTMLFmaFutCardElement>;
             /**
              * Player roster tile — used in /players list and search results.
              * Inputs map 1:1 to PlayerListItemDto from the .NET backend (and the
