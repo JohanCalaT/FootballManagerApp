@@ -1,6 +1,6 @@
 import { Injectable, Signal, inject } from '@angular/core';
 import { HttpClient, httpResource } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, map } from 'rxjs';
 import { GATEWAY_URL } from '../tokens/gateway-url.token';
 import { ApiResponse, PagedResponse } from '../models/api-response.model';
 import { ApiFootballProfile, ImportResult } from '../models/api-football.model';
@@ -130,5 +130,23 @@ export class PlayersApi {
     await firstValueFrom(
       this.http.delete<void>(`${this.base}/api/players/${id}`),
     );
+  }
+
+  /**
+   * Soft-uniqueness lookup used by the manual create form to warn about an
+   * existing `Name + Team` pair before submit (the backend would otherwise
+   * reject with 409). Returns Observable<boolean> so it composes naturally
+   * inside the async Reactive Forms validator.
+   *
+   * Hits the existing search endpoint with `limit=1`; if at least one row
+   * comes back, we treat the pair as taken. Case-insensitive matching is
+   * already guaranteed server-side by the soft-uniqueness rule.
+   */
+  existsByNameAndTeam(name: string, team: string): Observable<boolean> {
+    return this.http
+      .get<PagedResponse<PlayerListItem>>(`${this.base}/api/players/search`, {
+        params: { name, team, page: 1, limit: 1 },
+      })
+      .pipe(map((res) => (res?.data?.length ?? 0) > 0));
   }
 }
