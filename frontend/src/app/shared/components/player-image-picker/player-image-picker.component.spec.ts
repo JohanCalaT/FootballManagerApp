@@ -108,8 +108,12 @@ describe('PlayerImagePickerComponent', () => {
   it('commit() dispatches the url strategy after the user types a URL', async () => {
     factory.provide.and.resolveTo(sample({ imageSource: 'url', url: 'https://x.com/y.jpg' }));
 
-    component['onModeChange']('url');
-    component['onUrlInput']('  https://x.com/y.jpg  ');
+    component['onModeChange']({ detail: { value: 'url' } } as Parameters<
+      typeof component['onModeChange']
+    >[0]);
+    component['onUrlInput']({ detail: { value: '  https://x.com/y.jpg  ' } } as Parameters<
+      typeof component['onUrlInput']
+    >[0]);
     fixture.detectChanges();
 
     const result = await component.commit();
@@ -149,8 +153,12 @@ describe('PlayerImagePickerComponent', () => {
 
   it('surfaces ImageSourceError message in the error signal and re-throws', async () => {
     factory.provide.and.rejectWith(new ImageSourceError('url', 'La URL debe usar HTTPS.'));
-    component['onModeChange']('url');
-    component['onUrlInput']('http://nope.com/x');
+    component['onModeChange']({ detail: { value: 'url' } } as Parameters<
+      typeof component['onModeChange']
+    >[0]);
+    component['onUrlInput']({ detail: { value: 'http://nope.com/x' } } as Parameters<
+      typeof component['onUrlInput']
+    >[0]);
     fixture.detectChanges();
 
     await expectAsync(component.commit()).toBeRejectedWithError(

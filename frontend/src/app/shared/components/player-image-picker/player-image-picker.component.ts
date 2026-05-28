@@ -19,6 +19,12 @@ import {
   IonLabel,
   IonSpinner,
 } from '@ionic/angular/standalone';
+import type {
+  InputInputEventDetail,
+  IonInputCustomEvent,
+  IonSegmentCustomEvent,
+  SegmentChangeEventDetail,
+} from '@ionic/core';
 
 import { CameraService } from '../../../core/services/camera.service';
 import { PlayerImageFactory } from '../../../core/services/strategies/image/player-image.factory';
@@ -148,7 +154,8 @@ export class PlayerImagePickerComponent {
     }
   }
 
-  protected onModeChange(value: string | number | undefined): void {
+  protected onModeChange(event: IonSegmentCustomEvent<SegmentChangeEventDetail>): void {
+    const value = event.detail.value;
     if (value === 'firebase' || value === 'url') {
       this.mode.set(value);
       this.error.set(null);
@@ -161,8 +168,9 @@ export class PlayerImagePickerComponent {
     this.applyFileDraft(file);
   }
 
-  protected onUrlInput(value: string | null | undefined): void {
-    const url = (value ?? '').trim();
+  protected onUrlInput(event: IonInputCustomEvent<InputInputEventDetail>): void {
+    const raw = event.detail.value ?? '';
+    const url = raw.trim();
     this.urlDraft.set(url);
     this.wasCleared.set(false);
     this.error.set(null);

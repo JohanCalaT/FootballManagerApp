@@ -19,7 +19,7 @@
 
   <ion-segment
     [value]="mode()"
-    (ionChange)="onModeChange($any($event).detail.value)"
+    (ionChange)="onModeChange($event)"
     data-testid="picker-mode">
     <ion-segment-button value="firebase" data-testid="picker-mode-firebase">
       <ion-label>Subir foto</ion-label>
@@ -47,7 +47,7 @@
         type="url"
         placeholder="https://..."
         [value]="urlDraft()"
-        (ionInput)="onUrlInput($any($event).detail.value)"
+        (ionInput)="onUrlInput($event)"
         [disabled]="isCommitting()"
         data-testid="picker-url-input"></ion-input>
     </div>
