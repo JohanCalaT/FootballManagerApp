@@ -1,0 +1,79 @@
+// Gridiron Neon tokens (see DESIGN.md): surface-container card, Bebas Neue
+// uppercase header, neon-green focus ring. We avoid hard-coding the colours
+// where Ionic exposes a token, so the system theme override carries through.
+
+:host {
+  display: block;
+}
+
+.collapsible {
+  background: var(--ion-color-step-100, #1f1f25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 120ms ease;
+
+  &--open {
+    border-color: rgba(0, 255, 135, 0.35);
+  }
+
+  &__header {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    width: 100%;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid #00ff87;
+      outline-offset: -2px;
+    }
+  }
+
+  &__icon {
+    font-size: 1.1rem;
+    color: var(--ion-color-medium, #b9cbb9);
+  }
+
+  &__title {
+    flex: 1;
+    text-align: left;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    line-height: 24px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ion-text-color, #e4e1e9);
+  }
+
+  &__badge {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(0, 255, 135, 0.12);
+    color: #00ff87;
+  }
+
+  &__chevron {
+    font-size: 1.1rem;
+    color: var(--ion-color-medium, #b9cbb9);
+    transition: transform 160ms ease;
+
+    &--up {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__content {
+    padding: 4px 16px 16px;
+  }
+}
