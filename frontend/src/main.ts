@@ -1,6 +1,7 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { connectAuthEmulator, getAuth, provideAuth } from '@angular/fire/auth';
+import { connectStorageEmulator, getStorage, provideStorage } from '@angular/fire/storage';
 import { defineCustomElements } from '@football-manager/stencil/loader';
 
 import { appConfig } from './app/app.config';
@@ -49,6 +50,16 @@ async function main(): Promise<void> {
           });
         }
         return auth;
+      }),
+      provideStorage(() => {
+        const storage = getStorage();
+        // Same `?e2e=1` toggle as Auth: when Cypress runs against the
+        // Firebase emulators, redirect Storage to localhost:9199 so tests
+        // never touch the real bucket and never need network egress.
+        if (useAuthEmulator) {
+          connectStorageEmulator(storage, '127.0.0.1', 9199);
+        }
+        return storage;
       }),
     ],
   });
