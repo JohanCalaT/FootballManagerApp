@@ -156,6 +156,66 @@ describe('PUT /api/players/:id', () => {
       expect(res.body.data.team).toBe(before.team);
     });
   });
+
+  describe('biographical lock for imported players', () => {
+    it('ignores name / firstName / nationality / birthDate when apiFootballId is set', async () => {
+      // Imported player — comes with apiFootballId. The API is the source
+      // of truth for identity fields; the service must drop them from the
+      // patch even if a malicious or buggy client sends them.
+      const player = await PlayerModel.create(buildPlayer({
+        name: 'Lionel Messi',
+        firstName: 'Lionel',
+        nationality: 'Argentina',
+        birthDate: new Date('1987-06-24'),
+        team: 'Inter Miami',
+        league: 'MLS',
+        apiFootballId: 154,
+      }));
+
+      const res = await asAdmin(
+        request(app)
+          .put(`/api/players/${player._id.toString()}`)
+          .send({
+            // Biographical (should be ignored)
+            name: 'TAMPERED',
+            firstName: 'TAMPERED',
+            lastName: 'TAMPERED',
+            nationality: 'TAMPERED',
+            birthDate: '2000-01-01',
+            birthPlace: 'TAMPERED',
+            birthCountry: 'TAMPERED',
+            // Mutable (should land)
+            team: 'Al Nassr',
+            shirtNumber: 10,
+            injured: true,
+          }),
+      );
+
+      expect(res.status).toBe(200);
+      // Identity preserved
+      expect(res.body.data.name).toBe('Lionel Messi');
+      expect(res.body.data.firstName).toBe('Lionel');
+      expect(res.body.data.nationality).toBe('Argentina');
+      // Mutable changed
+      expect(res.body.data.team).toBe('Al Nassr');
+      expect(res.body.data.shirtNumber).toBe(10);
+      expect(res.body.data.injured).toBe(true);
+    });
+
+    it('allows full identity edit for manual players (no apiFootballId)', async () => {
+      const player = await seedOne();
+
+      const res = await asAdmin(
+        request(app)
+          .put(`/api/players/${player._id.toString()}`)
+          .send({ name: 'Pedri G.', nationality: 'España' }),
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.name).toBe('Pedri G.');
+      expect(res.body.data.nationality).toBe('España');
+    });
+  });
 });
 
 describe('DELETE /api/players/:id', () => {

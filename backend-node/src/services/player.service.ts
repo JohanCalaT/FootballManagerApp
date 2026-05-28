@@ -192,11 +192,38 @@ export interface UpdatePlayerInput {
   playerGeolocation?: IGeolocation;
 }
 
+/**
+ * Identity / biographical fields that are immutable once a player comes
+ * from API-Football. The API is the source of truth for these; the only
+ * way to refresh them is the future Re-import endpoint (PR 4). The .NET
+ * handler enforces the same lock — keeping parity is what makes the
+ * X-Backend toggle transparent.
+ */
+const LOCKED_FOR_IMPORTED = [
+  'name', 'firstName', 'lastName', 'nationality',
+  'birthDate', 'birthPlace', 'birthCountry',
+] as const;
+
 export const update = async (
   id: string,
   patch: UpdatePlayerInput,
 ): Promise<PlayerDetailDto> => {
+  // Need the current player to know its origin (manual vs imported) and to
+  // 404 cleanly before mutating anything.
+  const current = await repo.findById(id);
+  if (!current) throw new PlayerNotFoundError(id);
+
   const patchRecord = patch as Record<string, unknown>;
+
+  // Strip biographical fields when the player has an apiFootballId — they
+  // get silently ignored rather than 400-ing so a slightly-out-of-sync
+  // client (e.g. one that still echoes the unchanged values) does not break.
+  if (current.apiFootballId != null) {
+    for (const key of LOCKED_FOR_IMPORTED) {
+      delete patchRecord[key];
+    }
+  }
+
   // Trim de campos string requeridos si vienen en el patch
   if (typeof patchRecord.name   === 'string') patchRecord.name   = (patchRecord.name   as string).trim();
   if (typeof patchRecord.team   === 'string') patchRecord.team   = (patchRecord.team   as string).trim();
