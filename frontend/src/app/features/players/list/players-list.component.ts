@@ -10,6 +10,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ComingSoonService } from '../../../core/services/coming-soon.service';
 import { PlayerListItem } from '../../../core/models/player.model';
 import { isAuthenticated } from '../../../core/state/auth.signal';
+import { playersListNeedsRefresh } from '../../../core/state/players-list.signal';
 
 import { ImportPlayersDialogComponent } from '../import/import-players-dialog.component';
 import { HomeActionBarComponent } from './components/home-action-bar/home-action-bar.component';
@@ -46,6 +47,20 @@ export class PlayersListComponent implements OnInit {
 
   ngOnInit(): void {
     void this.store.reload(this.store.query());
+  }
+
+  /**
+   * Ionic lifecycle: fires every time the user navigates back into this
+   * page, even when IonRouterOutlet keeps the component in its cache (so
+   * ngOnInit does not re-fire). If any mutation page flipped the
+   * cross-route dirty signal before navigating here, we honour it by
+   * reloading the grid; otherwise we skip the network round trip.
+   */
+  ionViewWillEnter(): void {
+    if (playersListNeedsRefresh()) {
+      playersListNeedsRefresh.set(false);
+      void this.store.reload(this.store.query());
+    }
   }
 
   protected onSearchQueryChange(query: string): void {

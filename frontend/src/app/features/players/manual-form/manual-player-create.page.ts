@@ -32,6 +32,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { PlayersApi } from '../../../core/api/players.api';
 import { GeolocationService } from '../../../core/services/geolocation.service';
 import { currentUser } from '../../../core/state/auth.signal';
+import { markPlayersListDirty } from '../../../core/state/players-list.signal';
 import {
   CreatePlayerRequest,
   ImageSource,
@@ -199,6 +200,9 @@ export class ManualPlayerCreatePage {
         `Jugador "${created?.name ?? dto.name}" creado.`,
         'success',
       );
+      // Flag the cached list page so its ionViewWillEnter reloads instead
+      // of showing stale data — Ionic does not re-mount the route.
+      markPlayersListDirty();
       void this.router.navigate(['/players']);
     } catch (err) {
       await this.handleError(err);
