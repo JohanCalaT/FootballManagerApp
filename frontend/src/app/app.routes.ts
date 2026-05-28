@@ -51,6 +51,16 @@ export const routes: Routes = [
         (m) => m.PlayerEditPage,
       ),
   },
+  {
+    // Public detail page — anonymous users can land here from the home
+    // grid; the comments section gates the write action behind auth and
+    // admin-only buttons appear if the JWT claim is present.
+    path: 'players/:id',
+    loadComponent: () =>
+      import('./features/players/detail/player-detail.page').then(
+        (m) => m.PlayerDetailPage,
+      ),
+  },
   { path: '', redirectTo: 'splash', pathMatch: 'full' },
   { path: '**', redirectTo: 'splash' },
 ];

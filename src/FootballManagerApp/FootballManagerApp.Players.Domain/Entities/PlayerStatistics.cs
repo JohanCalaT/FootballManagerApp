@@ -4,6 +4,8 @@ public class PlayerStatistics
 {
     public Guid Id { get; private set; }
     public Guid PlayerId { get; private set; }
+    public Player Player { get; private set; } = null!;
+
     public int Season { get; private set; }
 
     public int? LeagueId { get; private set; }

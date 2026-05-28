@@ -44,8 +44,14 @@ public class CreateCommentHandler
 
         try
         {
+            // Prefer the nested shape (what the frontend sends today); fall
+            // back to the legacy flat fields if a caller still uses them.
             Geolocation? geo = null;
-            if (dto.ClientLat.HasValue && dto.ClientLng.HasValue)
+            if (dto.ClientGeolocation is not null)
+                geo = Geolocation.Create(
+                    dto.ClientGeolocation.Lat, dto.ClientGeolocation.Lng,
+                    dto.ClientGeolocation.City, dto.ClientGeolocation.Country);
+            else if (dto.ClientLat.HasValue && dto.ClientLng.HasValue)
                 geo = Geolocation.Create(
                     dto.ClientLat.Value, dto.ClientLng.Value,
                     dto.ClientCity, dto.ClientCountry);

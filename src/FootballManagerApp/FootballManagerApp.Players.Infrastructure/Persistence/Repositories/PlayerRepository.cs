@@ -102,7 +102,6 @@ public class PlayerRepository : IPlayerRepository
 
     public async Task UpdateAsync(Player player, CancellationToken ct)
     {
-        _db.Players.Update(player);
         try
         {
             await _db.SaveChangesAsync(ct);
