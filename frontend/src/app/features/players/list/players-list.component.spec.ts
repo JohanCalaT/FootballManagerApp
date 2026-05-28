@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { ModalController } from '@ionic/angular/standalone';
 
 import { AuthService } from '../../../core/services/auth.service';
@@ -113,9 +113,9 @@ describe('PlayersListComponent (home container)', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    // onImport now opens a real modal — covered by its own spec; we only
-    // verify the remaining placeholder buttons still notify coming-soon.
-    fixture.componentInstance['onInsert']();
+    // onImport opens a real modal and onInsert routes to /players/new — both
+    // are covered by their own specs. Here we only verify the remaining
+    // placeholder buttons still notify coming-soon.
     fixture.componentInstance['onIdealTeam']();
     fixture.componentInstance['onPublishNews']();
     fixture.componentInstance['onEditPlayer'](makePlayer('1'));
@@ -123,11 +123,25 @@ describe('PlayersListComponent (home container)', () => {
 
     const calls = comingSoon.notify.calls.allArgs().map((c) => c[0]);
     expect(calls).toEqual([
-      'Insertar jugador',
       'Equipo Ideal',
       'Publicar noticia',
       'Editar jugador',
       'Eliminar jugador',
     ]);
+  });
+
+  it('navigates to /players/new when the insert action fires', async () => {
+    await setup();
+    setSession({ uid: 'a', email: 'a@b.com', displayName: 'A', role: 'admin' }, 'tok');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const router = TestBed.inject(Router);
+    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+
+    fixture.componentInstance['onInsert']();
+
+    expect(navigate).toHaveBeenCalledOnceWith(['/players/new']);
   });
 });

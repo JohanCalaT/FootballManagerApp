@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 
+import { authGuard } from './core/guards/auth.guard';
+
 export const routes: Routes = [
   {
     path: 'splash',
@@ -30,6 +32,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/players/list/players-list.component').then(
         (m) => m.PlayersListComponent,
+      ),
+  },
+  {
+    path: 'players/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/players/manual-form/manual-player-create.page').then(
+        (m) => m.ManualPlayerCreatePage,
       ),
   },
   { path: '', redirectTo: 'splash', pathMatch: 'full' },

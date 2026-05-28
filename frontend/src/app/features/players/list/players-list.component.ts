@@ -75,7 +75,7 @@ export class PlayersListComponent implements OnInit {
     }
   }
   protected onInsert(): void {
-    void this.comingSoon.notify('Insertar jugador');
+    void this.router.navigate(['/players/new']);
   }
   protected onIdealTeam(): void {
     void this.comingSoon.notify('Equipo Ideal');
