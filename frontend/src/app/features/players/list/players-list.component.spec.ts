@@ -110,14 +110,18 @@ describe('PlayersListComponent (home container)', () => {
     expect(fixture.nativeElement.querySelector('[data-testid=home-action-bar]')).toBeTruthy();
   });
 
-  it('notifies coming-soon when a player tile is selected', async () => {
+  it('navigates to /players/:id when a player tile is selected', async () => {
     await setup();
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
 
+    const router = TestBed.inject(Router);
+    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+
     fixture.componentInstance['onPlayerSelected'](makePlayer('99'));
-    expect(comingSoon.notify).toHaveBeenCalledWith('Detalle de jugador');
+
+    expect(navigate).toHaveBeenCalledOnceWith(['/players', '99']);
   });
 
   it('notifies coming-soon for each action-bar button', async () => {

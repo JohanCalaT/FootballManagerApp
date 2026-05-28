@@ -130,8 +130,8 @@ export class PlayersListComponent implements OnInit {
     void this.comingSoon.notify('Publicar noticia');
   }
 
-  protected onPlayerSelected(_player: PlayerListItem): void {
-    void this.comingSoon.notify('Detalle de jugador');
+  protected onPlayerSelected(player: PlayerListItem): void {
+    void this.router.navigate(['/players', player.id]);
   }
   protected onEditPlayer(player: PlayerListItem): void {
     void this.router.navigate(['/players', player.id, 'edit']);
