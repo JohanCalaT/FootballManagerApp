@@ -50,6 +50,15 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+
+    &--split {
+      flex-direction: row;
+      gap: 8px;
+
+      ion-button {
+        flex: 1;
+      }
+    }
   }
 
   &__status {

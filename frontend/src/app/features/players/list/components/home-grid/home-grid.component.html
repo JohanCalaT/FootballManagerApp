@@ -22,6 +22,7 @@
         [attr.position]="player.position"
         [attr.image-url]="player.imageUrl"
         [attr.rating]="player.rating"
+        [attr.is-manual]="player.apiFootballId === null ? 'true' : null"
         (playerSelected)="onCardSelected(player)"
         data-testid="player-card">
         @if (canEdit(player)) {

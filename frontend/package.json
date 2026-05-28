@@ -44,6 +44,7 @@
     "@capacitor/status-bar": "8.0.2",
     "@football-manager/stencil": "file:./stencil",
     "@ionic/angular": "^8.0.0",
+    "@ionic/pwa-elements": "^3.4.0",
     "browser-image-compression": "^2.0.2",
     "firebase": "^12.13.0",
     "ionicons": "^7.0.0",

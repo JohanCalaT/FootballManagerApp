@@ -13,6 +13,12 @@ export type ImageSource = 'blob' | 'api' | 'url';
  */
 export interface PlayerListItem {
   id: string;
+  /**
+   * Null when the player was created via the manual form (no upstream
+   * source). Lets the UI flag manual entries — they have no statistics
+   * yet and would otherwise render as a flat gray ring.
+   */
+  apiFootballId: number | null;
   name: string;
   team: string;
   league: string;

@@ -22,7 +22,11 @@ describe('PlayerImagePickerComponent', () => {
   });
 
   beforeEach(async () => {
-    camera = jasmine.createSpyObj<CameraService>('CameraService', ['pickFromFile']);
+    camera = jasmine.createSpyObj<CameraService>('CameraService', [
+      'pickFromFile',
+      'pickFromCamera',
+      'pickFromGallery',
+    ]);
     factory = jasmine.createSpyObj<PlayerImageFactory>('PlayerImageFactory', [
       'create',
       'provide',
@@ -66,31 +70,45 @@ describe('PlayerImagePickerComponent', () => {
     expect(badge.nativeElement.textContent.trim()).toBe('Foto de API-Football');
   });
 
-  it('picks a file via the camera service and shows a blob preview', async () => {
+  it('opens the camera via Capacitor and shows a blob preview', async () => {
     const file = new File(['x'], 'p.png', { type: 'image/png' });
-    camera.pickFromFile.and.resolveTo(file);
+    camera.pickFromCamera.and.resolveTo(file);
 
-    const btn = fixture.debugElement.query(By.css('[data-testid="picker-pick-file"]'));
+    const btn = fixture.debugElement.query(By.css('[data-testid="picker-take-photo"]'));
     btn.triggerEventHandler('click');
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(camera.pickFromFile).toHaveBeenCalledOnceWith({ capture: 'environment' });
+    expect(camera.pickFromCamera).toHaveBeenCalledTimes(1);
     expect(URL.createObjectURL).toHaveBeenCalledWith(file);
     const img = fixture.debugElement.query(By.css('[data-testid="picker-preview-img"]'));
     expect(img.nativeElement.getAttribute('src')).toBe('blob:fake');
     expect(component.hasChanges()).toBeTrue();
   });
 
+  it('also accepts a photo from the gallery', async () => {
+    const file = new File(['x'], 'g.png', { type: 'image/png' });
+    camera.pickFromGallery.and.resolveTo(file);
+
+    fixture.debugElement
+      .query(By.css('[data-testid="picker-pick-gallery"]'))
+      .triggerEventHandler('click');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(camera.pickFromGallery).toHaveBeenCalledTimes(1);
+    expect(component.hasChanges()).toBeTrue();
+  });
+
   it('commit() dispatches the firebase strategy with the picked file and ownerUid', async () => {
     const file = new File(['x'], 'p.png', { type: 'image/png' });
-    camera.pickFromFile.and.resolveTo(file);
+    camera.pickFromCamera.and.resolveTo(file);
     factory.provide.and.resolveTo(
       sample({ imageSource: 'firebase', url: 'https://fbs/x.png', storagePath: 'players/u1/1.png' }),
     );
 
     fixture.debugElement
-      .query(By.css('[data-testid="picker-pick-file"]'))
+      .query(By.css('[data-testid="picker-take-photo"]'))
       .triggerEventHandler('click');
     await fixture.whenStable();
 

@@ -47,6 +47,11 @@ export namespace Components {
          */
         "interactive": boolean;
         /**
+          * Marks the tile as a manually-created player (no upstream API-Football source, therefore no statistics). When true, the rating slot is replaced by a "MANUAL" chip so users can tell the card apart from an imported player whose stats just haven't loaded yet.
+          * @default false
+         */
+        "isManual": boolean;
+        /**
           * League name. Accepted for DTO parity, not displayed in the tile.
          */
         "league"?: string;
@@ -172,6 +177,11 @@ declare namespace LocalJSX {
          */
         "interactive"?: boolean;
         /**
+          * Marks the tile as a manually-created player (no upstream API-Football source, therefore no statistics). When true, the rating slot is replaced by a "MANUAL" chip so users can tell the card apart from an imported player whose stats just haven't loaded yet.
+          * @default false
+         */
+        "isManual"?: boolean;
+        /**
           * League name. Accepted for DTO parity, not displayed in the tile.
          */
         "league"?: string;
@@ -206,6 +216,7 @@ declare namespace LocalJSX {
         "imageUrl": string;
         "rating": number;
         "playerId": string;
+        "isManual": boolean;
         "interactive": boolean;
     }
 

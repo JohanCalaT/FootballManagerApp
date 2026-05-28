@@ -15,6 +15,7 @@ import { PlayersListComponent } from './players-list.component';
 function makePlayer(id: string): PlayerListItem {
   return {
     id,
+    apiFootballId: null,
     name: `P-${id}`,
     team: 'T',
     league: 'L',

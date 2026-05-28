@@ -34,18 +34,26 @@
         }
       </label>
 
-      <fieldset class="manual-form__field manual-form__field--segment">
+      <fieldset class="manual-form__field">
         <legend class="manual-form__label">Posición *</legend>
-        <ion-segment
-          formControlName="position"
-          scrollable="true"
+        <div
+          class="position-grid"
+          role="radiogroup"
+          aria-label="Posición del jugador"
           data-testid="field-position">
           @for (pos of positions; track pos) {
-            <ion-segment-button [value]="pos" [attr.data-testid]="'pos-' + pos">
-              <ion-label>{{ pos }}</ion-label>
-            </ion-segment-button>
+            <button
+              type="button"
+              role="radio"
+              class="position-grid__pill"
+              [class.position-grid__pill--active]="form.controls.position.value === pos"
+              [attr.aria-checked]="form.controls.position.value === pos"
+              (click)="selectPosition(pos)"
+              [attr.data-testid]="'pos-' + pos">
+              {{ positionLabels[pos] }}
+            </button>
           }
-        </ion-segment>
+        </div>
         @if (form.controls.position.touched && form.controls.position.hasError('required')) {
           <span class="manual-form__error" data-testid="error-position">
             Elige una posición.

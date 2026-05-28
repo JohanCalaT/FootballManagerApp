@@ -162,8 +162,14 @@ export class PlayerImagePickerComponent {
     }
   }
 
-  protected async onPickFile(): Promise<void> {
-    const file = await this.camera.pickFromFile({ capture: 'environment' });
+  protected async onTakePhoto(): Promise<void> {
+    const file = await this.camera.pickFromCamera();
+    if (!file) return;
+    this.applyFileDraft(file);
+  }
+
+  protected async onPickFromGallery(): Promise<void> {
+    const file = await this.camera.pickFromGallery();
     if (!file) return;
     this.applyFileDraft(file);
   }

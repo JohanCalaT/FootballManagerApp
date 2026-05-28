@@ -280,6 +280,23 @@
   text-shadow: 0 0 8px rgba(255, 219, 60, 0.45);
 }
 
+/* Manual chip — replaces the rating slot when isManual is true. Smaller
+ * type than the rating number, slightly desaturated so it does not
+ * compete with the rated tiles on the same grid. */
+.card__badge--manual {
+  font-size: 10px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0 8px;
+  height: 22px;
+  min-width: auto;
+  background: rgba(20, 20, 25, 0.92);
+  color: #b9cbb9;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: none;
+}
+
 /* ---- Body (text content) — vertical stack, centered ---- */
 
 .card__body {

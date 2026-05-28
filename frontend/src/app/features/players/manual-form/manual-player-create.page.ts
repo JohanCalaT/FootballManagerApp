@@ -22,9 +22,6 @@ import {
   IonHeader,
   IonIcon,
   IonInput,
-  IonLabel,
-  IonSegment,
-  IonSegmentButton,
   IonSpinner,
   IonTitle,
   IonToolbar,
@@ -73,6 +70,12 @@ import { Geolocation } from '../../../core/models/geolocation.model';
   selector: 'app-manual-player-create',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Ionic's flex layout that lets ion-footer pin to the bottom only kicks in
+  // when the routed component is a direct `ion-page`. The IonRouterOutlet
+  // does NOT wrap standalone components automatically — we have to opt in
+  // via the host class. Without this, the footer renders but falls below
+  // the visible viewport on mobile.
+  host: { class: 'ion-page' },
   imports: [
     ReactiveFormsModule,
     IonBackButton,
@@ -83,9 +86,6 @@ import { Geolocation } from '../../../core/models/geolocation.model';
     IonHeader,
     IonIcon,
     IonInput,
-    IonLabel,
-    IonSegment,
-    IonSegmentButton,
     IonSpinner,
     IonTitle,
     IonToolbar,
@@ -104,6 +104,17 @@ export class ManualPlayerCreatePage {
   private readonly toastCtrl = inject(ToastController);
 
   protected readonly positions = PLAYER_POSITIONS;
+  /**
+   * Spanish labels for the 4 positions, shown in the 2x2 pill grid. The
+   * backend enum stays in English (mirrors API-Football), so we keep the
+   * canonical value as the form value and only translate at render time.
+   */
+  protected readonly positionLabels: Record<PlayerPosition, string> = {
+    Goalkeeper: 'Portero',
+    Defender: 'Defensa',
+    Midfielder: 'Centrocampista',
+    Attacker: 'Delantero',
+  };
   protected readonly user = currentUser;
   protected readonly ownerUid = computed(() => this.user()?.uid ?? '');
 
@@ -170,6 +181,11 @@ export class ManualPlayerCreatePage {
 
   protected onCancel(): void {
     void this.router.navigate(['/players']);
+  }
+
+  protected selectPosition(value: PlayerPosition): void {
+    this.form.controls.position.setValue(value);
+    this.form.controls.position.markAsTouched();
   }
 
   async onSubmit(): Promise<void> {

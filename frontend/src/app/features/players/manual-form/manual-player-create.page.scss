@@ -82,11 +82,6 @@ ion-title {
     }
   }
 
-  &__field--segment ion-segment {
-    --background: var(--fma-input-bg);
-    padding: 4px;
-  }
-
   &__label {
     font-family: 'Inter', sans-serif;
     font-size: 11px;
@@ -103,6 +98,45 @@ ion-title {
 
     &--warn {
       color: #ffdb3c;
+    }
+  }
+
+  // 2x2 position pill grid — fits comfortably on a 360px viewport, no
+  // horizontal scrolling. Replaces the ion-segment which overflowed.
+  .position-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+
+    &__pill {
+      appearance: none;
+      background: var(--fma-input-bg);
+      color: #e4e1e9;
+      border: 1px solid var(--fma-input-border);
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease,
+        color 120ms ease, box-shadow 120ms ease;
+
+      &:focus-visible {
+        outline: 2px solid var(--fma-neon);
+        outline-offset: 2px;
+      }
+
+      &--active {
+        background: var(--fma-neon);
+        color: #003919;
+        border-color: var(--fma-neon);
+        box-shadow: 0 0 12px rgba(0, 255, 135, 0.35);
+      }
     }
   }
 
