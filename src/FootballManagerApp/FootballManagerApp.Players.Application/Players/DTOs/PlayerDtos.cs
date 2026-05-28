@@ -34,6 +34,18 @@ public record PlayerStatisticsDto(
     int Assists,
     decimal? Rating);
 
+/// <summary>
+/// Nested shape for client / player geolocation in DTOs. Mirrors the
+/// frontend's `Geolocation` interface — keeping the wire format nested
+/// matches the domain value object and avoids the flat-fields tax that
+/// the older `PlayerLat/PlayerLng/PlayerCity/PlayerCountry` shape paid.
+/// </summary>
+public record GeolocationDto(
+    decimal Lat,
+    decimal Lng,
+    string? City,
+    string? Country);
+
 public record PlayerDetailDto(
     Guid Id,
     string Name,
@@ -50,7 +62,19 @@ public record PlayerDetailDto(
     DateTime RegisteredAt,
     int Version,
     IEnumerable<PlayerStatisticsDto> Statistics,
-    IEnumerable<CommentDto> Comments);
+    IEnumerable<CommentDto> Comments,
+    // === Fields added so the edit page can load the full player state.
+    // Appended as defaulted parameters so existing positional callers
+    // (mappers, tests) keep compiling and the new ones are opt-in. ===
+    int? ApiFootballId = null,
+    DateTime? BirthDate = null,
+    string? BirthPlace = null,
+    string? BirthCountry = null,
+    int? ShirtNumber = null,
+    string? ImageSource = null,
+    string? CreatedByUserId = null,
+    GeolocationDto? ClientGeolocation = null,
+    GeolocationDto? PlayerGeolocation = null);
 
 public record CreatePlayerDto(
     string Name,
@@ -84,7 +108,19 @@ public record UpdatePlayerDto(
     decimal? PlayerLat,
     decimal? PlayerLng,
     string? PlayerCity,
-    string? PlayerCountry);
+    string? PlayerCountry,
+    // === Fields added for the edit page. Defaulted to null so any
+    // existing positional callers (tests) keep compiling unchanged; new
+    // callers can use named arguments. PlayerGeolocation (nested)
+    // wins over the legacy PlayerLat/Lng/City/Country if both are sent. ===
+    string? FirstName = null,
+    string? LastName = null,
+    string? BirthPlace = null,
+    string? BirthCountry = null,
+    string? ImageSource = null,
+    bool? Injured = null,
+    GeolocationDto? PlayerGeolocation = null,
+    GeolocationDto? ClientGeolocation = null);
 
 public record ImportPlayerItemDto(
     int ApiFootballId,
