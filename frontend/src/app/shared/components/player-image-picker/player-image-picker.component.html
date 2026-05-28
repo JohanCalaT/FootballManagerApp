@@ -1,0 +1,81 @@
+<div class="picker" data-testid="player-image-picker">
+  <div class="picker__preview" data-testid="picker-preview">
+    @if (previewUrl(); as url) {
+      <img [src]="url" alt="Imagen del jugador" data-testid="picker-preview-img" />
+      @if (initial(); as init) {
+        @if (!draft() && !wasCleared()) {
+          <span class="picker__badge" data-testid="picker-source-badge">
+            {{ sourceLabel(init.imageSource) }}
+          </span>
+        }
+      }
+    } @else {
+      <div class="picker__placeholder" data-testid="picker-placeholder">
+        <ion-icon name="image-outline" aria-hidden="true"></ion-icon>
+        <span>Sin foto seleccionada</span>
+      </div>
+    }
+  </div>
+
+  <ion-segment
+    [value]="mode()"
+    (ionChange)="onModeChange($event)"
+    data-testid="picker-mode">
+    <ion-segment-button value="firebase" data-testid="picker-mode-firebase">
+      <ion-label>Subir foto</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="url" data-testid="picker-mode-url">
+      <ion-label>URL</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  @if (isMode('firebase')) {
+    <div class="picker__row">
+      <ion-button
+        expand="block"
+        fill="solid"
+        (click)="onPickFile()"
+        [disabled]="isCommitting()"
+        data-testid="picker-pick-file">
+        <ion-icon slot="start" name="camera-outline" aria-hidden="true"></ion-icon>
+        Cámara o galería
+      </ion-button>
+    </div>
+  } @else {
+    <div class="picker__row">
+      <ion-input
+        type="url"
+        placeholder="https://..."
+        [value]="urlDraft()"
+        (ionInput)="onUrlInput($event)"
+        [disabled]="isCommitting()"
+        data-testid="picker-url-input"></ion-input>
+    </div>
+  }
+
+  @if (hasChanges() || initial()) {
+    <div class="picker__row">
+      <ion-button
+        expand="block"
+        fill="outline"
+        color="medium"
+        (click)="onClear()"
+        [disabled]="isCommitting()"
+        data-testid="picker-clear">
+        <ion-icon slot="start" name="trash-outline" aria-hidden="true"></ion-icon>
+        Quitar imagen
+      </ion-button>
+    </div>
+  }
+
+  @if (isCommitting()) {
+    <div class="picker__status" data-testid="picker-committing">
+      <ion-spinner name="dots"></ion-spinner>
+      <span>Subiendo imagen…</span>
+    </div>
+  }
+
+  @if (error(); as msg) {
+    <p class="picker__error" role="alert" data-testid="picker-error">{{ msg }}</p>
+  }
+</div>
