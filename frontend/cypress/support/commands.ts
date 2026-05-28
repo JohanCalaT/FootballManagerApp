@@ -11,6 +11,8 @@ declare global {
       resetAuthEmulator(): Chainable<void>;
       /** Pre-create a user in the emulator so a login spec has something to log in as. */
       seedUser(email: string, password: string, displayName?: string): Chainable<void>;
+      /** Pre-create a user with the `admin: true` custom claim so it passes adminGuard. */
+      seedAdmin(email: string, password: string, displayName?: string): Chainable<void>;
       /** Visit a path, automatically appending ?e2e=1 so the app wires the emulator. */
       visitApp(path: string): Chainable<void>;
     }
@@ -37,6 +39,31 @@ Cypress.Commands.add('seedUser', (email, password, displayName) => {
     method: 'POST',
     url: `${emulatorBase()}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key`,
     body: { email, password, displayName, returnSecureToken: true },
+  });
+});
+
+Cypress.Commands.add('seedAdmin', (email, password, displayName) => {
+  // Create the user, then stamp customAttributes via the emulator's
+  // accounts:update endpoint. The emulator embeds those into the JWT on
+  // the next signIn, so auth.service.ts picks up role: 'admin'.
+  cy.request({
+    method: 'POST',
+    url: `${emulatorBase()}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key`,
+    body: { email, password, displayName, returnSecureToken: true },
+  }).then((res) => {
+    // Admin-SDK-shaped endpoint: the /v1/projects/{projectId}/... path is
+    // the one the emulator treats as service-account traffic, so it accepts
+    // customAttributes without an idToken. The user-facing /v1/accounts:update
+    // 400s with INVALID_REQ_TYPE when called this way.
+    cy.request({
+      method: 'POST',
+      url: `${emulatorBase()}/identitytoolkit.googleapis.com/v1/projects/${projectId()}/accounts:update`,
+      headers: { Authorization: 'Bearer owner' },
+      body: {
+        localId: res.body.localId,
+        customAttributes: JSON.stringify({ admin: true }),
+      },
+    });
   });
 });
 

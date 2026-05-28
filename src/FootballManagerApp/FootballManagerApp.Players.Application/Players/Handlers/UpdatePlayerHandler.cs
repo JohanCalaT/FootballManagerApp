@@ -51,20 +51,62 @@ public class UpdatePlayerHandler
 
         try
         {
-            player.Rename(dto.Name);
-            player.UpdateTeamAndLeague(dto.Team, dto.League);
-            player.SetPersonalInfo(
-                firstName: null, lastName: null,
-                nationality: dto.Nationality,
-                birthDate: dto.BirthDate, birthPlace: null, birthCountry: null,
-                height: dto.Height, weight: dto.Weight);
-            player.SetFootballInfo(dto.Position, dto.ShirtNumber);
-            player.SetImage(dto.ImageUrl, player.ImageSource);
+            // Biographical fields are immutable once a player came from
+            // API-Football — the API is the source of truth there. The
+            // frontend hides the inputs but the handler enforces the lock
+            // server-side so any direct PUT respects it too. The unlock
+            // mechanism is the future Re-import endpoint (PR 4), not a
+            // direct edit.
+            var isImported = player.ApiFootballId.HasValue;
+            if (!isImported)
+            {
+                player.Rename(dto.Name);
+                player.SetPersonalInfo(
+                    firstName: dto.FirstName,
+                    lastName: dto.LastName,
+                    nationality: dto.Nationality,
+                    birthDate: dto.BirthDate,
+                    birthPlace: dto.BirthPlace,
+                    birthCountry: dto.BirthCountry,
+                    height: dto.Height,
+                    weight: dto.Weight);
+            }
+            else
+            {
+                // Imported players still let the admin edit physical-only
+                // fields (height/weight change with age) but keep the
+                // identity locked.
+                player.SetPersonalInfo(
+                    firstName: player.FirstName,
+                    lastName: player.LastName,
+                    nationality: player.Nationality,
+                    birthDate: player.BirthDate,
+                    birthPlace: player.BirthPlace,
+                    birthCountry: player.BirthCountry,
+                    height: dto.Height,
+                    weight: dto.Weight);
+            }
 
-            if (dto.PlayerLat.HasValue && dto.PlayerLng.HasValue)
+            player.UpdateTeamAndLeague(dto.Team, dto.League);
+            player.SetFootballInfo(dto.Position, dto.ShirtNumber);
+            if (dto.Injured.HasValue) player.MarkInjured(dto.Injured.Value);
+            player.SetImage(dto.ImageUrl, dto.ImageSource ?? player.ImageSource);
+
+            // Geolocation: prefer the nested DTO shape (frontend native),
+            // fall back to the legacy flat fields for any older caller.
+            if (dto.PlayerGeolocation is not null)
+                player.SetPlayerGeolocation(Geolocation.Create(
+                    dto.PlayerGeolocation.Lat, dto.PlayerGeolocation.Lng,
+                    dto.PlayerGeolocation.City, dto.PlayerGeolocation.Country));
+            else if (dto.PlayerLat.HasValue && dto.PlayerLng.HasValue)
                 player.SetPlayerGeolocation(Geolocation.Create(
                     dto.PlayerLat.Value, dto.PlayerLng.Value,
                     dto.PlayerCity, dto.PlayerCountry));
+
+            if (dto.ClientGeolocation is not null)
+                player.SetClientGeolocation(Geolocation.Create(
+                    dto.ClientGeolocation.Lat, dto.ClientGeolocation.Lng,
+                    dto.ClientGeolocation.City, dto.ClientGeolocation.Country));
 
             await _repo.UpdateAsync(player, ct);
 

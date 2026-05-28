@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject } from '@angular/core';
+import { Component, OnInit, computed, effect, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   IonContent,
@@ -9,7 +9,7 @@ import {
 import { AuthService } from '../../../core/services/auth.service';
 import { ComingSoonService } from '../../../core/services/coming-soon.service';
 import { PlayerListItem } from '../../../core/models/player.model';
-import { isAuthenticated } from '../../../core/state/auth.signal';
+import { isAdmin, isAuthenticated } from '../../../core/state/auth.signal';
 import { playersListNeedsRefresh } from '../../../core/state/players-list.signal';
 
 import { ImportPlayersDialogComponent } from '../import/import-players-dialog.component';
@@ -44,6 +44,31 @@ export class PlayersListComponent implements OnInit {
 
   protected readonly isAuthenticated = isAuthenticated;
   protected readonly canRegister = computed(() => !this.isAuthenticated());
+
+  // Tracks the auth-fingerprint last seen so the reload effect can skip
+  // the synchronous initial fire (ngOnInit already loads the list once)
+  // and only react to actual login/logout/admin-claim transitions.
+  private lastAuthFingerprint: string | null = null;
+
+  constructor() {
+    // HATEOAS affordances on each PlayerListItem (_links.update, .delete)
+    // are baked server-side from the X-User-Admin header — which the
+    // Gateway stamps from the JWT admin claim. If the user signs in
+    // while this page is mounted (Firebase restores the session
+    // asynchronously after splash), the cached payload still holds the
+    // anonymous _links and admin buttons never appear. Reload on every
+    // auth transition so the grid always reflects the current role.
+    effect(() => {
+      const fingerprint = `${isAuthenticated()}-${isAdmin()}`;
+      if (this.lastAuthFingerprint === null) {
+        this.lastAuthFingerprint = fingerprint;
+        return;
+      }
+      if (this.lastAuthFingerprint === fingerprint) return;
+      this.lastAuthFingerprint = fingerprint;
+      void this.store.reload(this.store.query());
+    });
+  }
 
   ngOnInit(): void {
     void this.store.reload(this.store.query());
@@ -102,11 +127,14 @@ export class PlayersListComponent implements OnInit {
   protected onPlayerSelected(_player: PlayerListItem): void {
     void this.comingSoon.notify('Detalle de jugador');
   }
-  protected onEditPlayer(_player: PlayerListItem): void {
-    void this.comingSoon.notify('Editar jugador');
+  protected onEditPlayer(player: PlayerListItem): void {
+    void this.router.navigate(['/players', player.id, 'edit']);
   }
-  protected onDeletePlayer(_player: PlayerListItem): void {
-    void this.comingSoon.notify('Eliminar jugador');
+  protected onDeletePlayer(player: PlayerListItem): void {
+    // Delete confirmation lives in the edit page (where the full player
+    // context is available, including the name to confirm). Sending the
+    // admin there keeps a single destructive flow instead of two.
+    void this.router.navigate(['/players', player.id, 'edit']);
   }
 
   protected async onLoadMore(ev: InfiniteScrollCustomEvent): Promise<void> {

@@ -105,7 +105,16 @@ describe('Players · Home', () => {
     cy.intercept('GET', '**/api/players?page=1&limit=20', {
       fixture: 'players-page-1-admin.json',
     }).as('listAdmin');
-    cy.visitApp('/players');
+    cy.intercept('GET', '**/api/players/11111111-1111-1111-1111-111111111111', {
+      fixture: 'player-detail-admin.json',
+    }).as('playerDetail');
+
+    cy.seedAdmin(users.admin.email, users.admin.password, users.admin.displayName);
+    cy.visitApp('/auth/login');
+    cy.get('[data-testid=login-email-input]').type(users.admin.email);
+    cy.get('[data-testid=login-password-input]').type(users.admin.password);
+    cy.get('[data-testid=login-submit-button]').click();
+    cy.location('pathname').should('eq', '/players');
     cy.wait('@listAdmin');
 
     cy.get('[data-testid=player-card-edit-button]').click();
