@@ -102,11 +102,14 @@ export class PlayersListComponent implements OnInit {
   protected onPlayerSelected(_player: PlayerListItem): void {
     void this.comingSoon.notify('Detalle de jugador');
   }
-  protected onEditPlayer(_player: PlayerListItem): void {
-    void this.comingSoon.notify('Editar jugador');
+  protected onEditPlayer(player: PlayerListItem): void {
+    void this.router.navigate(['/players', player.id, 'edit']);
   }
-  protected onDeletePlayer(_player: PlayerListItem): void {
-    void this.comingSoon.notify('Eliminar jugador');
+  protected onDeletePlayer(player: PlayerListItem): void {
+    // Delete confirmation lives in the edit page (where the full player
+    // context is available, including the name to confirm). Sending the
+    // admin there keeps a single destructive flow instead of two.
+    void this.router.navigate(['/players', player.id, 'edit']);
   }
 
   protected async onLoadMore(ev: InfiniteScrollCustomEvent): Promise<void> {

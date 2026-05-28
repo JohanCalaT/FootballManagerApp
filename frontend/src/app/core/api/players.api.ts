@@ -88,6 +88,16 @@ export class PlayersApi {
   // Promise-shaped variants used by the home page paged store, which needs
   // append-on-load semantics that httpResource (replace-on-URL-change) does
   // not provide out of the box.
+  /**
+   * Promise-shaped GET by id — needed by the edit page which loads once
+   * inside an async lifecycle rather than reactively via `httpResource`.
+   */
+  async getByIdOnce(id: string): Promise<ApiResponse<Player>> {
+    return firstValueFrom(
+      this.http.get<ApiResponse<Player>>(`${this.base}/api/players/${id}`),
+    );
+  }
+
   async listPage(page: number, limit: number): Promise<PagedResponse<PlayerListItem>> {
     return firstValueFrom(
       this.http.get<PagedResponse<PlayerListItem>>(`${this.base}/api/players`, {
@@ -120,9 +130,27 @@ export class PlayersApi {
     );
   }
 
-  async update(id: string, payload: UpdatePlayerRequest): Promise<ApiResponse<Player>> {
+  async update(
+    id: string,
+    payload: UpdatePlayerRequest,
+    /**
+     * Optimistic concurrency token. Pass the `version` the GET returned;
+     * .NET will 412 if someone else mutated the player in between. Node
+     * ignores it (no version model there). Sent as the standard `If-Match`
+     * HTTP header per the backend contract.
+     */
+    ifMatchVersion?: number,
+  ): Promise<ApiResponse<Player>> {
+    const headers: Record<string, string> = {};
+    if (ifMatchVersion != null) {
+      headers['If-Match'] = `"${ifMatchVersion}"`;
+    }
     return firstValueFrom(
-      this.http.put<ApiResponse<Player>>(`${this.base}/api/players/${id}`, payload),
+      this.http.put<ApiResponse<Player>>(
+        `${this.base}/api/players/${id}`,
+        payload,
+        { headers },
+      ),
     );
   }
 

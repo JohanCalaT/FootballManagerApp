@@ -1,0 +1,265 @@
+// Reuses the same Gridiron Neon visual language as the create page — see
+// manual-player-create.page.scss. We do NOT extend that file via SCSS
+// imports because the two pages have meaningfully different structure
+// (state block + origin banner + danger zone) and bundling them would
+// blur the boundary in code review. Duplication is intentional and
+// scoped to a few dozen lines.
+
+:host {
+  --fma-surface-card: #1f1f25;
+  --fma-input-bg: #050505;
+  --fma-input-border: rgba(255, 255, 255, 0.12);
+  --fma-input-border-focus: #00ff87;
+  --fma-neon: #00ff87;
+  --fma-gold: #ffdb3c;
+  --fma-danger: #ffb4ab;
+}
+
+ion-header ion-toolbar {
+  --background: rgba(19, 19, 24, 0.7);
+  --color: #e4e1e9;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+ion-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.edit-form {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 140px;
+
+  &__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding-top: 64px;
+    color: #b9cbb9;
+  }
+
+  &__origin {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 255, 135, 0.25);
+    background: rgba(0, 255, 135, 0.06);
+
+    &--imported {
+      border-color: rgba(255, 219, 60, 0.4);
+      background: rgba(255, 219, 60, 0.06);
+    }
+
+    ion-icon {
+      font-size: 1.4rem;
+      color: var(--fma-neon);
+    }
+    &--imported ion-icon {
+      color: var(--fma-gold);
+    }
+  }
+
+  &__origin-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+
+    strong {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #e4e1e9;
+    }
+    small {
+      font-size: 11px;
+      color: #b9cbb9;
+    }
+  }
+
+  &__card {
+    background: var(--fma-surface-card);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    // The "Estado del día" block gets a subtle neon edge so it reads as
+    // the primary daily-touch surface, in line with the Gridiron Neon
+    // "active/in-focus = neon glow" rule from DESIGN.md.
+    &--state {
+      border-color: rgba(0, 255, 135, 0.25);
+      box-shadow: 0 0 20px rgba(0, 255, 135, 0.05);
+    }
+  }
+
+  &__heading {
+    margin: 0 0 4px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    line-height: 26px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #e4e1e9;
+
+    &--danger {
+      color: var(--fma-danger);
+    }
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    border: 0;
+    padding: 0;
+
+    ion-input {
+      --background: var(--fma-input-bg);
+      --color: #e4e1e9;
+      --placeholder-color: #6e6e76;
+      --highlight-color-focused: var(--fma-input-border-focus);
+      background: var(--fma-input-bg);
+      border: 1px solid var(--fma-input-border);
+      border-radius: 8px;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+  }
+
+  &__row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    &--inline {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  &__label {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #b9cbb9;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__lock {
+    font-size: 11px;
+    color: var(--fma-gold);
+  }
+
+  .position-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+
+    &__pill {
+      appearance: none;
+      background: var(--fma-input-bg);
+      color: #e4e1e9;
+      border: 1px solid var(--fma-input-border);
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease,
+        color 120ms ease, box-shadow 120ms ease;
+
+      &:focus-visible {
+        outline: 2px solid var(--fma-neon);
+        outline-offset: 2px;
+      }
+
+      &--active {
+        background: var(--fma-neon);
+        color: #003919;
+        border-color: var(--fma-neon);
+        box-shadow: 0 0 12px rgba(0, 255, 135, 0.35);
+      }
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+
+    .edit-form__field:nth-child(odd):last-child {
+      grid-column: span 2;
+    }
+  }
+
+  &__defer-hint {
+    margin: 8px 0;
+    color: #b9cbb9;
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  &__hint {
+    margin: 0 0 8px;
+    color: #b9cbb9;
+    font-size: 12px;
+  }
+
+  &__danger {
+    background: rgba(255, 180, 171, 0.04);
+    border: 1px solid rgba(255, 180, 171, 0.18);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__footer ion-toolbar {
+    --background: rgba(19, 19, 24, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 0 8px;
+  }
+
+  &__cta {
+    display: flex;
+    padding: 8px 8px 12px;
+
+    ion-button[color='primary'] {
+      flex: 1;
+      --background: var(--fma-neon);
+      --background-activated: #00d770;
+      --color: #003919;
+      --border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+  }
+}

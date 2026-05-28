@@ -97,6 +97,14 @@ export interface Player {
   createdByUserId: string;
   clientGeolocation: Geolocation | null;
   playerGeolocation: Geolocation | null;
+  /**
+   * Optimistic-concurrency version. .NET returns it in the body AND in the
+   * `ETag` response header. Frontend captures it on GET and replays it via
+   * the `If-Match` header on PUT so a stale write yields 412. Node returns
+   * null here (it doesn't model versioning) — the field is optional so
+   * both backends populate the same shape.
+   */
+  version?: number;
   statistics: PlayerStatistics[];
 }
 

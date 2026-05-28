@@ -114,20 +114,16 @@ describe('PlayersListComponent (home container)', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    // onImport opens a real modal and onInsert routes to /players/new — both
-    // are covered by their own specs. Here we only verify the remaining
-    // placeholder buttons still notify coming-soon.
+    // onImport opens a real modal; onInsert routes to /players/new;
+    // edit/delete now route to /players/:id/edit — all covered by their
+    // own specs below. Here we only verify the remaining placeholders.
     fixture.componentInstance['onIdealTeam']();
     fixture.componentInstance['onPublishNews']();
-    fixture.componentInstance['onEditPlayer'](makePlayer('1'));
-    fixture.componentInstance['onDeletePlayer'](makePlayer('1'));
 
     const calls = comingSoon.notify.calls.allArgs().map((c) => c[0]);
     expect(calls).toEqual([
       'Equipo Ideal',
       'Publicar noticia',
-      'Editar jugador',
-      'Eliminar jugador',
     ]);
   });
 
@@ -144,5 +140,35 @@ describe('PlayersListComponent (home container)', () => {
     fixture.componentInstance['onInsert']();
 
     expect(navigate).toHaveBeenCalledOnceWith(['/players/new']);
+  });
+
+  it('navigates to /players/:id/edit on edit action', async () => {
+    await setup();
+    setSession({ uid: 'a', email: 'a@b.com', displayName: 'A', role: 'admin' }, 'tok');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const router = TestBed.inject(Router);
+    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+
+    fixture.componentInstance['onEditPlayer'](makePlayer('42'));
+
+    expect(navigate).toHaveBeenCalledOnceWith(['/players', '42', 'edit']);
+  });
+
+  it('routes delete action to the edit page where confirmation lives', async () => {
+    await setup();
+    setSession({ uid: 'a', email: 'a@b.com', displayName: 'A', role: 'admin' }, 'tok');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const router = TestBed.inject(Router);
+    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+
+    fixture.componentInstance['onDeletePlayer'](makePlayer('77'));
+
+    expect(navigate).toHaveBeenCalledOnceWith(['/players', '77', 'edit']);
   });
 });
