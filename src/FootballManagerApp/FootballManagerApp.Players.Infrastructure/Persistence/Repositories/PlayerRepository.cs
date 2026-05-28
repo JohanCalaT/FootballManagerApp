@@ -102,7 +102,18 @@ public class PlayerRepository : IPlayerRepository
 
     public async Task UpdateAsync(Player player, CancellationToken ct)
     {
-        _db.Players.Update(player);
+        // The aggregate came in tracked via GetByIdAsync (no AsNoTracking),
+        // so the change tracker already holds the original Version snapshot
+        // that the IsConcurrencyToken WHERE clause needs. Calling
+        // `_db.Players.Update(player)` on a tracked entity re-marks every
+        // property as Modified — including Version — and that, combined
+        // with the BumpModifiedPlayerVersions interceptor in DbContext,
+        // produced a false ConcurrencyConflictException on every PUT that
+        // also touched the Statistics collection (the orphan-removal +
+        // Add cycle nudged the change tracker just enough to mis-snapshot
+        // the Version original). Letting EF detect the changes naturally
+        // from the tracked graph fixes both the false 409 AND the wrong
+        // UPDATE-instead-of-DELETE+INSERT EF was emitting for stats.
         try
         {
             await _db.SaveChangesAsync(ct);
