@@ -171,10 +171,6 @@ export class ManualPlayerCreatePage {
     });
   }
 
-  protected onCancel(): void {
-    void this.router.navigate(['/players']);
-  }
-
   protected selectPosition(value: PlayerPosition): void {
     this.form.controls.position.setValue(value);
     this.form.controls.position.markAsTouched();
