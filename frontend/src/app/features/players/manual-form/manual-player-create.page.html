@@ -133,6 +133,24 @@
       </div>
     </app-collapsible-section>
 
+    <!-- Sección 4 — Marcar en mapa (opcional, lazy) -->
+    <app-collapsible-section
+      title="Marcar en mapa"
+      icon="map-outline"
+      [(open)]="mapSectionOpen"
+      [badge]="playerGeolocation() ? 'Ubicación elegida' : undefined">
+      @defer (when mapSectionOpen()) {
+        <app-player-geolocation-picker
+          [initial]="playerGeolocation()"
+          (changed)="onPlayerGeolocationChange($event)"
+          data-testid="player-geo-picker"></app-player-geolocation-picker>
+      } @placeholder {
+        <p class="manual-form__defer-hint">El mapa se cargará al abrir esta sección.</p>
+      } @loading (minimum 200ms) {
+        <p class="manual-form__defer-hint">Cargando mapa…</p>
+      }
+    </app-collapsible-section>
+
     <p class="manual-form__hint">
       <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
       Tu ubicación se guardará automáticamente al pulsar guardar.

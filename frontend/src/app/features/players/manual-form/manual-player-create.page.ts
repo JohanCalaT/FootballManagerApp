@@ -46,8 +46,10 @@ import {
 } from '../../../core/validators/position.validator';
 import { nameTeamDuplicateValidator } from '../../../core/validators/name-team-duplicate.validator';
 import { CollapsibleSectionComponent } from '../../../shared/components/collapsible-section/collapsible-section.component';
+import { PlayerGeolocationPickerComponent } from '../../../shared/components/player-geolocation-picker/player-geolocation-picker.component';
 import { PlayerImagePickerComponent } from '../../../shared/components/player-image-picker/player-image-picker.component';
 import { ImageSourceKind } from '../../../core/services/strategies/image/player-image-source';
+import { Geolocation } from '../../../core/models/geolocation.model';
 
 /**
  * Manual player create page (DAH — formulario manual).
@@ -88,6 +90,7 @@ import { ImageSourceKind } from '../../../core/services/strategies/image/player-
     IonTitle,
     IonToolbar,
     CollapsibleSectionComponent,
+    PlayerGeolocationPickerComponent,
     PlayerImagePickerComponent,
   ],
   templateUrl: './manual-player-create.page.html',
@@ -107,6 +110,14 @@ export class ManualPlayerCreatePage {
   protected readonly picker = viewChild<PlayerImagePickerComponent>(PlayerImagePickerComponent);
 
   protected readonly isSaving = signal(false);
+  /**
+   * Pin chosen by the user on the map picker. Stays null if they never open
+   * the collapsible — submit then sends `playerGeolocation = null` and the
+   * jugador simply does not appear on the world map until edited later.
+   */
+  protected readonly playerGeolocation = signal<Geolocation | null>(null);
+  /** Two-way bound with the map collapsible — drives `@defer` loading. */
+  protected readonly mapSectionOpen = signal(false);
 
   protected readonly form = this.fb.nonNullable.group(
     {
@@ -220,8 +231,12 @@ export class ManualPlayerCreatePage {
       imageSource: image ? toBackendImageSource(image.imageSource) : null,
       injured: false,
       clientGeolocation: clientGeo,
-      playerGeolocation: null,
+      playerGeolocation: this.playerGeolocation(),
     };
+  }
+
+  protected onPlayerGeolocationChange(geo: Geolocation): void {
+    this.playerGeolocation.set(geo);
   }
 
   private async handleError(err: unknown): Promise<void> {

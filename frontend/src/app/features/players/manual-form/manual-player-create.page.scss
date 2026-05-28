@@ -116,6 +116,13 @@ ion-title {
     }
   }
 
+  &__defer-hint {
+    margin: 8px 0;
+    color: #b9cbb9;
+    font-size: 12px;
+    font-style: italic;
+  }
+
   &__hint {
     margin: 4px 4px 16px;
     color: #b9cbb9;

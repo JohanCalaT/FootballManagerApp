@@ -1,0 +1,26 @@
+<div class="geo-picker" data-testid="geo-picker">
+  <div #mapHost class="geo-picker__map" data-testid="geo-picker-map"></div>
+
+  <div class="geo-picker__actions">
+    <ion-button
+      fill="outline"
+      size="small"
+      (click)="onUseMyLocation()"
+      [disabled]="isLocating()"
+      data-testid="geo-picker-use-current">
+      @if (isLocating()) {
+        <ion-spinner name="dots" slot="start"></ion-spinner>
+      } @else {
+        <ion-icon slot="start" name="locate-outline" aria-hidden="true"></ion-icon>
+      }
+      Usar mi ubicación
+    </ion-button>
+    <p class="geo-picker__hint">
+      Toca el mapa o arrastra el pin para colocar al jugador.
+    </p>
+  </div>
+
+  @if (error(); as msg) {
+    <p class="geo-picker__error" role="alert" data-testid="geo-picker-error">{{ msg }}</p>
+  }
+</div>

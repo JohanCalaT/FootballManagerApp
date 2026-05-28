@@ -172,6 +172,29 @@ describe('ManualPlayerCreatePage', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
+  it('includes the player geolocation in the DTO when the user picked a pin', async () => {
+    fillRequired();
+    page['playerGeolocation'].set({
+      lat: 36.85,
+      lng: -2.46,
+      city: null,
+      country: null,
+    });
+    api.create.and.resolveTo({ status: 201, data: null } as ApiResponse<Player>);
+
+    await waitForValidation();
+    await page.onSubmit();
+
+    expect(api.create).toHaveBeenCalledTimes(1);
+    const dto = api.create.calls.mostRecent().args[0];
+    expect(dto.playerGeolocation).toEqual({
+      lat: 36.85,
+      lng: -2.46,
+      city: null,
+      country: null,
+    });
+  });
+
   it('still submits when the user denies geolocation (silent → null)', async () => {
     fillRequired();
     geo.requestClientPosition.and.resolveTo(null);
