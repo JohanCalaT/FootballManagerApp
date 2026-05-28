@@ -216,6 +216,13 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Bias the crop toward the top of the image. Player portraits from
+     external sources (Transfermarkt, club sites) tend to be vertical
+     shots with the face in the upper third — `center` would cut the
+     head off and show the chest. `center top` keeps the face visible
+     for portraits while still looking fine on square API-Football
+     shots and landscape group photos. */
+  object-position: center top;
   display: block;
 }
 
