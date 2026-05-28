@@ -188,7 +188,7 @@
 
 .fut__overall {
   font-family: 'Bebas Neue', system-ui, sans-serif;
-  font-size: 40px;
+  font-size: 30px;
   letter-spacing: 0.01em;
   color: var(--_tier-accent);
 }
@@ -308,37 +308,6 @@
   width: 100%;
 }
 
-/* Compact 6-attribute strip — 3 columns x 2 rows, separated by a hairline. */
-.fut__attrs {
-  margin-top: auto;
-  width: 100%;
-  padding-top: 8px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px 8px;
-  border-top: 1px solid color-mix(in srgb, var(--_tier-edge) 40%, transparent);
-}
-
-.fut__attr {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 5px;
-}
-
-.fut__attr-val {
-  font-family: 'Bebas Neue', system-ui, sans-serif;
-  font-size: 16px;
-  color: var(--_on-surface);
-}
-
-.fut__attr-label {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--_on-surface-soft);
-}
-
 .fut__hint {
   position: absolute;
   z-index: 1;
@@ -360,86 +329,49 @@
   gap: 12px;
 }
 
-.fut__back-head {
+/* Six attributes as a 3-row x 2-col numeric grid — all fit even compact. */
+.fut__grid {
   position: relative;
   z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid color-mix(in srgb, var(--_tier-edge) 45%, transparent);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
 }
 
-.fut__back-overall {
-  flex-shrink: 0;
-  font-family: 'Bebas Neue', system-ui, sans-serif;
-  font-size: 34px;
-  line-height: 1;
-  color: var(--_tier-accent);
-}
-
-.fut__back-id { min-width: 0; }
-
-.fut__back-name {
-  margin: 0;
-  font-family: 'Bebas Neue', system-ui, sans-serif;
-  font-size: 18px;
-  line-height: 18px;
-  font-weight: 400;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--_on-surface);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.fut__back-pos {
-  margin: 2px 0 0;
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: var(--_on-surface-soft);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.fut__gauges {
-  position: relative;
-  z-index: 1;
+.fut__stat {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 3px;
 }
 
-.fut__gauge-top {
+.fut__stat-row {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 3px;
 }
 
-.fut__gauge-label {
+.fut__stat-label {
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--_on-surface-soft);
 }
 
-.fut__gauge-val {
+.fut__stat-val {
   font-family: 'Bebas Neue', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 17px;
+  line-height: 1;
   color: var(--_on-surface);
 }
 
-.fut__gauge-track {
-  height: 4px;
+.fut__stat-track {
+  height: 3px;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
 
-.fut__gauge-fill {
+.fut__stat-fill {
   height: 100%;
   border-radius: 9999px;
   background: linear-gradient(90deg, var(--_tier-edge), var(--_tier-accent));
@@ -479,37 +411,61 @@
 
 /* ================= COMPACT OVERRIDES ================= */
 
+/* Compact front: overall + position pinned to the top-left corner (FUT-style)
+   so they don't eat a whole row — the portrait centres and the name gets
+   room to breathe below it. */
 :host(.fut--compact) .fut__face--front {
-  padding: 10px 10px 12px;
+  padding: 8px;
+  justify-content: flex-start;
 }
-:host(.fut--compact) .fut__overall { font-size: 27px; }
-:host(.fut--compact) .fut__pos { font-size: 9px; }
+:host(.fut--compact) .fut__top {
+  position: absolute;
+  top: 7px;
+  left: 9px;
+  width: auto;
+}
+:host(.fut--compact) .fut__rating {
+  align-items: flex-start;
+  padding-left: 0;
+}
+:host(.fut--compact) .fut__overall { font-size: 20px; }
+:host(.fut--compact) .fut__pos {
+  margin-top: 0;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
 :host(.fut--compact) .fut__nat,
 :host(.fut--compact) .fut__team,
 :host(.fut--compact) .fut__hint,
-:host(.fut--compact) .fut__attrs,
 :host(.fut--compact) .fut__reason { display: none; }
 
 :host(.fut--compact) .fut__token {
-  width: 56px;
-  height: 56px;
+  width: 58px;
+  height: 58px;
+  margin: 20px 0 8px;
 }
 :host(.fut--compact) .fut__initials { font-size: 22px; }
 
+:host(.fut--compact) .fut__body {
+  flex: 1;
+  justify-content: center;
+}
 :host(.fut--compact) .fut__name {
-  font-size: 14px;
-  line-height: 15px;
+  font-size: 13px;
+  line-height: 14px;
+  letter-spacing: 0.04em;
   min-height: 0;
-  -webkit-line-clamp: 1;
+  -webkit-line-clamp: 2;
 }
 
 :host(.fut--compact) .fut__face--back {
-  padding: 12px;
-  gap: 8px;
+  padding: 9px 8px;
+  justify-content: center;
 }
-:host(.fut--compact) .fut__back-overall { font-size: 26px; }
-:host(.fut--compact) .fut__back-name { font-size: 15px; line-height: 15px; }
-:host(.fut--compact) .fut__gauges { gap: 5px; }
+:host(.fut--compact) .fut__grid { gap: 7px 10px; }
+:host(.fut--compact) .fut__stat-val { font-size: 14px; }
+:host(.fut--compact) .fut__stat-label { font-size: 8px; }
+:host(.fut--compact) .fut__stat-track { height: 2px; }
 
 /* ---- Reduced motion: swap faces instantly, no spin / pulse ---- */
 

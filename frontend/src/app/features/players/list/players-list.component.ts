@@ -124,7 +124,7 @@ export class PlayersListComponent implements OnInit {
     void this.router.navigate(['/players/new']);
   }
   protected onIdealTeam(): void {
-    void this.comingSoon.notify('Equipo Ideal');
+    void this.router.navigate(['/ideal-team']);
   }
   protected onPublishNews(): void {
     void this.comingSoon.notify('Publicar noticia');

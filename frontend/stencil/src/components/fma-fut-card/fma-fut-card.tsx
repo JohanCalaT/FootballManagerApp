@@ -205,15 +205,6 @@ export class FmaFutCard {
                 {this.team ? (
                   <p class="fut__team" title={this.team}>{this.team}</p>
                 ) : null}
-
-                <div class="fut__attrs" aria-hidden="true">
-                  {attrs.map(a => (
-                    <div class="fut__attr">
-                      <span class="fut__attr-val">{FmaFutCard.attrValue(a.value)}</span>
-                      <span class="fut__attr-label">{a.label}</span>
-                    </div>
-                  ))}
-                </div>
               </div>
 
               {this.interactive ? (
@@ -221,34 +212,23 @@ export class FmaFutCard {
               ) : null}
             </div>
 
-            {/* ---------- BACK ---------- */}
+            {/* ---------- BACK — stats only, no identity repeated ---------- */}
             <div class="fut__face fut__face--back" part="back">
               <div class="fut__backdrop" aria-hidden="true"></div>
 
-              <header class="fut__back-head">
-                <span class="fut__back-overall">{this.overallLabel}</span>
-                <div class="fut__back-id">
-                  <h3 class="fut__back-name" title={this.name}>{this.name}</h3>
-                  <p class="fut__back-pos">
-                    {this.position ?? '--'}
-                    {this.team ? ` · ${this.team}` : ''}
-                  </p>
-                </div>
-              </header>
-
-              <div class="fut__gauges">
+              <div class="fut__grid">
                 {attrs.map(a => {
                   const pct = a.value === undefined || a.value === null
                     ? 0
                     : Math.max(0, Math.min(100, a.value));
                   return (
-                    <div class="fut__gauge">
-                      <div class="fut__gauge-top">
-                        <span class="fut__gauge-label">{a.label}</span>
-                        <span class="fut__gauge-val">{FmaFutCard.attrValue(a.value)}</span>
+                    <div class="fut__stat">
+                      <div class="fut__stat-row">
+                        <span class="fut__stat-label">{a.label}</span>
+                        <span class="fut__stat-val">{FmaFutCard.attrValue(a.value)}</span>
                       </div>
-                      <div class="fut__gauge-track">
-                        <div class="fut__gauge-fill" style={{ width: `${pct}%` }}></div>
+                      <div class="fut__stat-track">
+                        <div class="fut__stat-fill" style={{ width: `${pct}%` }}></div>
                       </div>
                     </div>
                   );
