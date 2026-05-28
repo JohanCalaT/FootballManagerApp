@@ -53,5 +53,6 @@ internal static class PlayerMappings
 
     public static PlayerStatisticsDto ToStatsDto(this PlayerStatistics s) =>
         new(s.Season, s.TeamName, s.LeagueName,
-            s.Appearances, s.Goals, s.Assists, s.Rating);
+            s.Appearances, s.Goals, s.Assists, s.Rating,
+            Position: s.Position);
 }

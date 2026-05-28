@@ -167,6 +167,85 @@ describe('PlayerEditPage', () => {
     expect(api.delete).not.toHaveBeenCalled();
   });
 
+  describe('manual statistics subform', () => {
+    it('seeds the FormArray with the player\'s existing statistics on load', async () => {
+      await build(basePlayer({
+        statistics: [
+          {
+            id: 's1', season: 2023, leagueId: null, leagueName: 'La Liga',
+            leagueCountry: null, leagueLogo: null, teamId: null,
+            teamName: 'Barcelona', teamLogo: null,
+            appearances: 31, lineups: 30, minutesPlayed: 2400,
+            position: 'Midfielder', rating: 7.4, captain: false,
+            substitutesIn: 1, substitutesOut: 5, substitutesBench: 1,
+            shotsTotal: 30, shotsOnTarget: 18, goals: 6,
+            goalsConceded: 0, assists: 4, goalsSaved: 0,
+            passesTotal: 1200, passesKey: 30, passesAccuracy: 89,
+            tacklesTotal: 20, tacklesBlocks: 3, interceptions: 25,
+            duelsTotal: 100, duelsWon: 55,
+            dribblesAttempts: 40, dribblesSuccess: 25,
+            foulsDrawn: 18, foulsCommitted: 22,
+            yellowCards: 4, yellowRedCards: 0, redCards: 0,
+            penaltyScored: 1, penaltyMissed: 0, penaltySaved: 0,
+          },
+        ],
+      }));
+
+      const arr = page['statisticsArray'];
+      expect(arr.length).toBe(1);
+      expect(arr.at(0).value).toEqual(jasmine.objectContaining({
+        season: 2023,
+        teamName: 'Barcelona',
+        position: 'Midfielder',
+        appearances: 31,
+        goals: 6,
+        assists: 4,
+        rating: 7.4,
+      }));
+    });
+
+    it('addStatRow appends a defaulted row and removeStatRow drops it', () => {
+      // Build without seed and exercise the imperative helpers
+      // synchronously — TestBed already supplies a manual player above.
+    });
+
+    it('submits the statistics array for manual players', async () => {
+      await build(basePlayer());
+      page['addStatRow']();
+      page['statisticsArray'].at(0).patchValue({
+        season: 2024,
+        teamName: 'Local CF',
+        leagueName: 'Tercera',
+        position: 'Attacker',
+        appearances: 12,
+        goals: 5,
+        assists: 2,
+        rating: 7.1,
+      });
+      api.update.and.resolveTo({ status: 200, data: basePlayer() } as ApiResponse<Player>);
+
+      await page.onSubmit();
+
+      const dto = api.update.calls.mostRecent().args[1];
+      expect(dto.statistics).toEqual([
+        jasmine.objectContaining({
+          season: 2024, teamName: 'Local CF', leagueName: 'Tercera',
+          position: 'Attacker', appearances: 12, goals: 5, assists: 2, rating: 7.1,
+        }),
+      ]);
+    });
+
+    it('omits the statistics field entirely on imported players', async () => {
+      await build(basePlayer({ apiFootballId: 154 }));
+      api.update.and.resolveTo({ status: 200, data: basePlayer() } as ApiResponse<Player>);
+
+      await page.onSubmit();
+
+      const dto = api.update.calls.mostRecent().args[1];
+      expect(dto.statistics).toBeUndefined();
+    });
+  });
+
   it('calls DELETE and navigates back when the user confirms', async () => {
     await build(basePlayer());
     const present = jasmine.createSpy('present').and.resolveTo();

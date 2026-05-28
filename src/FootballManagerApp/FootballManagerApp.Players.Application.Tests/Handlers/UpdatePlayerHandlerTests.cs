@@ -179,6 +179,93 @@ public class UpdatePlayerHandlerTests
     }
 
     [Fact]
+    public async Task Replaces_statistics_array_on_manual_player()
+    {
+        var player = Player.Create("Pedri", "Barcelona", "La Liga", "u1");
+        var repo = new Mock<IPlayerRepository>();
+        repo.Setup(r => r.GetByIdAsync(player.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(player);
+
+        var dto = new UpdatePlayerDto(
+            "Pedri", "Barcelona", "La Liga", "Midfielder",
+            ImageUrl: null, Nationality: null, BirthDate: null,
+            Height: null, Weight: null, ShirtNumber: null,
+            PlayerLat: null, PlayerLng: null,
+            PlayerCity: null, PlayerCountry: null,
+            Statistics: new[]
+            {
+                new PlayerStatisticsDto(
+                    Season: 2023, TeamName: "Barcelona", LeagueName: "La Liga",
+                    Appearances: 31, Goals: 6, Assists: 4, Rating: 7.4m,
+                    Position: "Midfielder"),
+                new PlayerStatisticsDto(
+                    Season: 2024, TeamName: "Barcelona", LeagueName: "La Liga",
+                    Appearances: 22, Goals: 3, Assists: 2, Rating: 7.0m,
+                    Position: "Midfielder"),
+            });
+
+        var result = await Build(repo).HandleAsync(player.Id, dto, null, default);
+
+        result.Status.Should().Be(200);
+        player.Statistics.Should().HaveCount(2);
+        player.Statistics.Select(s => s.Season).Should().BeEquivalentTo(new[] { 2023, 2024 });
+        player.Statistics.First().Goals.Should().Be(6);
+        player.Statistics.First().Position.Should().Be("Midfielder");
+    }
+
+    [Fact]
+    public async Task Ignores_statistics_payload_on_imported_player()
+    {
+        var player = Player.Create("Pedri", "Barcelona", "La Liga", "u1");
+        player.SetApiFootballId(154);
+        var repo = new Mock<IPlayerRepository>();
+        repo.Setup(r => r.GetByIdAsync(player.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(player);
+
+        var dto = new UpdatePlayerDto(
+            "Pedri", "Barcelona", "La Liga", "Midfielder",
+            ImageUrl: null, Nationality: null, BirthDate: null,
+            Height: null, Weight: null, ShirtNumber: null,
+            PlayerLat: null, PlayerLng: null,
+            PlayerCity: null, PlayerCountry: null,
+            Statistics: new[]
+            {
+                new PlayerStatisticsDto(
+                    2023, "TAMPERED", "TAMPERED", 99, 99, 99, 9.99m, "Attacker"),
+            });
+
+        var result = await Build(repo).HandleAsync(player.Id, dto, null, default);
+
+        result.Status.Should().Be(200);
+        // Statistics untouched — imported players' stats come from API-Football,
+        // not from admin input.
+        player.Statistics.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Rejects_400_when_statistics_season_outside_allowed_window()
+    {
+        var repo = new Mock<IPlayerRepository>();
+        var dto = new UpdatePlayerDto(
+            "Pedri", "Barcelona", "La Liga", "Midfielder",
+            ImageUrl: null, Nationality: null, BirthDate: null,
+            Height: null, Weight: null, ShirtNumber: null,
+            PlayerLat: null, PlayerLng: null,
+            PlayerCity: null, PlayerCountry: null,
+            Statistics: new[]
+            {
+                new PlayerStatisticsDto(
+                    Season: 2019, TeamName: "Barcelona", LeagueName: "La Liga",
+                    Appearances: 5, Goals: 0, Assists: 0, Rating: null,
+                    Position: null),
+            });
+
+        var result = await Build(repo).HandleAsync(Guid.NewGuid(), dto, null, default);
+
+        result.Status.Should().Be(400);
+    }
+
+    [Fact]
     public async Task Reads_nested_geolocation_when_provided()
     {
         var player = Player.Create("Pedri", "Barcelona", "La Liga", "u1");

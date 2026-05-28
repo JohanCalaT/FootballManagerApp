@@ -48,6 +48,11 @@ public class CreatePlayerValidator : AbstractValidator<CreatePlayerDto>
 
 public class UpdatePlayerValidator : AbstractValidator<UpdatePlayerDto>
 {
+    // Manual stats only accept the free-tier API-Football seasons since they
+    // are surfaced alongside imported stats on the player detail page and
+    // must stay comparable.
+    private static readonly int[] AllowedSeasons = { 2022, 2023, 2024 };
+
     public UpdatePlayerValidator()
     {
         RuleFor(x => x.Name).NotEmpty().MinimumLength(2).MaximumLength(100);
@@ -67,5 +72,19 @@ public class UpdatePlayerValidator : AbstractValidator<UpdatePlayerDto>
         RuleFor(x => x.BirthDate)
             .Must(PlayerValidationRules.IsReasonableBirthDate)
             .WithMessage("BirthDate fuera de rango razonable (10–60 años)");
+
+        RuleForEach(x => x.Statistics!)
+            .ChildRules(stats =>
+            {
+                stats.RuleFor(s => s.Season)
+                    .Must(s => AllowedSeasons.Contains(s))
+                    .WithMessage($"Season debe ser una de: {string.Join(", ", AllowedSeasons)}");
+                stats.RuleFor(s => s.Appearances).GreaterThanOrEqualTo(0);
+                stats.RuleFor(s => s.Goals).GreaterThanOrEqualTo(0);
+                stats.RuleFor(s => s.Assists).GreaterThanOrEqualTo(0);
+                stats.RuleFor(s => s.Rating)
+                    .InclusiveBetween(0m, 10m).When(s => s.Rating.HasValue);
+            })
+            .When(x => x.Statistics is not null);
     }
 }

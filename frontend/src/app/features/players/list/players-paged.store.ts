@@ -41,6 +41,22 @@ export class PlayersPagedStore {
     await this.fetch(1, limit);
   }
 
+  /**
+   * Drop a single card from the local list without re-fetching. Used after
+   * a successful DELETE so the grid updates instantly — beats `reload()`
+   * because it preserves the scroll position and avoids a network round
+   * trip just to remove one row.
+   */
+  removeById(id: string): void {
+    const current = this.players();
+    if (!current.some((p) => p.id === id)) return;
+    this.players.set(current.filter((p) => p.id !== id));
+    const total = this.total();
+    if (total !== null && total > 0) {
+      this.total.set(total - 1);
+    }
+  }
+
   /** Fetch the next page if we haven't exhausted the total yet. */
   async loadMore(limit = 20): Promise<void> {
     if (this.loading() || this.allLoaded()) {

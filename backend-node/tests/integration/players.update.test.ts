@@ -216,6 +216,83 @@ describe('PUT /api/players/:id', () => {
       expect(res.body.data.nationality).toBe('España');
     });
   });
+
+  describe('manual statistics subform', () => {
+    it('replaces the statistics array on a manual player', async () => {
+      const player = await seedOne();
+
+      const res = await asAdmin(
+        request(app)
+          .put(`/api/players/${player._id.toString()}`)
+          .send({
+            statistics: [
+              {
+                season: 2023, teamName: 'FC Barcelona', leagueName: 'La Liga',
+                position: 'Midfielder',
+                appearances: 31, goals: 6, assists: 4, rating: 7.4,
+              },
+              {
+                season: 2024, teamName: 'FC Barcelona', leagueName: 'La Liga',
+                position: 'Midfielder',
+                appearances: 22, goals: 3, assists: 2, rating: 7.0,
+              },
+            ],
+          }),
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.statistics).toHaveLength(2);
+      expect(res.body.data.statistics[0].season).toBe(2023);
+      expect(res.body.data.statistics[0].goals).toBe(6);
+      expect(res.body.data.statistics[0].position).toBe('Midfielder');
+    });
+
+    it('rejects 400 when statistics carry a season outside the free-tier window', async () => {
+      const player = await seedOne();
+
+      const res = await asAdmin(
+        request(app)
+          .put(`/api/players/${player._id.toString()}`)
+          .send({
+            statistics: [
+              {
+                season: 2019, teamName: 'X', leagueName: 'Y', position: 'Midfielder',
+                appearances: 1, goals: 0, assists: 0, rating: 5,
+              },
+            ],
+          }),
+      );
+
+      expect(res.status).toBe(400);
+    });
+
+    it('silently drops the statistics field for imported players', async () => {
+      const imported = await PlayerModel.create(buildPlayer({
+        name: 'Lionel Messi', team: 'Inter Miami', league: 'MLS',
+        apiFootballId: 154,
+        statistics: [],
+      }));
+
+      const res = await asAdmin(
+        request(app)
+          .put(`/api/players/${imported._id.toString()}`)
+          .send({
+            shirtNumber: 10,
+            statistics: [
+              {
+                season: 2024, teamName: 'TAMPERED', leagueName: 'TAMPERED',
+                position: 'Attacker',
+                appearances: 99, goals: 99, assists: 99, rating: 9.99,
+              },
+            ],
+          }),
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.statistics).toHaveLength(0);
+      expect(res.body.data.shirtNumber).toBe(10);
+    });
+  });
 });
 
 describe('DELETE /api/players/:id', () => {

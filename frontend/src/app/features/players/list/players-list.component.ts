@@ -1,11 +1,14 @@
 import { Component, OnInit, computed, effect, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import {
+  AlertController,
   IonContent,
   ModalController,
+  ToastController,
   type InfiniteScrollCustomEvent,
 } from '@ionic/angular/standalone';
 
+import { PlayersApi } from '../../../core/api/players.api';
 import { AuthService } from '../../../core/services/auth.service';
 import { ComingSoonService } from '../../../core/services/coming-soon.service';
 import { PlayerListItem } from '../../../core/models/player.model';
@@ -40,6 +43,9 @@ export class PlayersListComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly comingSoon = inject(ComingSoonService);
   private readonly modalCtrl = inject(ModalController);
+  private readonly alertCtrl = inject(AlertController);
+  private readonly toastCtrl = inject(ToastController);
+  private readonly api = inject(PlayersApi);
   protected readonly store = inject(PlayersPagedStore);
 
   protected readonly isAuthenticated = isAuthenticated;
@@ -130,11 +136,56 @@ export class PlayersListComponent implements OnInit {
   protected onEditPlayer(player: PlayerListItem): void {
     void this.router.navigate(['/players', player.id, 'edit']);
   }
-  protected onDeletePlayer(player: PlayerListItem): void {
-    // Delete confirmation lives in the edit page (where the full player
-    // context is available, including the name to confirm). Sending the
-    // admin there keeps a single destructive flow instead of two.
-    void this.router.navigate(['/players', player.id, 'edit']);
+
+  /**
+   * Inline destructive flow from the home grid: AlertController with the
+   * player name in the message so the admin sees exactly who they are
+   * about to remove (the grid is dense — confusing one card with another
+   * is a real risk). Cancel is the default role, the destructive button
+   * is visually distinct via cssClass. On success: toast + remove the
+   * card from the local store in-place so the grid does not have to
+   * round-trip the network just to drop one row.
+   */
+  protected async onDeletePlayer(player: PlayerListItem): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'Eliminar jugador',
+      subHeader: player.name,
+      message: `Vas a eliminar a ${player.name} (${player.team}). Esta acción es permanente y no se puede deshacer.`,
+      cssClass: 'fma-alert',
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Eliminar',
+          role: 'destructive',
+          cssClass: 'fma-alert-destructive',
+        },
+      ],
+    });
+    await alert.present();
+    const { role } = await alert.onDidDismiss();
+    if (role !== 'destructive') return;
+
+    try {
+      await this.api.delete(player.id);
+      this.store.removeById(player.id);
+      await this.toast(`Jugador "${player.name}" eliminado.`, 'success');
+    } catch {
+      await this.toast('No se pudo eliminar el jugador. Inténtalo de nuevo.', 'danger');
+    }
+  }
+
+  private async toast(
+    message: string,
+    color: 'success' | 'warning' | 'danger',
+  ): Promise<void> {
+    const t = await this.toastCtrl.create({
+      message,
+      duration: 2800,
+      position: 'top',
+      color,
+      cssClass: 'fma-toast',
+    });
+    await t.present();
   }
 
   protected async onLoadMore(ev: InfiniteScrollCustomEvent): Promise<void> {

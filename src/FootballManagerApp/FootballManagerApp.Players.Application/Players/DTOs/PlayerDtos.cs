@@ -32,7 +32,12 @@ public record PlayerStatisticsDto(
     int Appearances,
     int Goals,
     int Assists,
-    decimal? Rating);
+    decimal? Rating,
+    // Manual-stat field per CLAUDE.md ("Solo rellena Season, TeamName,
+    // LeagueName, Position, Appearances, Goals, Assists, Rating"). Defaulted
+    // so the existing positional callers (mappers, fixtures) keep working
+    // and the API-Football enriched rows still come through unchanged.
+    string? Position = null);
 
 /// <summary>
 /// Nested shape for client / player geolocation in DTOs. Mirrors the
@@ -120,7 +125,13 @@ public record UpdatePlayerDto(
     string? ImageSource = null,
     bool? Injured = null,
     GeolocationDto? PlayerGeolocation = null,
-    GeolocationDto? ClientGeolocation = null);
+    GeolocationDto? ClientGeolocation = null,
+    // Manual-stats subform — only honoured for manual players (ApiFootballId
+    // null). The handler silently drops it for imported players because the
+    // API-Football statistics are the source of truth and mixing manual
+    // entries would skew the Equipo Ideal algorithm. `null` (omitted) leaves
+    // the current statistics array untouched.
+    IEnumerable<PlayerStatisticsDto>? Statistics = null);
 
 public record ImportPlayerItemDto(
     int ApiFootballId,

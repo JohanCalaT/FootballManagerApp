@@ -3,6 +3,7 @@ using FootballManagerApp.Players.Application.Common.DTOs;
 using FootballManagerApp.Players.Application.Common.Interfaces;
 using FootballManagerApp.Players.Application.Players.DTOs;
 using FootballManagerApp.Players.Application.Players.Mapping;
+using FootballManagerApp.Players.Domain.Entities;
 using FootballManagerApp.Shared.Exceptions;
 using FootballManagerApp.Shared.Responses;
 using FootballManagerApp.Shared.ValueObjects;
@@ -107,6 +108,32 @@ public class UpdatePlayerHandler
                 player.SetClientGeolocation(Geolocation.Create(
                     dto.ClientGeolocation.Lat, dto.ClientGeolocation.Lng,
                     dto.ClientGeolocation.City, dto.ClientGeolocation.Country));
+
+            // Manual statistics: only manual players (ApiFootballId null) can
+            // edit their stats array. For imported players the array is owned
+            // by API-Football and the field is silently dropped (handler-side
+            // mirror of the biographical lock above). Null = preserve current.
+            if (!isImported && dto.Statistics is not null)
+            {
+                var entities = dto.Statistics.Select(s =>
+                {
+                    var stats = PlayerStatistics.Create(
+                        player.Id, s.Season, s.TeamName, s.LeagueName);
+                    stats.SetGames(
+                        appearances: s.Appearances,
+                        lineups: 0,
+                        minutesPlayed: 0,
+                        position: s.Position,
+                        rating: s.Rating,
+                        captain: false);
+                    stats.SetOffensive(
+                        shotsTotal: 0, shotsOnTarget: 0,
+                        goals: s.Goals, assists: s.Assists,
+                        penaltyScored: 0, penaltyMissed: 0);
+                    return stats;
+                });
+                player.ReplaceStatistics(entities);
+            }
 
             await _repo.UpdateAsync(player, ct);
 

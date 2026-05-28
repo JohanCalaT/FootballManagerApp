@@ -192,6 +192,124 @@
         </div>
       </app-collapsible-section>
 
+      <!-- Estadísticas manuales (solo manuales) -->
+      @if (!isImported()) {
+        <app-collapsible-section
+          title="Estadísticas por temporada"
+          icon="stats-chart-outline"
+          [badge]="statisticsArray.length > 0 ? (statisticsArray.length + ' temporada' + (statisticsArray.length === 1 ? '' : 's')) : undefined">
+          <p class="edit-form__hint">
+            Añade una entrada por temporada para que el Equipo Ideal pueda valorar a este jugador.
+          </p>
+
+          <div formArrayName="statistics" class="stats-list" data-testid="stats-list">
+            @for (row of statisticsArray.controls; track row; let i = $index) {
+              <fieldset [formGroupName]="i" class="stats-list__row" [attr.data-testid]="'stats-row-' + i">
+                <header class="stats-list__row-head">
+                  <strong>Temporada #{{ i + 1 }}</strong>
+                  <button
+                    type="button"
+                    class="stats-list__remove"
+                    (click)="removeStatRow(i)"
+                    [attr.data-testid]="'stats-remove-' + i"
+                    aria-label="Quitar temporada">
+                    <ion-icon name="close-circle-outline" aria-hidden="true"></ion-icon>
+                  </button>
+                </header>
+
+                <div class="edit-form__grid">
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Temporada</span>
+                    <select
+                      class="stats-list__select"
+                      formControlName="season"
+                      [attr.data-testid]="'stats-season-' + i">
+                      @for (s of allowedSeasons; track s) {
+                        <option [value]="s">{{ s }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Posición</span>
+                    <select
+                      class="stats-list__select"
+                      formControlName="position"
+                      [attr.data-testid]="'stats-position-' + i">
+                      <option value="">—</option>
+                      @for (p of positions; track p) {
+                        <option [value]="p">{{ p }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Equipo</span>
+                    <ion-input
+                      formControlName="teamName"
+                      type="text"
+                      [attr.data-testid]="'stats-team-' + i"></ion-input>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Liga</span>
+                    <ion-input
+                      formControlName="leagueName"
+                      type="text"
+                      [attr.data-testid]="'stats-league-' + i"></ion-input>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Partidos</span>
+                    <ion-input
+                      formControlName="appearances"
+                      type="number"
+                      inputmode="numeric"
+                      min="0"
+                      [attr.data-testid]="'stats-appearances-' + i"></ion-input>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Goles</span>
+                    <ion-input
+                      formControlName="goals"
+                      type="number"
+                      inputmode="numeric"
+                      min="0"
+                      [attr.data-testid]="'stats-goals-' + i"></ion-input>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Asistencias</span>
+                    <ion-input
+                      formControlName="assists"
+                      type="number"
+                      inputmode="numeric"
+                      min="0"
+                      [attr.data-testid]="'stats-assists-' + i"></ion-input>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Rating</span>
+                    <ion-input
+                      formControlName="rating"
+                      type="number"
+                      inputmode="decimal"
+                      step="0.1"
+                      min="0"
+                      max="10"
+                      placeholder="0–10"
+                      [attr.data-testid]="'stats-rating-' + i"></ion-input>
+                  </label>
+                </div>
+              </fieldset>
+            }
+          </div>
+
+          <ion-button
+            expand="block"
+            fill="outline"
+            (click)="addStatRow()"
+            data-testid="stats-add">
+            <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
+            Añadir temporada
+          </ion-button>
+        </app-collapsible-section>
+      }
+
       <!-- Mapa -->
       <app-collapsible-section
         title="Marcar en mapa"
