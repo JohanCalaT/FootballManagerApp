@@ -8,5 +8,10 @@
     "email": "cypress-fresh@example.com",
     "password": "cypress-fresh-123",
     "displayName": "Fresh User"
+  },
+  "admin": {
+    "email": "cypress-admin@example.com",
+    "password": "cypress-admin-123",
+    "displayName": "Cypress Admin"
   }
 }

@@ -1,0 +1,35 @@
+{
+  "status": 200,
+  "message": "OK",
+  "data": {
+    "id": "11111111-1111-1111-1111-111111111111",
+    "apiFootballId": null,
+    "name": "Lionel Messi",
+    "firstName": "Lionel",
+    "lastName": "Messi",
+    "nationality": "Argentina",
+    "birthDate": "1987-06-24",
+    "birthPlace": "Rosario",
+    "birthCountry": "Argentina",
+    "height": "170 cm",
+    "weight": "72 kg",
+    "position": "Attacker",
+    "shirtNumber": 10,
+    "injured": false,
+    "imageUrl": null,
+    "imageSource": null,
+    "team": "Inter Miami",
+    "league": "MLS",
+    "registeredAt": "2026-01-01T00:00:00Z",
+    "createdByUserId": "cypress-admin",
+    "clientGeolocation": null,
+    "playerGeolocation": null,
+    "version": 1,
+    "statistics": []
+  },
+  "_links": {
+    "self": { "href": "/api/players/11111111-1111-1111-1111-111111111111", "rel": "self", "method": "GET" },
+    "update": { "href": "/api/players/11111111-1111-1111-1111-111111111111", "rel": "update", "method": "PUT" },
+    "delete": { "href": "/api/players/11111111-1111-1111-1111-111111111111", "rel": "delete", "method": "DELETE" }
+  }
+}
