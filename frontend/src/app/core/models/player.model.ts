@@ -108,6 +108,23 @@ export interface Player {
   statistics: PlayerStatistics[];
 }
 
+/**
+ * Subset of PlayerStatistics the manual subform on the edit page sends back.
+ * The 8 fields documented in CLAUDE.md ("Solo rellena Season, TeamName,
+ * LeagueName, Position, Appearances, Goals, Assists, Rating"). All other
+ * fields default to 0 / false server-side.
+ */
+export interface ManualStatistic {
+  season: number;
+  teamName?: string | null;
+  leagueName?: string | null;
+  position?: PlayerPosition | string | null;
+  appearances: number;
+  goals: number;
+  assists: number;
+  rating?: number | null;
+}
+
 export interface CreatePlayerRequest {
   apiFootballId?: number | null;
   name: string;
@@ -130,7 +147,14 @@ export interface CreatePlayerRequest {
   playerGeolocation?: Geolocation | null;
 }
 
-export type UpdatePlayerRequest = CreatePlayerRequest;
+export interface UpdatePlayerRequest extends CreatePlayerRequest {
+  /**
+   * Replaces the full statistics array. Only honoured server-side for
+   * manual players — imported ones silently drop it. Omit to leave the
+   * current array unchanged.
+   */
+  statistics?: ManualStatistic[];
+}
 
 export interface ImportPlayerItem {
   apiFootballId: number;

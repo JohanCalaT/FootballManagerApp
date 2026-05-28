@@ -9,7 +9,9 @@ import {
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import {
+  FormArray,
   FormBuilder,
+  FormGroup,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
@@ -39,6 +41,7 @@ import { markPlayersListDirty } from '../../../core/state/players-list.signal';
 import { Geolocation } from '../../../core/models/geolocation.model';
 import {
   ImageSource,
+  ManualStatistic,
   Player,
   PlayerPosition,
   UpdatePlayerRequest,
@@ -128,6 +131,9 @@ export class PlayerEditPage {
     };
   });
 
+  /** Free-tier API-Football window — matches backend validator. */
+  protected readonly allowedSeasons = [2022, 2023, 2024] as const;
+
   protected readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(100)]],
     position: ['', [Validators.required, positionValidator()]],
@@ -143,7 +149,44 @@ export class PlayerEditPage {
     weight: ['', Validators.maxLength(20)],
     shirtNumber: [null as number | null, [Validators.min(1), Validators.max(99)]],
     injured: [false],
+    // Manual-stats subform. Only mounted/visible for manual players; the
+    // edit-page effect below populates it from player.statistics on load.
+    statistics: this.fb.array<FormGroup>([]),
   });
+
+  protected get statisticsArray(): FormArray<FormGroup> {
+    return this.form.controls.statistics as FormArray<FormGroup>;
+  }
+
+  private buildStatRow(seed?: Partial<ManualStatistic>): FormGroup {
+    return this.fb.nonNullable.group({
+      season: [
+        seed?.season ?? this.allowedSeasons[this.allowedSeasons.length - 1],
+        [Validators.required],
+      ],
+      teamName: [seed?.teamName ?? '', Validators.maxLength(100)],
+      leagueName: [seed?.leagueName ?? '', Validators.maxLength(100)],
+      position: [seed?.position ?? '', positionValidator()],
+      appearances: [
+        seed?.appearances ?? 0,
+        [Validators.required, Validators.min(0)],
+      ],
+      goals: [seed?.goals ?? 0, [Validators.required, Validators.min(0)]],
+      assists: [seed?.assists ?? 0, [Validators.required, Validators.min(0)]],
+      rating: [
+        seed?.rating ?? null,
+        [Validators.min(0), Validators.max(10)],
+      ],
+    });
+  }
+
+  protected addStatRow(): void {
+    this.statisticsArray.push(this.buildStatRow());
+  }
+
+  protected removeStatRow(index: number): void {
+    this.statisticsArray.removeAt(index);
+  }
 
   constructor() {
     effect(() => {
@@ -166,6 +209,24 @@ export class PlayerEditPage {
         injured: p.injured,
       });
       this.playerGeolocation.set(p.playerGeolocation);
+
+      // Seed the manual stats subform with whatever the player already
+      // has. For imported players we still load it (read-only could be
+      // useful) but the template hides the editor so changes never reach
+      // the backend — and the backend also drops the field for them.
+      this.statisticsArray.clear({ emitEvent: false });
+      for (const s of p.statistics ?? []) {
+        this.statisticsArray.push(this.buildStatRow({
+          season: s.season,
+          teamName: s.teamName ?? undefined,
+          leagueName: s.leagueName ?? undefined,
+          position: s.position ?? undefined,
+          appearances: s.appearances,
+          goals: s.goals,
+          assists: s.assists,
+          rating: s.rating ?? undefined,
+        }));
+      }
 
       // Lock biographical fields for imported players. The backend already
       // enforces this on PUT; disabling them in the UI gives the admin
@@ -276,7 +337,31 @@ export class PlayerEditPage {
         ? toBackendImageSource(image.imageSource)
         : current.imageSource,
       playerGeolocation: this.playerGeolocation(),
+      // Manual stats only travel when this is a manual player; backend drops
+      // them otherwise but we save the bandwidth.
+      statistics: this.isImported() ? undefined : this.collectStats(),
     };
+  }
+
+  private collectStats(): ManualStatistic[] {
+    return this.statisticsArray.controls.map((row) => {
+      const v = row.value as {
+        season: number;
+        teamName: string; leagueName: string; position: string;
+        appearances: number; goals: number; assists: number;
+        rating: number | null;
+      };
+      return {
+        season: Number(v.season),
+        teamName: v.teamName?.trim() || null,
+        leagueName: v.leagueName?.trim() || null,
+        position: v.position || null,
+        appearances: Number(v.appearances) || 0,
+        goals: Number(v.goals) || 0,
+        assists: Number(v.assists) || 0,
+        rating: v.rating == null || v.rating === ('' as unknown) ? null : Number(v.rating),
+      };
+    });
   }
 
   private async handleError(err: unknown): Promise<void> {
