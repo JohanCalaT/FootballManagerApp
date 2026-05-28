@@ -7,6 +7,12 @@ interface CreateCommentBody {
   author: string;
   text:   string;
   rating: number;
+  /**
+   * Nested geolocation — preferred shape the frontend sends. When absent,
+   * the controller falls back to the legacy X-Client-* headers so a curl
+   * that uses headers still works.
+   */
+  clientGeolocation?: { lat: number; lng: number; city?: string; country?: string };
 }
 
 export const getByPlayer = async (
@@ -35,8 +41,21 @@ export const create = async (
       rating:          req.body.rating,
       createdByUserId: req.userId!, // requireUser garantiza que existe
     };
-    const geo = parseClientGeo(req.headers);
-    if (geo) input.clientGeolocation = geo;
+    // Body wins over headers — the Angular frontend sends nested
+    // clientGeolocation. The header fallback stays for backwards compat
+    // with any curl/Postman script that still uses the old contract.
+    const body = req.body.clientGeolocation;
+    if (body && Number.isFinite(body.lat) && Number.isFinite(body.lng)) {
+      input.clientGeolocation = {
+        lat: body.lat,
+        lng: body.lng,
+        city: body.city,
+        country: body.country,
+      };
+    } else {
+      const geo = parseClientGeo(req.headers);
+      if (geo) input.clientGeolocation = geo;
+    }
 
     const dto  = await playerService.addComment(req.params.playerId, input);
     const resp = created(dto, 'Comentario añadido');

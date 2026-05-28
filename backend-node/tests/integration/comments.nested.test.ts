@@ -84,6 +84,40 @@ describe('POST /api/comments/player/:playerId', () => {
       expect(res.body.data.clientGeolocation).toEqual({ lat: 41.38, lng: 2.18 });
     });
 
+    it('persists clientGeolocation from the body (preferred over headers)', async () => {
+      const player = await PlayerModel.create(buildPlayer());
+
+      const res = await request(app)
+        .post(`/api/comments/player/${player._id.toString()}`)
+        .set('X-User-Id', 'uid-test')
+        .send({
+          ...validBody,
+          clientGeolocation: { lat: 36.85, lng: -2.46, city: 'Almería', country: 'España' },
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.clientGeolocation).toEqual({
+        lat: 36.85, lng: -2.46, city: 'Almería', country: 'España',
+      });
+    });
+
+    it('prefers the body geolocation when both body and headers are sent', async () => {
+      const player = await PlayerModel.create(buildPlayer());
+
+      const res = await request(app)
+        .post(`/api/comments/player/${player._id.toString()}`)
+        .set('X-User-Id', 'uid-test')
+        .set('X-Client-Lat', '0')
+        .set('X-Client-Lng', '0')
+        .send({
+          ...validBody,
+          clientGeolocation: { lat: 36.85, lng: -2.46 },
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.clientGeolocation).toEqual({ lat: 36.85, lng: -2.46 });
+    });
+
     it('accepts rating boundaries 0 and 5', async () => {
       const player = await PlayerModel.create(buildPlayer());
       const id = player._id.toString();
