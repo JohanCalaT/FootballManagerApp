@@ -7,6 +7,7 @@ import { HomeGridComponent } from './home-grid.component';
 function basePlayer(id: string, overrides: Partial<PlayerListItem> = {}): PlayerListItem {
   return {
     id,
+    apiFootballId: null,
     name: `Player ${id}`,
     team: 'T',
     league: 'L',

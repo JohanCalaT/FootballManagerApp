@@ -9,6 +9,7 @@ import { PlayersPagedStore } from './players-paged.store';
 function makePlayer(id: string, name: string): PlayerListItem {
   return {
     id,
+    apiFootballId: null,
     name,
     team: 'Team',
     league: 'League',

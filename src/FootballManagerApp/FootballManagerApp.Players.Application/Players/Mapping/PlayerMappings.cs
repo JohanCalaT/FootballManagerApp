@@ -9,6 +9,7 @@ internal static class PlayerMappings
     public static PlayerListItemDto ToListItem(this Player p) =>
         new(
             p.Id,
+            p.ApiFootballId,
             p.Name,
             p.Team,
             p.League,

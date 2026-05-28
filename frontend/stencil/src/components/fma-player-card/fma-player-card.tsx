@@ -70,6 +70,14 @@ export class FmaPlayerCard {
   @Prop() playerId?: string;
 
   /**
+   * Marks the tile as a manually-created player (no upstream API-Football
+   * source, therefore no statistics). When true, the rating slot is
+   * replaced by a "MANUAL" chip so users can tell the card apart from an
+   * imported player whose stats just haven't loaded yet.
+   */
+  @Prop() isManual: boolean = false;
+
+  /**
    * When true, the whole tile is keyboard-interactive and emits
    * playerSelected on click / Enter / Space. Defaults to true; flip to
    * false for purely-display contexts (e.g. inside a pop-up).
@@ -118,6 +126,7 @@ export class FmaPlayerCard {
           'card': true,
           'card--interactive': this.interactive,
           'card--tier-none': tier === null,
+          'card--manual': this.isManual,
           [`card--tier-${tier}`]: tier !== null,
         }}
         role={this.interactive ? 'button' : undefined}
@@ -147,6 +156,13 @@ export class FmaPlayerCard {
                 aria-label={`rating ${this.ratingLabel}`}
               >
                 {this.ratingLabel}
+              </div>
+            ) : this.isManual ? (
+              <div
+                class="card__badge card__badge--manual"
+                aria-label="Jugador creado manualmente"
+              >
+                MANUAL
               </div>
             ) : null}
           </div>

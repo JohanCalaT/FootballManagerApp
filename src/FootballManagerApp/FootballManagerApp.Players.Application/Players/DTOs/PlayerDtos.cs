@@ -6,6 +6,7 @@ namespace FootballManagerApp.Players.Application.Players.DTOs;
 
 public record PlayerListItemDto(
     Guid Id,
+    int? ApiFootballId,
     string Name,
     string Team,
     string League,

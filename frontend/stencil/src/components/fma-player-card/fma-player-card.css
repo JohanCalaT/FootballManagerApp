@@ -216,6 +216,13 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Bias the crop toward the top of the image. Player portraits from
+     external sources (Transfermarkt, club sites) tend to be vertical
+     shots with the face in the upper third — `center` would cut the
+     head off and show the chest. `center top` keeps the face visible
+     for portraits while still looking fine on square API-Football
+     shots and landscape group photos. */
+  object-position: center top;
   display: block;
 }
 
@@ -278,6 +285,23 @@
 }
 :host(.card--tier-gold) .card__badge {
   text-shadow: 0 0 8px rgba(255, 219, 60, 0.45);
+}
+
+/* Manual chip — replaces the rating slot when isManual is true. Smaller
+ * type than the rating number, slightly desaturated so it does not
+ * compete with the rated tiles on the same grid. */
+.card__badge--manual {
+  font-size: 10px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0 8px;
+  height: 22px;
+  min-width: auto;
+  background: rgba(20, 20, 25, 0.92);
+  color: #b9cbb9;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: none;
 }
 
 /* ---- Body (text content) — vertical stack, centered ---- */

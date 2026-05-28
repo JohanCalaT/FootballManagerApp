@@ -1,0 +1,203 @@
+// Manual create page — Gridiron Neon (see DESIGN.md).
+// Mobile-first single column with stacked surface cards, footer CTA pinned
+// behind glassmorphism. Inputs use the standard dark-glass treatment of
+// the rest of the app (auth pages, import dialog), so the form does not
+// feel "designed by a different person" than the existing surfaces.
+
+// Do NOT set `display` on :host — the component has `class="ion-page"` on
+// the host (declared in the @Component decorator) and Ionic's `.ion-page`
+// rules apply `display: flex; flex-direction: column` so that ion-header,
+// ion-content and ion-footer stack with the footer pinned to the bottom.
+// A `:host { display: block }` here wins by specificity and breaks the
+// footer pinning — which is exactly what happened the first time around.
+:host {
+  --fma-surface-card: #1f1f25;
+  --fma-input-bg: #050505;
+  --fma-input-border: rgba(255, 255, 255, 0.12);
+  --fma-input-border-focus: #00ff87;
+  --fma-neon: #00ff87;
+}
+
+ion-header ion-toolbar {
+  --background: rgba(19, 19, 24, 0.7);
+  --color: #e4e1e9;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+ion-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.manual-form {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 120px;
+
+  &__card {
+    background: var(--fma-surface-card);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__heading {
+    margin: 0 0 4px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    line-height: 26px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #e4e1e9;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    border: 0;
+    padding: 0;
+
+    ion-input,
+    ion-segment {
+      --background: var(--fma-input-bg);
+      --color: #e4e1e9;
+      --placeholder-color: #6e6e76;
+      --highlight-color-focused: var(--fma-input-border-focus);
+      background: var(--fma-input-bg);
+      border: 1px solid var(--fma-input-border);
+      border-radius: 8px;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    ion-input.has-focus,
+    ion-segment.in-segment-focus,
+    ion-input.ion-focused {
+      border-color: var(--fma-input-border-focus);
+      box-shadow: 0 0 0 3px rgba(0, 255, 135, 0.15);
+    }
+  }
+
+  &__label {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #b9cbb9;
+  }
+
+  &__error {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: #ffb4ab;
+
+    &--warn {
+      color: #ffdb3c;
+    }
+  }
+
+  // 2x2 position pill grid — fits comfortably on a 360px viewport, no
+  // horizontal scrolling. Replaces the ion-segment which overflowed.
+  .position-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+
+    &__pill {
+      appearance: none;
+      background: var(--fma-input-bg);
+      color: #e4e1e9;
+      border: 1px solid var(--fma-input-border);
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease,
+        color 120ms ease, box-shadow 120ms ease;
+
+      &:focus-visible {
+        outline: 2px solid var(--fma-neon);
+        outline-offset: 2px;
+      }
+
+      &--active {
+        background: var(--fma-neon);
+        color: #003919;
+        border-color: var(--fma-neon);
+        box-shadow: 0 0 12px rgba(0, 255, 135, 0.35);
+      }
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+
+    .manual-form__field:nth-child(odd):last-child {
+      grid-column: span 2;
+    }
+  }
+
+  &__defer-hint {
+    margin: 8px 0;
+    color: #b9cbb9;
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  &__hint {
+    margin: 4px 4px 16px;
+    color: #b9cbb9;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    ion-icon {
+      color: var(--fma-neon);
+    }
+  }
+
+  &__footer ion-toolbar {
+    --background: rgba(19, 19, 24, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 0 8px;
+  }
+
+  &__cta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 8px 12px;
+
+    ion-button[color='primary'] {
+      flex: 1;
+      --background: var(--fma-neon);
+      --background-activated: #00d770;
+      --color: #003919;
+      --border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+  }
+}

@@ -30,15 +30,24 @@
   </ion-segment>
 
   @if (isMode('firebase')) {
-    <div class="picker__row">
+    <div class="picker__row picker__row--split">
       <ion-button
         expand="block"
         fill="solid"
-        (click)="onPickFile()"
+        (click)="onTakePhoto()"
         [disabled]="isCommitting()"
-        data-testid="picker-pick-file">
+        data-testid="picker-take-photo">
         <ion-icon slot="start" name="camera-outline" aria-hidden="true"></ion-icon>
-        Cámara o galería
+        Cámara
+      </ion-button>
+      <ion-button
+        expand="block"
+        fill="outline"
+        (click)="onPickFromGallery()"
+        [disabled]="isCommitting()"
+        data-testid="picker-pick-gallery">
+        <ion-icon slot="start" name="images-outline" aria-hidden="true"></ion-icon>
+        Galería
       </ion-button>
     </div>
   } @else {

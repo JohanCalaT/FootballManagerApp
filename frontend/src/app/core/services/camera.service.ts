@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 export interface PickFileOptions {
   /** MIME filter for the file input. Defaults to `image/*`. */
@@ -12,20 +13,33 @@ export interface PickFileOptions {
   readonly capture?: 'user' | 'environment';
 }
 
+export type CameraSourceKind = 'camera' | 'gallery';
+
 /**
- * Thin wrapper around the HTML5 file input so the rest of the app does not
- * have to build hidden `<input>` elements imperatively. Returns the chosen
- * File or `null` if the user cancelled.
+ * Image-input wrapper. Two paths:
  *
- * Why not `@capacitor/camera` here? On Android webview the HTML5 input with
- * `capture="environment"` opens the system camera natively, so a vanilla
- * input covers both web and packaged builds without an extra plugin in the
- * critical path. The Capacitor Camera dep stays installed for future use
- * (e.g. finer control over resolution / source selection sheet) but is not
- * required for v1 of the picker.
+ *   - `pickFromCamera()`  → opens the device camera via `@capacitor/camera`.
+ *                            On Android packaged build → native intent. On
+ *                            web (Ionic serve / staging) → `@ionic/pwa-elements`
+ *                            renders an in-browser capture UI (registered in
+ *                            main.ts via `definePwaElements`).
+ *   - `pickFromGallery()` → opens the platform photo picker via Capacitor.
+ *   - `pickFromFile()`    → legacy fallback that uses a hidden file input.
+ *                            Used by tests and as the bottom escape hatch.
+ *
+ * All three resolve with a `File` (or `null` if the user cancelled) so the
+ * caller chain stays the same.
  */
 @Injectable({ providedIn: 'root' })
 export class CameraService {
+  async pickFromCamera(): Promise<File | null> {
+    return this.getPhoto(CameraSource.Camera);
+  }
+
+  async pickFromGallery(): Promise<File | null> {
+    return this.getPhoto(CameraSource.Photos);
+  }
+
   pickFromFile(opts: PickFileOptions = {}): Promise<File | null> {
     return new Promise((resolve) => {
       const input = document.createElement('input');
@@ -34,9 +48,6 @@ export class CameraService {
       if (opts.capture) {
         input.setAttribute('capture', opts.capture);
       }
-      // `change` fires once a file is picked; if the user cancels, no event
-      // fires at all on most browsers, so we also listen on focus return as
-      // a soft cancel signal (resolves null).
       let settled = false;
       const finish = (file: File | null): void => {
         if (settled) return;
@@ -45,7 +56,6 @@ export class CameraService {
       };
 
       input.addEventListener('change', () => finish(input.files?.[0] ?? null));
-      // Defer cancel detection one tick so it does not race the change event.
       window.addEventListener(
         'focus',
         () => setTimeout(() => finish(null), 300),
@@ -54,5 +64,34 @@ export class CameraService {
 
       input.click();
     });
+  }
+
+  private async getPhoto(source: CameraSource): Promise<File | null> {
+    try {
+      const photo = await Camera.getPhoto({
+        source,
+        resultType: CameraResultType.Uri,
+        quality: 85,
+        allowEditing: false,
+      });
+      if (!photo.webPath) return null;
+
+      const response = await fetch(photo.webPath);
+      const blob = await response.blob();
+      const ext = photo.format || blob.type.split('/')[1] || 'jpeg';
+      const mime = blob.type || `image/${ext}`;
+      return new File(
+        [blob],
+        `${source === CameraSource.Camera ? 'capture' : 'photo'}-${Date.now()}.${ext}`,
+        { type: mime },
+      );
+    } catch (err) {
+      // Capacitor throws when the user cancels the prompt or denies the
+      // permission. We treat both as "no file chosen" rather than as errors,
+      // since the caller (the picker) just needs to know nothing was picked.
+      // eslint-disable-next-line no-console
+      console.debug('[CameraService] cancelled or denied:', err);
+      return null;
+    }
   }
 }

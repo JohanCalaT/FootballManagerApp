@@ -3,6 +3,7 @@ import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { connectAuthEmulator, getAuth, provideAuth } from '@angular/fire/auth';
 import { connectStorageEmulator, getStorage, provideStorage } from '@angular/fire/storage';
 import { defineCustomElements } from '@football-manager/stencil/loader';
+import { defineCustomElements as definePwaElements } from '@ionic/pwa-elements/loader';
 
 import { appConfig } from './app/app.config';
 import { AppComponent } from './app/app.component';
@@ -13,6 +14,12 @@ import { AppConfig } from './app/core/config/app-config.model';
 // global custom-elements registry before Angular bootstraps, so the first
 // template that contains one of these tags can upgrade it immediately.
 defineCustomElements(window);
+
+// Register @ionic/pwa-elements so Capacitor's Camera plugin can render a
+// proper camera-capture UI inside a desktop / mobile browser (Ionic serve,
+// staging). On Android packaged via Capacitor the native camera takes over
+// and these elements are simply unused.
+definePwaElements(window);
 
 // Fetch the runtime config materialized by scripts/write-config.js (from the
 // FIREBASE_* env vars injected by the Aspire AppHost). This runs once before
