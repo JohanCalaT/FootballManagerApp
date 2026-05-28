@@ -49,6 +49,16 @@ interface UpdatePlayerBody {
   imageUrl?:     string;
   imageSource?:  ImageSource;
   playerGeolocation?: { lat: number; lng: number; city?: string; country?: string };
+  statistics?: Array<{
+    season:      number;
+    teamName?:   string;
+    leagueName?: string;
+    position?:   string;
+    appearances: number;
+    goals:       number;
+    assists:     number;
+    rating?:     number;
+  }>;
 }
 
 export const getAll = async (
@@ -245,6 +255,7 @@ export const update = async (
     if (body.imageUrl     !== undefined) patch.imageUrl     = body.imageUrl;
     if (body.imageSource  !== undefined) patch.imageSource  = body.imageSource;
     if (body.playerGeolocation !== undefined) patch.playerGeolocation = body.playerGeolocation;
+    if (body.statistics !== undefined) patch.statistics = body.statistics;
 
     const dto   = await playerService.update(req.params.id, patch);
     const links = buildPlayerLinks(dto.id, req.isAdmin);

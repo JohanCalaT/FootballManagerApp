@@ -172,6 +172,17 @@ export const create = async (input: CreatePlayerInput): Promise<PlayerDetailDto>
 
 // ─────────────── Update ───────────────
 
+export interface ManualStatistic {
+  season:      number;
+  teamName?:   string;
+  leagueName?: string;
+  position?:   string;
+  appearances: number;
+  goals:       number;
+  assists:     number;
+  rating?:     number;
+}
+
 export interface UpdatePlayerInput {
   name?:         string;
   team?:         string;
@@ -190,6 +201,12 @@ export interface UpdatePlayerInput {
   imageUrl?:     string;
   imageSource?:  ImageSource;
   playerGeolocation?: IGeolocation;
+  /**
+   * Replaces the full statistics array. Only honoured for manual players —
+   * imported players' stats are owned by API-Football and the service
+   * silently drops this field for them (mirrors .NET handler).
+   */
+  statistics?:   ManualStatistic[];
 }
 
 /**
@@ -202,7 +219,13 @@ export interface UpdatePlayerInput {
 const LOCKED_FOR_IMPORTED = [
   'name', 'firstName', 'lastName', 'nationality',
   'birthDate', 'birthPlace', 'birthCountry',
+  // statistics belongs here too — the API-Football array is the source of
+  // truth for imported players and we never let an admin overwrite it.
+  'statistics',
 ] as const;
+
+/** Free-tier API-Football seasons used by manual stats too, for parity. */
+const ALLOWED_SEASONS = [2022, 2023, 2024];
 
 export const update = async (
   id: string,
@@ -228,6 +251,43 @@ export const update = async (
   if (typeof patchRecord.name   === 'string') patchRecord.name   = (patchRecord.name   as string).trim();
   if (typeof patchRecord.team   === 'string') patchRecord.team   = (patchRecord.team   as string).trim();
   if (typeof patchRecord.league === 'string') patchRecord.league = (patchRecord.league as string).trim();
+
+  // Manual statistics: validate each row and expand to the full schema shape
+  // so Mongoose validators do not balk on missing default-0 numeric fields.
+  if (Array.isArray(patchRecord.statistics)) {
+    const rows = patchRecord.statistics as ManualStatistic[];
+    for (const [i, s] of rows.entries()) {
+      if (!ALLOWED_SEASONS.includes(s.season)) {
+        throw new ValidationError(
+          `statistics[${i}].season debe ser una de: ${ALLOWED_SEASONS.join(', ')}`,
+        );
+      }
+      if (s.rating !== undefined && (s.rating < 0 || s.rating > 10)) {
+        throw new ValidationError(`statistics[${i}].rating debe estar entre 0 y 10`);
+      }
+    }
+    patchRecord.statistics = rows.map((s) => ({
+      season:        s.season,
+      teamName:      s.teamName ?? null,
+      leagueName:    s.leagueName ?? null,
+      position:      s.position ?? null,
+      appearances:   s.appearances,
+      goals:         s.goals,
+      assists:       s.assists,
+      rating:        s.rating ?? null,
+      // Remaining schema fields default to 0 / false in Mongoose, but we
+      // populate explicitly so $set replaces the entire array atomically.
+      lineups: 0, minutesPlayed: 0, captain: false,
+      substitutesIn: 0, substitutesOut: 0, substitutesBench: 0,
+      shotsTotal: 0, shotsOnTarget: 0, goalsConceded: 0,
+      goalsSaved: 0, passesTotal: 0, passesKey: 0, passesAccuracy: 0,
+      tacklesTotal: 0, tacklesBlocks: 0, interceptions: 0,
+      duelsTotal: 0, duelsWon: 0, dribblesAttempts: 0, dribblesSuccess: 0,
+      foulsDrawn: 0, foulsCommitted: 0,
+      yellowCards: 0, yellowRedCards: 0, redCards: 0,
+      penaltyScored: 0, penaltyMissed: 0, penaltySaved: 0,
+    }));
+  }
 
   const doc = await repo.update(id, patchRecord);
   if (!doc) throw new PlayerNotFoundError(id);
