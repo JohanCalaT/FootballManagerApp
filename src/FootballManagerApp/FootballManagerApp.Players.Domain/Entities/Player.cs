@@ -38,7 +38,11 @@ public class Player
     // Las queries normales filtran por DeletedAt == null vía HasQueryFilter.
     public DateTime? DeletedAt { get; private set; }
 
-    public void MarkDeleted() => DeletedAt = DateTime.UtcNow;
+    public void MarkDeleted()
+    {
+        DeletedAt = DateTime.UtcNow;
+        Touch();
+    }
 
     private void Touch() => Version++;
 
@@ -76,7 +80,11 @@ public class Player
         };
     }
 
-    public void SetApiFootballId(int apiFootballId) => ApiFootballId = apiFootballId;
+    public void SetApiFootballId(int apiFootballId)
+    {
+        ApiFootballId = apiFootballId;
+        Touch();
+    }
 
     public void SetPersonalInfo(
         string? firstName,
@@ -96,12 +104,14 @@ public class Player
         BirthCountry = birthCountry;
         Height = height;
         Weight = weight;
+        Touch();
     }
 
     public void SetFootballInfo(string? position, int? shirtNumber)
     {
         Position = position;
         ShirtNumber = shirtNumber;
+        Touch();
     }
 
     public void UpdateTeamAndLeague(string team, string league)
@@ -112,6 +122,7 @@ public class Player
             throw new DomainException("La liga es obligatoria");
         Team = team.Trim();
         League = league.Trim();
+        Touch();
     }
 
     public void Rename(string name)
@@ -119,9 +130,14 @@ public class Player
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("El nombre del jugador es obligatorio");
         Name = name.Trim();
+        Touch();
     }
 
-    public void MarkInjured(bool injured) => Injured = injured;
+    public void MarkInjured(bool injured)
+    {
+        Injured = injured;
+        Touch();
+    }
 
     public void SetImage(string? url, string? source)
     {
@@ -130,19 +146,27 @@ public class Player
             throw new DomainException("ImageSource debe ser 'blob', 'api' o 'url'");
         ImageUrl = url;
         ImageSource = source;
+        Touch();
     }
 
-    public void SetClientGeolocation(Geolocation? geolocation) =>
+    public void SetClientGeolocation(Geolocation? geolocation)
+    {
         ClientGeolocation = geolocation;
+        Touch();
+    }
 
-    public void SetPlayerGeolocation(Geolocation? geolocation) =>
+    public void SetPlayerGeolocation(Geolocation? geolocation)
+    {
         PlayerGeolocation = geolocation;
+        Touch();
+    }
 
     public void AddStatistics(PlayerStatistics stats)
     {
         if (stats.PlayerId != Id)
             throw new DomainException("Las estadísticas pertenecen a otro jugador");
         _statistics.Add(stats);
+        Touch();
     }
 
     public void ReplaceStatistics(IEnumerable<PlayerStatistics> stats)
@@ -150,5 +174,6 @@ public class Player
         _statistics.Clear();
         foreach (var s in stats)
             AddStatistics(s);
+        Touch();
     }
 }

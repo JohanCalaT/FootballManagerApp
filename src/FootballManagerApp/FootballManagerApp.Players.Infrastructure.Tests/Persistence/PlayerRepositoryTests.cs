@@ -119,6 +119,51 @@ public class PlayerRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateAsync_replaces_statistics_collection_without_concurrency_conflict()
+    {
+        // Regression: replacing the stats array (Clear + Add new-GUID rows) used to
+        // throw DbUpdateConcurrencyException because EF emitted UPDATE instead of
+        // INSERT for the new rows (store-generated PK + client-assigned Guid). The
+        // PlayerStatistics.Id ValueGeneratedNever mapping makes EF detect them Added.
+        // Mirror UpdatePlayerHandler: a manual player that already has stats,
+        // loaded tracked, then ReplaceStatistics with brand-new GUID rows.
+        var player = NewPlayer();
+        var original = PlayerStatistics.Create(player.Id, 2023, "Inter Miami", "MLS");
+        original.SetOffensive(10, 5, 3, 2, 0, 0);
+        player.AddStatistics(original);
+
+        await using (var ctx = _factory.CreateContext())
+        {
+            await new PlayerRepository(ctx).CreateAsync(player, default);
+        }
+
+        await using (var ctx = _factory.CreateContext())
+        {
+            var loaded = await new PlayerRepository(ctx).GetByIdAsync(player.Id, default);
+
+            // Replace the single season with MULTIPLE seasons at once — exactly
+            // what the handler builds: new GUIDs, LeagueId/TeamId left null.
+            var replacements = new[] { 2022, 2023, 2024 }.Select(season =>
+            {
+                var s = PlayerStatistics.Create(loaded!.Id, season, "Inter Miami", "MLS");
+                s.SetGames(20, 0, 0, "Attacker", 8.5m, false);
+                s.SetOffensive(0, 0, season - 2000, 7, 0, 0); // 22 / 23 / 24 goals
+                return s;
+            });
+            loaded!.ReplaceStatistics(replacements);
+
+            await new PlayerRepository(ctx).UpdateAsync(loaded, default);
+        }
+
+        await using var read = _factory.CreateContext();
+        var reloaded = await new PlayerRepository(read).GetByIdAsync(player.Id, default);
+        reloaded!.Statistics.Should().HaveCount(3);
+        reloaded.Statistics.Select(s => s.Season)
+            .Should().BeEquivalentTo(new[] { 2022, 2023, 2024 });
+        reloaded.Statistics.Single(s => s.Season == 2024).Goals.Should().Be(24);
+    }
+
+    [Fact]
     public async Task DeleteAsync_softdeletes_player_hiding_it_from_default_queries()
     {
         var player = NewPlayer();

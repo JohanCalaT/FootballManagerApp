@@ -64,7 +64,14 @@ public class PlayerConfiguration : IEntityTypeConfiguration<Player>
         });
 
         builder.HasMany(p => p.Statistics)
-            .WithOne()
+            // Declaring the back-reference (s => s.Player) — not just
+            // WithOne() — gives EF Core's change tracker visibility into
+            // both sides of the relationship. That is what enables
+            // automatic orphan detection on Player.Statistics.Clear() +
+            // Add(new): EF emits the proper DELETE + INSERT pair instead
+            // of stray UPDATEs that previously raised spurious 409
+            // concurrency conflicts on the parent.
+            .WithOne(s => s.Player)
             .HasForeignKey(s => s.PlayerId)
             .OnDelete(DeleteBehavior.Cascade);
 

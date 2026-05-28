@@ -113,6 +113,13 @@ public class UpdatePlayerHandler
             // edit their stats array. For imported players the array is owned
             // by API-Football and the field is silently dropped (handler-side
             // mirror of the biographical lock above). Null = preserve current.
+            //
+            // Clear() + AddStatistics() relies on EF Core's orphan detection
+            // for the HasMany → cascade DELETE the removed rows, INSERT the
+            // new ones. That detection requires the dependent's back-reference
+            // navigation to be declared in the mapping (see PlayerConfiguration
+            // .WithOne(s => s.Player)), otherwise EF emits stray UPDATEs and
+            // raises spurious 409 ConcurrencyConflictExceptions.
             if (!isImported && dto.Statistics is not null)
             {
                 var entities = dto.Statistics.Select(s =>
