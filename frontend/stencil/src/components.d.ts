@@ -8,26 +8,28 @@ import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
     /**
      * FUT-style flippable player card — built for the "Equipo Ideal" feature.
-     * Tap / click (or Enter / Space) flips the card on its vertical axis:
-     *   - Front: tier-framed portrait, big overall, position, name, club and a
-     *     compact 6-attribute strip — the classic Ultimate Team face.
-     *   - Back:  the six attributes laid out as labelled gauges plus the AI's
-     *     justification (`reason`) for picking this player.
+     * One tap flips the card in place on its vertical axis (no intermediate
+     * enlarged view):
+     *   - Front: circular portrait with a small overall badge pinned to its
+     *     top-left corner, a position chip below, and the full player name at the
+     *     bottom (never truncated).
+     *   - Back:  the six attributes as a clean 2-column value grid.
+     * A persistent ⓘ button (top-right, above both faces) opens the *deep* detail
+     * — animated bars + the AI's justification — which lives in the host's sheet,
+     * not on the card. Tapping ⓘ emits `infoClick` and never flips the card.
      * Data-source agnostic by design: every value arrives through props, so the
-     * host can feed it mock fixtures (this preview), a future stats-bearing
-     * ideal-team response, or a per-player fetch — the component does not care.
-     * Attributes are 0–99 (FUT scale), not the app's 0–10 statistic rating; the
-     * AI is expected to emit them on the FUT scale. Tier (bronze / silver / gold
-     * / icon) is derived from `overall` using FUT thresholds and drives the frame
-     * colour, mirroring the ring tiers of <fma-player-card>.
-     * Goalkeepers swap the outfield labels (PAC/SHO/PAS/DRI/DEF/PHY) for the GK
-     * set (DIV/HAN/KIC/REF/SPD/POS) over the same six numeric slots.
+     * host can feed mock fixtures, an ideal-team response, or a per-player fetch.
+     * Attributes are 0–99 (FUT scale). Tier (bronze / silver / gold / icon) is
+     * derived from `overall` and drives the frame colour. Goalkeepers swap the
+     * outfield labels (PAC/SHO/PAS/DRI/DEF/PHY) for the GK set
+     * (DIV/HAN/KIC/REF/SPD/POS) over the same six numeric slots.
      * Inherits --app-* design tokens through the shadow boundary with local
-     * fallbacks, so it renders sensibly in a token-less host.
+     * fallbacks, so it adopts the host's palette (the Equipo Ideal screen feeds it
+     * the prototype's neon-on-deep-green tokens).
      */
     interface FmaFutCard {
         /**
-          * Compact variant for the ideal-team pitch, where all 11 must fit on a phone. Drops the club, nationality and hint and shrinks the token so the front shows just overall + position + portrait + name; the back keeps the gauges (no justification). Tap still flips to reveal stats.
+          * Compact variant for the ideal-team pitch, where all 11 must fit on a phone. Sizes its internals in `cqw` so it scales cleanly from ~68px upward.
           * @default false
          */
         "compact": boolean;
@@ -40,7 +42,7 @@ export namespace Components {
          */
         "dri"?: number;
         /**
-          * Flip state. Mutable so the host can drive it (e.g. flip the whole team at once) while taps still toggle it locally. Reflected to an attribute for easy CSS hooks from the host.
+          * Flip state. Mutable so the host can drive it while taps still toggle it locally. Reflected to an attribute so the host can hook CSS (e.g. raise the z-index of a flipped pitch card).
           * @default false
          */
         "flipped": boolean;
@@ -58,7 +60,7 @@ export namespace Components {
          */
         "name": string;
         /**
-          * Nationality label, shown small under the overall on the front.
+          * Nationality label (kept for API parity; not shown on the card face).
          */
         "nationality"?: string;
         /**
@@ -78,11 +80,11 @@ export namespace Components {
          */
         "phy"?: number;
         /**
-          * Fine-grained position from the ideal-team response (GK, CB, ST, CAM…). Shown verbatim on the front. A leading "GK" switches the back labels to the goalkeeper set.
+          * Fine-grained position from the ideal-team response (GK, CB, ST, CAM…). Shown verbatim on the front chip. A leading "GK" switches the back labels to the goalkeeper set.
          */
         "position"?: string;
         /**
-          * Gemini's justification for picking this player — shown on the back.
+          * AI justification — kept for API parity. The deep detail (bars + reason) is rendered by the host's ⓘ sheet, not by the card itself.
          */
         "reason"?: string;
         /**
@@ -90,7 +92,12 @@ export namespace Components {
          */
         "sho"?: number;
         /**
-          * Club / team name.
+          * Whether to render the ⓘ deep-detail trigger.
+          * @default true
+         */
+        "showInfo": boolean;
+        /**
+          * Club / team name (kept for API parity; not shown on the card face).
          */
         "team"?: string;
     }
@@ -176,25 +183,28 @@ export interface FmaPlayerCardCustomEvent<T> extends CustomEvent<T> {
 declare global {
     interface HTMLFmaFutCardElementEventMap {
         "flipChange": { name: string; flipped: boolean };
+        "infoClick": { name: string };
     }
     /**
      * FUT-style flippable player card — built for the "Equipo Ideal" feature.
-     * Tap / click (or Enter / Space) flips the card on its vertical axis:
-     *   - Front: tier-framed portrait, big overall, position, name, club and a
-     *     compact 6-attribute strip — the classic Ultimate Team face.
-     *   - Back:  the six attributes laid out as labelled gauges plus the AI's
-     *     justification (`reason`) for picking this player.
+     * One tap flips the card in place on its vertical axis (no intermediate
+     * enlarged view):
+     *   - Front: circular portrait with a small overall badge pinned to its
+     *     top-left corner, a position chip below, and the full player name at the
+     *     bottom (never truncated).
+     *   - Back:  the six attributes as a clean 2-column value grid.
+     * A persistent ⓘ button (top-right, above both faces) opens the *deep* detail
+     * — animated bars + the AI's justification — which lives in the host's sheet,
+     * not on the card. Tapping ⓘ emits `infoClick` and never flips the card.
      * Data-source agnostic by design: every value arrives through props, so the
-     * host can feed it mock fixtures (this preview), a future stats-bearing
-     * ideal-team response, or a per-player fetch — the component does not care.
-     * Attributes are 0–99 (FUT scale), not the app's 0–10 statistic rating; the
-     * AI is expected to emit them on the FUT scale. Tier (bronze / silver / gold
-     * / icon) is derived from `overall` using FUT thresholds and drives the frame
-     * colour, mirroring the ring tiers of <fma-player-card>.
-     * Goalkeepers swap the outfield labels (PAC/SHO/PAS/DRI/DEF/PHY) for the GK
-     * set (DIV/HAN/KIC/REF/SPD/POS) over the same six numeric slots.
+     * host can feed mock fixtures, an ideal-team response, or a per-player fetch.
+     * Attributes are 0–99 (FUT scale). Tier (bronze / silver / gold / icon) is
+     * derived from `overall` and drives the frame colour. Goalkeepers swap the
+     * outfield labels (PAC/SHO/PAS/DRI/DEF/PHY) for the GK set
+     * (DIV/HAN/KIC/REF/SPD/POS) over the same six numeric slots.
      * Inherits --app-* design tokens through the shadow boundary with local
-     * fallbacks, so it renders sensibly in a token-less host.
+     * fallbacks, so it adopts the host's palette (the Equipo Ideal screen feeds it
+     * the prototype's neon-on-deep-green tokens).
      */
     interface HTMLFmaFutCardElement extends Components.FmaFutCard, HTMLStencilElement {
         addEventListener<K extends keyof HTMLFmaFutCardElementEventMap>(type: K, listener: (this: HTMLFmaFutCardElement, ev: FmaFutCardCustomEvent<HTMLFmaFutCardElementEventMap[K]>) => any, options?: boolean | AddEventListenerOptions): void;
@@ -267,26 +277,28 @@ declare namespace LocalJSX {
 
     /**
      * FUT-style flippable player card — built for the "Equipo Ideal" feature.
-     * Tap / click (or Enter / Space) flips the card on its vertical axis:
-     *   - Front: tier-framed portrait, big overall, position, name, club and a
-     *     compact 6-attribute strip — the classic Ultimate Team face.
-     *   - Back:  the six attributes laid out as labelled gauges plus the AI's
-     *     justification (`reason`) for picking this player.
+     * One tap flips the card in place on its vertical axis (no intermediate
+     * enlarged view):
+     *   - Front: circular portrait with a small overall badge pinned to its
+     *     top-left corner, a position chip below, and the full player name at the
+     *     bottom (never truncated).
+     *   - Back:  the six attributes as a clean 2-column value grid.
+     * A persistent ⓘ button (top-right, above both faces) opens the *deep* detail
+     * — animated bars + the AI's justification — which lives in the host's sheet,
+     * not on the card. Tapping ⓘ emits `infoClick` and never flips the card.
      * Data-source agnostic by design: every value arrives through props, so the
-     * host can feed it mock fixtures (this preview), a future stats-bearing
-     * ideal-team response, or a per-player fetch — the component does not care.
-     * Attributes are 0–99 (FUT scale), not the app's 0–10 statistic rating; the
-     * AI is expected to emit them on the FUT scale. Tier (bronze / silver / gold
-     * / icon) is derived from `overall` using FUT thresholds and drives the frame
-     * colour, mirroring the ring tiers of <fma-player-card>.
-     * Goalkeepers swap the outfield labels (PAC/SHO/PAS/DRI/DEF/PHY) for the GK
-     * set (DIV/HAN/KIC/REF/SPD/POS) over the same six numeric slots.
+     * host can feed mock fixtures, an ideal-team response, or a per-player fetch.
+     * Attributes are 0–99 (FUT scale). Tier (bronze / silver / gold / icon) is
+     * derived from `overall` and drives the frame colour. Goalkeepers swap the
+     * outfield labels (PAC/SHO/PAS/DRI/DEF/PHY) for the GK set
+     * (DIV/HAN/KIC/REF/SPD/POS) over the same six numeric slots.
      * Inherits --app-* design tokens through the shadow boundary with local
-     * fallbacks, so it renders sensibly in a token-less host.
+     * fallbacks, so it adopts the host's palette (the Equipo Ideal screen feeds it
+     * the prototype's neon-on-deep-green tokens).
      */
     interface FmaFutCard {
         /**
-          * Compact variant for the ideal-team pitch, where all 11 must fit on a phone. Drops the club, nationality and hint and shrinks the token so the front shows just overall + position + portrait + name; the back keeps the gauges (no justification). Tap still flips to reveal stats.
+          * Compact variant for the ideal-team pitch, where all 11 must fit on a phone. Sizes its internals in `cqw` so it scales cleanly from ~68px upward.
           * @default false
          */
         "compact"?: boolean;
@@ -299,7 +311,7 @@ declare namespace LocalJSX {
          */
         "dri"?: number;
         /**
-          * Flip state. Mutable so the host can drive it (e.g. flip the whole team at once) while taps still toggle it locally. Reflected to an attribute for easy CSS hooks from the host.
+          * Flip state. Mutable so the host can drive it while taps still toggle it locally. Reflected to an attribute so the host can hook CSS (e.g. raise the z-index of a flipped pitch card).
           * @default false
          */
         "flipped"?: boolean;
@@ -317,13 +329,17 @@ declare namespace LocalJSX {
          */
         "name": string;
         /**
-          * Nationality label, shown small under the overall on the front.
+          * Nationality label (kept for API parity; not shown on the card face).
          */
         "nationality"?: string;
         /**
           * Emits the new flip state whenever the card turns.
          */
         "onFlipChange"?: (event: FmaFutCardCustomEvent<{ name: string; flipped: boolean }>) => void;
+        /**
+          * Emits when the ⓘ deep-detail trigger is activated.
+         */
+        "onInfoClick"?: (event: FmaFutCardCustomEvent<{ name: string }>) => void;
         /**
           * Overall rating on the FUT 0–99 scale. Drives the tier / frame colour.
          */
@@ -341,11 +357,11 @@ declare namespace LocalJSX {
          */
         "phy"?: number;
         /**
-          * Fine-grained position from the ideal-team response (GK, CB, ST, CAM…). Shown verbatim on the front. A leading "GK" switches the back labels to the goalkeeper set.
+          * Fine-grained position from the ideal-team response (GK, CB, ST, CAM…). Shown verbatim on the front chip. A leading "GK" switches the back labels to the goalkeeper set.
          */
         "position"?: string;
         /**
-          * Gemini's justification for picking this player — shown on the back.
+          * AI justification — kept for API parity. The deep detail (bars + reason) is rendered by the host's ⓘ sheet, not by the card itself.
          */
         "reason"?: string;
         /**
@@ -353,7 +369,12 @@ declare namespace LocalJSX {
          */
         "sho"?: number;
         /**
-          * Club / team name.
+          * Whether to render the ⓘ deep-detail trigger.
+          * @default true
+         */
+        "showInfo"?: boolean;
+        /**
+          * Club / team name (kept for API parity; not shown on the card face).
          */
         "team"?: string;
     }
@@ -445,6 +466,7 @@ declare namespace LocalJSX {
         "reason": string;
         "flipped": boolean;
         "interactive": boolean;
+        "showInfo": boolean;
         "compact": boolean;
     }
     interface FmaPlayerCardAttributes {
@@ -470,22 +492,24 @@ declare module "@stencil/core" {
         interface IntrinsicElements {
             /**
              * FUT-style flippable player card — built for the "Equipo Ideal" feature.
-             * Tap / click (or Enter / Space) flips the card on its vertical axis:
-             *   - Front: tier-framed portrait, big overall, position, name, club and a
-             *     compact 6-attribute strip — the classic Ultimate Team face.
-             *   - Back:  the six attributes laid out as labelled gauges plus the AI's
-             *     justification (`reason`) for picking this player.
+             * One tap flips the card in place on its vertical axis (no intermediate
+             * enlarged view):
+             *   - Front: circular portrait with a small overall badge pinned to its
+             *     top-left corner, a position chip below, and the full player name at the
+             *     bottom (never truncated).
+             *   - Back:  the six attributes as a clean 2-column value grid.
+             * A persistent ⓘ button (top-right, above both faces) opens the *deep* detail
+             * — animated bars + the AI's justification — which lives in the host's sheet,
+             * not on the card. Tapping ⓘ emits `infoClick` and never flips the card.
              * Data-source agnostic by design: every value arrives through props, so the
-             * host can feed it mock fixtures (this preview), a future stats-bearing
-             * ideal-team response, or a per-player fetch — the component does not care.
-             * Attributes are 0–99 (FUT scale), not the app's 0–10 statistic rating; the
-             * AI is expected to emit them on the FUT scale. Tier (bronze / silver / gold
-             * / icon) is derived from `overall` using FUT thresholds and drives the frame
-             * colour, mirroring the ring tiers of <fma-player-card>.
-             * Goalkeepers swap the outfield labels (PAC/SHO/PAS/DRI/DEF/PHY) for the GK
-             * set (DIV/HAN/KIC/REF/SPD/POS) over the same six numeric slots.
+             * host can feed mock fixtures, an ideal-team response, or a per-player fetch.
+             * Attributes are 0–99 (FUT scale). Tier (bronze / silver / gold / icon) is
+             * derived from `overall` and drives the frame colour. Goalkeepers swap the
+             * outfield labels (PAC/SHO/PAS/DRI/DEF/PHY) for the GK set
+             * (DIV/HAN/KIC/REF/SPD/POS) over the same six numeric slots.
              * Inherits --app-* design tokens through the shadow boundary with local
-             * fallbacks, so it renders sensibly in a token-less host.
+             * fallbacks, so it adopts the host's palette (the Equipo Ideal screen feeds it
+             * the prototype's neon-on-deep-green tokens).
              */
             "fma-fut-card": LocalJSX.IntrinsicElements["fma-fut-card"] & JSXBase.HTMLAttributes<HTMLFmaFutCardElement>;
             /**
