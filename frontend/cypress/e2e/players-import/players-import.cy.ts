@@ -27,14 +27,16 @@ describe('Players · Import', () => {
     cy.get('[data-testid=login-submit-button]').click();
     cy.location('pathname').should('eq', '/players');
     cy.wait('@listPage1');
-    cy.get('[data-testid=home-import-button]').click();
+    // Import now lives behind the add FAB → action sheet on the Jugadores tab.
+    cy.get('[data-testid=home-fab]').click();
+    cy.contains('Importar de API-Football').click();
     cy.get('[data-testid=import-modal]').should('be.visible');
   }
 
-  it('anonymous user does not see the import button', () => {
+  it('anonymous user does not see the add FAB', () => {
     cy.visitApp('/players');
     cy.wait('@listPage1');
-    cy.get('[data-testid=home-import-button]').should('not.exist');
+    cy.get('[data-testid=home-fab]').should('not.exist');
   });
 
   it('signed user opens the modal and sees the plan-free banner', () => {

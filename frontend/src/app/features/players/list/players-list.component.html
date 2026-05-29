@@ -5,15 +5,6 @@
 
   <app-home-hero [count]="store.total()" />
 
-  @if (isAuthenticated()) {
-    <app-home-action-bar
-      (importRequested)="onImport()"
-      (insertRequested)="onInsert()"
-      (idealTeamRequested)="onIdealTeam()"
-      (newsRequested)="onNews()"
-      (publishNewsRequested)="onPublishNews()" />
-  }
-
   <app-home-search
     [filters]="store.filters()"
     [filterCount]="store.activeFilterCount()"
@@ -35,4 +26,12 @@
     (loadMoreRequested)="onLoadMore($event)"
     (retryRequested)="onRetry()"
     (registerRequested)="goToRegister()" />
+
+  @if (isAuthenticated()) {
+    <ion-fab slot="fixed" vertical="bottom" horizontal="end">
+      <ion-fab-button (click)="openActions()" data-testid="home-fab" aria-label="Añadir jugadores">
+        <ion-icon name="add-outline"></ion-icon>
+      </ion-fab-button>
+    </ion-fab>
+  }
 </ion-content>

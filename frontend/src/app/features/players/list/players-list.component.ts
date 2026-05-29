@@ -1,12 +1,18 @@
 import { Component, OnInit, computed, effect, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import {
+  ActionSheetController,
   AlertController,
   IonContent,
+  IonFab,
+  IonFabButton,
+  IonIcon,
   ModalController,
   ToastController,
   type InfiniteScrollCustomEvent,
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { addOutline } from 'ionicons/icons';
 
 import { PlayersApi } from '../../../core/api/players.api';
 import { AuthService } from '../../../core/services/auth.service';
@@ -16,7 +22,6 @@ import { backendChoice } from '../../../core/state/backend-choice.signal';
 import { playersListNeedsRefresh } from '../../../core/state/players-list.signal';
 
 import { ImportPlayersDialogComponent } from '../import/import-players-dialog.component';
-import { HomeActionBarComponent } from './components/home-action-bar/home-action-bar.component';
 import { HomeGridComponent } from './components/home-grid/home-grid.component';
 import { HomeHeaderComponent } from './components/home-header/home-header.component';
 import { HomeHeroComponent } from './components/home-hero/home-hero.component';
@@ -32,9 +37,11 @@ import { PlayersPagedStore } from './players-paged.store';
   standalone: true,
   imports: [
     IonContent,
+    IonFab,
+    IonFabButton,
+    IonIcon,
     HomeHeaderComponent,
     HomeHeroComponent,
-    HomeActionBarComponent,
     HomeSearchComponent,
     HomeGridComponent,
   ],
@@ -47,6 +54,7 @@ export class PlayersListComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly modalCtrl = inject(ModalController);
   private readonly alertCtrl = inject(AlertController);
+  private readonly actionSheetCtrl = inject(ActionSheetController);
   private readonly toastCtrl = inject(ToastController);
   private readonly api = inject(PlayersApi);
   protected readonly store = inject(PlayersPagedStore);
@@ -61,6 +69,8 @@ export class PlayersListComponent implements OnInit {
   private lastBackend: string | null = null;
 
   constructor() {
+    addIcons({ addOutline });
+
     // HATEOAS affordances on each PlayerListItem (_links.update, .delete)
     // are baked server-side from the X-User-Admin header — which the
     // Gateway stamps from the JWT admin claim. If the user signs in
@@ -182,14 +192,29 @@ export class PlayersListComponent implements OnInit {
   protected onInsert(): void {
     void this.router.navigate(['/players/new']);
   }
-  protected onIdealTeam(): void {
-    void this.router.navigate(['/ideal-team']);
-  }
-  protected onNews(): void {
-    void this.router.navigate(['/news']);
-  }
-  protected onPublishNews(): void {
-    void this.router.navigate(['/news/publish']);
+
+  /** FAB "+" → action sheet with the two create paths (manual / API-Football). */
+  protected async openActions(): Promise<void> {
+    const sheet = await this.actionSheetCtrl.create({
+      header: 'Añadir jugadores',
+      cssClass: 'fma-action-sheet',
+      buttons: [
+        {
+          text: 'Insertar manualmente',
+          handler: () => {
+            this.onInsert();
+          },
+        },
+        {
+          text: 'Importar de API-Football',
+          handler: () => {
+            void this.onImport();
+          },
+        },
+        { text: 'Cancelar', role: 'cancel' },
+      ],
+    });
+    await sheet.present();
   }
 
   protected onPlayerSelected(player: PlayerListItem): void {
