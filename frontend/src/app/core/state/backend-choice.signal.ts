@@ -25,7 +25,3 @@ export function setBackend(choice: BackendChoice): void {
   backendChoice.set(choice);
   persist(choice);
 }
-
-export function toggleBackend(): void {
-  setBackend(backendChoice() === 'dotnet' ? 'node' : 'dotnet');
-}
