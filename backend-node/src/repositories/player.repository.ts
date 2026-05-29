@@ -171,6 +171,8 @@ export interface PlayerForPromptDto {
   name: string;
   team: string;
   position: string;
+  imageUrl: string | null;
+  nationality: string | null;
   averageRating: number | null;
   totalGoals: number;
   totalAssists: number;
@@ -197,6 +199,8 @@ export const getAllForIdealTeam = async (): Promise<PlayerForPromptDto[]> =>
         name:     1,
         team:     1,
         position: { $ifNull: ['$position', 'Unknown'] },
+        imageUrl:    { $ifNull: ['$imageUrl', null] },
+        nationality: { $ifNull: ['$nationality', null] },
         hasStatistics: {
           $gt: [{ $size: { $ifNull: ['$statistics', []] } }, 0],
         },

@@ -60,6 +60,12 @@ export const buildIdealTeamPrompt = (
   out.push('5. Si no hay suficientes en una posición,');
   out.push('   adapta jugadores de posición similar');
   out.push('6. El id debe ser exactamente el de la lista');
+  out.push('7. Para CADA jugador añade atributos estilo FUT,');
+  out.push('   enteros de 0 a 99, coherentes con su nivel:');
+  out.push('   overall, pac, sho, pas, dri, def, phy.');
+  out.push('   overall ~ rating*10 (rating 8.5 -> ~85).');
+  out.push('   En porteros estos 6 valores representan');
+  out.push('   DIV, HAN, KIC, REF, SPD, POS en ese orden.');
   out.push('');
 
   out.push('COORDENADAS:');
@@ -92,7 +98,9 @@ export const buildIdealTeamPrompt = (
   out.push('    "position": "GK",');
   out.push('    "x": 0.5,');
   out.push('    "y": 0.05,');
-  out.push('    "reason": "justificación"');
+  out.push('    "reason": "justificación",');
+  out.push('    "overall": 0, "pac": 0, "sho": 0,');
+  out.push('    "pas": 0, "dri": 0, "def": 0, "phy": 0');
   out.push('  },');
   out.push('  "defenders":   [ /* mismo shape, position ∈ {CB,LB,RB,LWB,RWB} */ ],');
   out.push('  "midfielders": [ /* mismo shape, position ∈ {CDM,CM,CAM,LM,RM}  */ ],');

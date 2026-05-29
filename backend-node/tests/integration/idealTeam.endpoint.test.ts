@@ -25,23 +25,26 @@ const seedEleven = async () => {
   return docs.map((d) => d._id.toString());
 };
 
+// FUT attributes Gemini is now expected to emit for every player.
+const ATTRS = { overall: 85, pac: 80, sho: 70, pas: 75, dri: 78, def: 60, phy: 72 };
+
 const fakeResponse = (ids: string[]) => ({
   formation: '4-3-3',
   goalkeeper: {
     id: ids[0], name: 'P0', team: 'T0', position: 'GK',
-    x: 0.5, y: 0.05, reason: 'gk',
+    x: 0.5, y: 0.05, reason: 'gk', ...ATTRS,
   },
   defenders: ids.slice(1, 5).map((id, i) => ({
     id, name: `P${i + 1}`, team: `T${i + 1}`, position: 'CB',
-    x: 0.2 + 0.2 * i, y: 0.2, reason: 'd',
+    x: 0.2 + 0.2 * i, y: 0.2, reason: 'd', ...ATTRS,
   })),
   midfielders: ids.slice(5, 8).map((id, i) => ({
     id, name: `P${i + 5}`, team: `T${i + 5}`, position: 'CM',
-    x: 0.25 + 0.25 * i, y: 0.5, reason: 'm',
+    x: 0.25 + 0.25 * i, y: 0.5, reason: 'm', ...ATTRS,
   })),
   attackers: ids.slice(8, 11).map((id, i) => ({
     id, name: `P${i + 8}`, team: `T${i + 8}`, position: 'ST',
-    x: 0.25 + 0.25 * i, y: 0.8, reason: 'a',
+    x: 0.25 + 0.25 * i, y: 0.8, reason: 'a', ...ATTRS,
   })),
   generalJustification: 'great team',
 });
@@ -84,6 +87,28 @@ describe('POST /api/ideal-team', () => {
       .send({ formation: '4-3-3' });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/mínimo 11/);
+    expect(mockedGenerate).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when there is no goalkeeper in the DB', async () => {
+    // 11 outfield players, zero goalkeepers → mandatory-GK guard cuts in.
+    const positions: Array<'Defender' | 'Midfielder' | 'Attacker'> = [
+      'Defender', 'Defender', 'Defender', 'Defender',
+      'Midfielder', 'Midfielder', 'Midfielder', 'Midfielder',
+      'Attacker', 'Attacker', 'Attacker',
+    ];
+    await Promise.all(positions.map((pos, i) =>
+      PlayerModel.create({
+        name: `P${i}`, team: `T${i}`, league: 'La Liga',
+        position: pos, createdByUserId: 'uid-1',
+      }),
+    ));
+    const res = await request(app)
+      .post('/api/ideal-team')
+      .set('X-User-Id', 'u')
+      .send({ formation: '4-3-3' });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/porteros/i);
     expect(mockedGenerate).not.toHaveBeenCalled();
   });
 
@@ -138,6 +163,9 @@ describe('POST /api/ideal-team', () => {
     expect(res.body.data.defenders).toHaveLength(4);
     expect(res.body.data.midfielders).toHaveLength(3);
     expect(res.body.data.attackers).toHaveLength(3);
+    // FUT attributes survive and identity is enriched from the DB.
+    expect(res.body.data.goalkeeper.overall).toBe(85);
+    expect(res.body.data.goalkeeper.imageUrl).toBeNull();
     expect(res.body._links.self).toEqual({
       href: '/api/ideal-team', rel: 'self', method: 'POST',
     });
