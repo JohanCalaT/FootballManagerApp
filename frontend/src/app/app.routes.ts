@@ -36,7 +36,10 @@ export const routes: Routes = [
       ),
   },
   {
+    // Registered-user feature (admins included). Backend also enforces auth
+    // (401 without X-User-Id); the guard stops anonymous access up front.
     path: 'ideal-team',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/ideal-team/ideal-team.page').then(
         (m) => m.IdealTeamPage,
