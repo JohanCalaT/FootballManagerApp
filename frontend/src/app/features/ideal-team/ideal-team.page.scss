@@ -1,12 +1,33 @@
-// Equipo Ideal — uses the global Gridiron Neon tokens (theme/variables.scss).
+// Equipo Ideal — prototype palette (neon on deep green) + Chakra Petch /
+// Barlow Semi Condensed, scoped to this feature only. The --app-* overrides
+// cascade into <fma-fut-card> through the shadow boundary (custom properties
+// inherit), so the card adopts the same palette without any per-instance vars.
 // Phase machine: form → loading → pack → reveal (pitch).
+
+// Prototype tokens, applied wherever this feature renders — including the
+// modals, which Ionic teleports outside .ideal-content.
+@mixin ideal-tokens {
+  --app-bg: #04120a;
+  --app-surface: #0c2114;
+  --app-surface-low: #0a1c12;
+  --app-on-surface: #e9fff1;
+  --app-on-surface-soft: rgba(233, 255, 241, 0.7);
+  --app-on-surface-faint: rgba(233, 255, 241, 0.42);
+  --app-outline: #7fb499;
+  --app-primary: #3df08a;
+  --app-primary-bright: #6dffb0;
+  --app-primary-glow: rgba(61, 240, 138, 0.42);
+  --app-primary-glow-soft: rgba(61, 240, 138, 0.18);
+}
 
 :host {
   display: block;
 }
 
 .ideal-content {
+  @include ideal-tokens;
   --background: var(--app-bg);
+  font-family: 'Barlow Semi Condensed', 'Barlow Semi Condensed', system-ui, sans-serif;
 }
 
 .glow {
@@ -62,7 +83,7 @@
 
 .form-title {
   margin: 0;
-  font-family: 'Bebas Neue', system-ui, sans-serif;
+  font-family: 'Chakra Petch', system-ui, sans-serif;
   font-size: 2.75rem;
   letter-spacing: 0.06em;
   font-weight: 400;
@@ -89,7 +110,7 @@
 }
 
 .field-label {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Barlow Semi Condensed', system-ui, sans-serif;
   font-size: 0.75rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -124,7 +145,7 @@
 
 .loading-text {
   margin: 0;
-  font-family: 'Bebas Neue', system-ui, sans-serif;
+  font-family: 'Chakra Petch', system-ui, sans-serif;
   font-size: 1.5rem;
   letter-spacing: 0.06em;
 }
@@ -219,7 +240,7 @@
   position: absolute;
   z-index: 2;
   bottom: 1.25rem;
-  font-family: 'Bebas Neue', system-ui, sans-serif;
+  font-family: 'Chakra Petch', system-ui, sans-serif;
   font-size: 1.5rem;
   letter-spacing: 0.18em;
   color: var(--app-gold, #ffdb3c);
@@ -318,7 +339,7 @@
 .pack-title {
   margin: 0;
   max-width: 20rem;
-  font-family: 'Bebas Neue', system-ui, sans-serif;
+  font-family: 'Chakra Petch', system-ui, sans-serif;
   font-size: 1.75rem;
   letter-spacing: 0.04em;
   font-weight: 400;
@@ -387,6 +408,22 @@
 .pitch__box--top { top: 0; border-top: none; }
 .pitch__box--bottom { bottom: 0; border-bottom: none; }
 
+// Single instruction above the pitch — replaces per-card hints.
+.pitch-hint {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  color: var(--app-on-surface-soft);
+}
+
+.pitch-hint__i {
+  color: var(--app-primary);
+  font-weight: 700;
+}
+
 .slot {
   position: absolute;
   width: clamp(68px, 21vw, 104px);
@@ -402,22 +439,201 @@
   transform: translate(-50%, -50%) scale(1);
 }
 
+// Lift the hovered or currently-flipped card above its neighbours so the
+// turning face is never clipped by an adjacent slot.
+.slot--in:hover {
+  z-index: 5;
+}
+.slot--in:has(fma-fut-card[flipped]) {
+  z-index: 10;
+}
+
 .reveal-foot {
   flex: 0 0 auto;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   padding: 0.5rem 1rem max(0.5rem, env(safe-area-inset-bottom));
   background: var(--app-bg);
 }
 
+.reveal-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .reveal-formation {
   margin: 0;
-  font-family: 'Bebas Neue', system-ui, sans-serif;
+  font-family: 'Chakra Petch', system-ui, sans-serif;
   font-size: 1.5rem;
   letter-spacing: 0.12em;
   color: var(--app-primary);
+}
+
+/* ───────────── detail (ⓘ) + analysis sheets ───────────── */
+// Modals are teleported outside .ideal-content, so re-apply the tokens here.
+.detail-modal,
+.analysis-modal {
+  @include ideal-tokens;
+  --background: var(--app-surface);
+  --border-radius: 1.25rem 1.25rem 0 0;
+  font-family: 'Barlow Semi Condensed', 'Barlow Semi Condensed', system-ui, sans-serif;
+}
+
+.detail-sheet {
+  padding: 1.5rem 1.5rem max(1.5rem, env(safe-area-inset-bottom));
+  color: var(--app-on-surface);
+}
+
+.detail-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--app-primary) 30%, transparent);
+}
+
+.detail-overall {
+  flex-shrink: 0;
+  font-family: 'Chakra Petch', system-ui, sans-serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--app-primary);
+  text-shadow: 0 0 14px var(--app-primary-glow);
+}
+
+.detail-id {
+  min-width: 0;
+}
+
+.detail-name {
+  margin: 0;
+  font-family: 'Chakra Petch', system-ui, sans-serif;
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: var(--app-on-surface);
+}
+
+.detail-pos {
+  margin: 0.15rem 0 0;
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  color: var(--app-on-surface-soft);
+}
+
+.detail-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bar__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.bar__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--app-on-surface-soft);
+}
+
+.bar__val {
+  font-family: 'Chakra Petch', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--app-on-surface);
+}
+
+.bar__track {
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.bar__fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--app-primary), var(--app-primary-bright));
+  box-shadow: 0 0 10px var(--app-primary-glow);
+  transform-origin: left center;
+  animation: bar-grow 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.detail-reason {
+  margin-top: 1.25rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--app-primary) 28%, transparent);
+  border-radius: 0.75rem;
+  background: rgba(4, 18, 10, 0.4);
+}
+
+.detail-reason__label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--app-primary);
+}
+
+.detail-reason__text {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--app-on-surface-soft);
+}
+
+@keyframes bar-grow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+.analysis-sheet {
+  padding: 1.5rem 1.5rem max(1.5rem, env(safe-area-inset-bottom));
+  color: var(--app-on-surface);
+}
+
+.analysis-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.analysis-title {
+  margin: 0;
+  font-family: 'Chakra Petch', system-ui, sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.04em;
+  font-weight: 400;
+}
+
+.analysis-formation {
+  font-family: 'Chakra Petch', system-ui, sans-serif;
+  font-size: 1.25rem;
+  letter-spacing: 0.08em;
+  color: var(--app-primary);
+}
+
+.analysis-text {
+  margin: 0;
+  color: var(--app-on-surface-soft, rgba(228, 225, 233, 0.7));
+  font-size: 0.9375rem;
+  line-height: 1.55;
 }
 
 /* ───────────── animations ───────────── */

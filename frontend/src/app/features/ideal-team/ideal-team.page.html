@@ -90,6 +90,10 @@
   } @else {
     <!-- ───────────── REVEAL (pitch) ───────────── -->
     <section class="stage stage--reveal" data-testid="ideal-reveal">
+      <p class="pitch-hint">
+        Toca una carta para girarla · <span class="pitch-hint__i">ⓘ</span> para ver el detalle
+      </p>
+
       <div class="pitch">
         <div class="pitch__lines" aria-hidden="true">
           <span class="pitch__halfway"></span>
@@ -103,7 +107,8 @@
             class="slot"
             [class.slot--in]="isRevealed(i)"
             [style.left]="styleFor(player).left"
-            [style.top]="styleFor(player).top">
+            [style.top]="styleFor(player).top"
+            data-testid="ideal-slot">
             <fma-fut-card
               [attr.name]="player.name"
               [attr.team]="player.team"
@@ -117,19 +122,91 @@
               [attr.dri]="player.dri"
               [attr.def]="player.def"
               [attr.phy]="player.phy"
-              [attr.reason]="player.reason"
-              compact="true">
+              compact="true"
+              (flipChange)="onFlip()"
+              (infoClick)="openInfo(player)">
             </fma-fut-card>
           </div>
         }
       </div>
 
       <footer class="reveal-foot">
-        <p class="reveal-formation">{{ team.formation }}</p>
-        <ion-button fill="clear" size="small" (click)="reset()">
-          Generar otro
-        </ion-button>
+        <p class="reveal-formation">{{ team().formation }}</p>
+        <div class="reveal-actions">
+          <ion-button
+            fill="clear"
+            size="small"
+            (click)="openAnalysis()"
+            data-testid="ideal-analysis-open">
+            <ion-icon name="sparkles" slot="start"></ion-icon>
+            Análisis IA
+          </ion-button>
+          <ion-button fill="clear" size="small" (click)="reset()">
+            Generar otro
+          </ion-button>
+        </div>
       </footer>
     </section>
   }
+
+  <!-- ───────────── Deep detail (ⓘ): animated bars + AI reason ───────────── -->
+  <ion-modal
+    class="detail-modal"
+    [isOpen]="selectedPlayer() !== null"
+    [initialBreakpoint]="0.6"
+    [breakpoints]="[0, 0.6, 0.95]"
+    (didDismiss)="closeInfo()">
+    <ng-template>
+      @if (selectedPlayer(); as p) {
+        <div class="detail-sheet" data-testid="ideal-player-detail">
+          <header class="detail-head">
+            <span class="detail-overall">{{ p.overall }}</span>
+            <div class="detail-id">
+              <h2 class="detail-name">{{ p.name }}</h2>
+              <p class="detail-pos">{{ p.position }} · {{ p.team }}</p>
+            </div>
+          </header>
+
+          <div class="detail-bars">
+            @for (a of selectedAttributes(); track a.label) {
+              <div class="bar">
+                <div class="bar__top">
+                  <span class="bar__label">{{ a.label }}</span>
+                  <span class="bar__val">{{ a.value }}</span>
+                </div>
+                <div class="bar__track">
+                  <div class="bar__fill" [style.width.%]="a.value"></div>
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (p.reason) {
+            <div class="detail-reason">
+              <span class="detail-reason__label">Por qué juega</span>
+              <p class="detail-reason__text">{{ p.reason }}</p>
+            </div>
+          }
+        </div>
+      }
+    </ng-template>
+  </ion-modal>
+
+  <!-- ───────────── Team-level AI analysis ───────────── -->
+  <ion-modal
+    class="analysis-modal"
+    [isOpen]="showAnalysis()"
+    [initialBreakpoint]="0.5"
+    [breakpoints]="[0, 0.5, 0.9]"
+    (didDismiss)="closeAnalysis()">
+    <ng-template>
+      <div class="analysis-sheet" data-testid="ideal-analysis">
+        <header class="analysis-head">
+          <h2 class="analysis-title">Análisis del equipo</h2>
+          <span class="analysis-formation">{{ team().formation }}</span>
+        </header>
+        <p class="analysis-text">{{ team().generalJustification }}</p>
+      </div>
+    </ng-template>
+  </ion-modal>
 </ion-content>

@@ -36,6 +36,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'ideal-team',
+    loadComponent: () =>
+      import('./features/ideal-team/ideal-team.page').then(
+        (m) => m.IdealTeamPage,
+      ),
+  },
+  {
     path: 'players/new',
     canActivate: [authGuard],
     loadComponent: () =>
