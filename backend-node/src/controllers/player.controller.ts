@@ -152,7 +152,7 @@ export const create = async (
     if (body.firstName    !== undefined) input.firstName    = body.firstName;
     if (body.lastName     !== undefined) input.lastName     = body.lastName;
     if (body.nationality  !== undefined) input.nationality  = body.nationality;
-    if (body.birthDate    !== undefined) input.birthDate    = new Date(body.birthDate);
+    if (body.birthDate    != null)       input.birthDate    = new Date(body.birthDate);
     if (body.birthPlace   !== undefined) input.birthPlace   = body.birthPlace;
     if (body.birthCountry !== undefined) input.birthCountry = body.birthCountry;
     if (body.height       !== undefined) input.height       = body.height;
@@ -244,7 +244,7 @@ export const update = async (
     if (body.firstName    !== undefined) patch.firstName    = body.firstName;
     if (body.lastName     !== undefined) patch.lastName     = body.lastName;
     if (body.nationality  !== undefined) patch.nationality  = body.nationality;
-    if (body.birthDate    !== undefined) patch.birthDate    = new Date(body.birthDate);
+    if (body.birthDate    != null)       patch.birthDate    = new Date(body.birthDate);
     if (body.birthPlace   !== undefined) patch.birthPlace   = body.birthPlace;
     if (body.birthCountry !== undefined) patch.birthCountry = body.birthCountry;
     if (body.height       !== undefined) patch.height       = body.height;

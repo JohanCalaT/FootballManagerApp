@@ -27,6 +27,39 @@ describe('POST /api/players', () => {
       expect(res.body._links.self.href).toBe(`/api/players/${res.body.data.id}`);
     });
 
+    it('accepts explicit null for optional fields (mirrors the .NET contract)', async () => {
+      // The frontend sends null (not undefined) for empty optional fields.
+      // express-validator's bare .optional() only skips undefined, so null
+      // used to fail validation here while .NET accepted it.
+      const res = await request(app)
+        .post('/api/players')
+        .set('X-User-Id', 'uid-test')
+        .send({
+          name: 'Juan Fernando Quintero',
+          team: 'River Plate',
+          league: 'Argentina',
+          position: 'Midfielder',
+          firstName: null,
+          lastName: null,
+          nationality: null,
+          birthDate: null,
+          birthPlace: null,
+          birthCountry: null,
+          height: null,
+          weight: null,
+          shirtNumber: null,
+          imageUrl: 'https://example.com/p.png',
+          imageSource: 'url',
+          injured: false,
+          playerGeolocation: null,
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.name).toBe('Juan Fernando Quintero');
+      expect(res.body.data.firstName).toBeNull();
+      expect(res.body.data.birthDate).toBeNull();
+    });
+
     it('persists optional fields when provided', async () => {
       const res = await request(app)
         .post('/api/players')
