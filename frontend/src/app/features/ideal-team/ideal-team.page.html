@@ -77,8 +77,14 @@
           (click)="onOpenPack()"
           aria-label="Abrir sobre"
           data-testid="ideal-open-pack">
-          <div class="pack__inner" aria-hidden="true"></div>
-          <div class="pack__shine" aria-hidden="true"></div>
+          <!-- Clipped surface: radial glow + diagonal sweep + vignette.
+               Separate from the 3D lid so overflow:hidden here doesn't
+               flatten the lid's rotateX swing. -->
+          <div class="pack__clip" aria-hidden="true">
+            <div class="pack__glow"></div>
+            <div class="pack__shine"></div>
+            <div class="pack__vignette"></div>
+          </div>
           <div class="pack__logo">
             <img src="assets/img/logo-football-manager.png" alt="" />
           </div>

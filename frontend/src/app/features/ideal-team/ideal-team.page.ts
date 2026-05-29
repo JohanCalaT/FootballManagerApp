@@ -37,22 +37,24 @@ const PACK_OPEN_MS = 1100;
 
 /** Loading "hype" tuning. */
 const MIN_LOADING_MS = 1400; // floor so a fast response doesn't flash
-const STEP_INTERVAL_MS = 1700; // how often the narrated step advances
-const PROGRESS_TICK_MS = 120; // bar easing cadence
-const PROGRESS_TARGET = 88; // bar holds here until the response lands
+const STEP_INTERVAL_MS = 1500; // dwell on each step before the next chunk
 const COUNT_TICK_MS = 90; // "players scanned" counter cadence
 const COUNT_CAP = 99; // counter ceiling while waiting
 
-/** Narrated steps — simulate the AI "thinking" (Gemini gives no real progress). */
+/**
+ * Narrated steps and the progress chunk each one fills to. Stepped (not eased)
+ * so the bar visibly jumps ~20% and dwells — never an asymptote that looks
+ * stuck. Both arrays advance together; the last step is a reassurance line that
+ * holds (with the counter still moving) until the response lands.
+ */
 const LOADING_STEPS = [
   'Analizando jugadores…',
   'Evaluando la defensa…',
   'Buscando química entre líneas…',
   'Eligiendo el once titular…',
-  'Dibujando la formación…',
+  'Afinando los últimos detalles…',
 ];
-/** Shown once the steps are exhausted but the response is still pending. */
-const LOADING_REASSURE = 'Afinando los últimos detalles…';
+const PROGRESS_STEPS = [20, 40, 60, 80, 92];
 
 /**
  * Equipo Ideal — FUT-Champions-inspired reveal flow (design-first branch).
@@ -98,11 +100,10 @@ export class IdealTeamPage implements OnDestroy {
   /** Index into LOADING_STEPS (climbs, then holds on the reassurance line). */
   private readonly loadingStep = signal(0);
   /** Narrated message for the current step. */
-  protected readonly loadingMessage = computed(() => {
-    const i = this.loadingStep();
-    return i < LOADING_STEPS.length ? LOADING_STEPS[i] : LOADING_REASSURE;
-  });
-  /** Progress bar 0..100 — eases to PROGRESS_TARGET and waits for the response. */
+  protected readonly loadingMessage = computed(
+    () => LOADING_STEPS[Math.min(this.loadingStep(), LOADING_STEPS.length - 1)],
+  );
+  /** Progress bar 0..100 — stepped in chunks, holds, completes on response. */
   protected readonly loadingProgress = signal(0);
   /** Simulated "players scanned" counter for movement. */
   protected readonly analyzed = signal(0);
@@ -189,31 +190,30 @@ export class IdealTeamPage implements OnDestroy {
     }
   }
 
-  /** Drive the narrated message, the easing bar and the scan counter. */
+  /** Drive the stepped message + bar and the scan counter. */
   private startLoadingFx(): void {
     this.stopLoadingFx();
+    const last = LOADING_STEPS.length - 1;
     this.loadingStep.set(0);
-    this.loadingProgress.set(0);
+    this.loadingProgress.set(PROGRESS_STEPS[0]);
     this.analyzed.set(0);
+    this.haptics.light();
 
-    // Narrated steps — advance until the reassurance line, then hold.
+    // Stepped chunks — advance message + bar together, then hold on the last.
     this.fxTimers.push(
       setInterval(() => {
-        this.loadingStep.update((s) => (s < LOADING_STEPS.length ? s + 1 : s));
-        this.haptics.light();
+        this.loadingStep.update((s) => {
+          const next = Math.min(s + 1, last);
+          if (next !== s) {
+            this.loadingProgress.set(PROGRESS_STEPS[next]);
+            this.haptics.light();
+          }
+          return next;
+        });
       }, STEP_INTERVAL_MS),
     );
 
-    // Bar eases toward the target and holds there (never fakes 100%).
-    this.fxTimers.push(
-      setInterval(() => {
-        this.loadingProgress.update((p) =>
-          p >= 100 ? p : Math.min(PROGRESS_TARGET, p + (PROGRESS_TARGET - p) * 0.08 + 0.4),
-        );
-      }, PROGRESS_TICK_MS),
-    );
-
-    // Scan counter climbs then settles at the cap.
+    // Scan counter keeps moving so the hold on the last step never looks frozen.
     this.fxTimers.push(
       setInterval(() => {
         this.analyzed.update((n) =>

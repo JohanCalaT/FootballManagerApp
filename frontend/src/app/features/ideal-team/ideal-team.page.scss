@@ -171,7 +171,7 @@
     var(--app-primary-bright, #6dffb0)
   );
   box-shadow: 0 0 12px var(--app-primary-glow);
-  transition: width 0.25s ease-out;
+  transition: width 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .loading-count {
@@ -230,6 +230,14 @@
 }
 
 .pack {
+  // One smooth vertical surface — no stacked fills, no hard 50% stop.
+  --pack-surface: linear-gradient(
+    180deg,
+    #1f2d24 0%,
+    #122017 52%,
+    #070f0a 100%
+  );
+
   position: relative;
   width: 13rem;
   height: 18rem;
@@ -238,44 +246,64 @@
   cursor: pointer;
   display: grid;
   place-items: center;
-  background:
-    linear-gradient(160deg, #2a2a33 0%, #16161b 60%, #0c0c10 100%);
+  background: var(--pack-surface);
+  // Gold edge with a soft glow + green ambient + drop shadow.
   border: 1px solid var(--app-gold, #ffdb3c);
   box-shadow:
-    0 0 0 1px rgba(255, 219, 60, 0.2),
+    0 0 0 1px rgba(255, 219, 60, 0.18),
+    0 0 18px rgba(255, 219, 60, 0.22),
     0 18px 50px rgba(0, 0, 0, 0.6),
     0 0 40px var(--app-primary-glow);
   transform-style: preserve-3d;
   animation: ideal-float 3s ease-in-out infinite;
 }
 
-/* Bright interior revealed once the lid swings open. */
-.pack__inner {
+/* Clipped surface layer — recorta el barrido y el glow a la forma de la carta.
+   overflow:hidden flattens this wrapper, which is fine (no 3D children here);
+   the lid lives outside it so its rotateX swing keeps the 3D. */
+.pack__clip {
   position: absolute;
   inset: 0;
-  border-radius: 1.25rem;
-  opacity: 0;
+  z-index: 0;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+/* Radial green glow behind the logo — faint at rest, blooms while opening. */
+.pack__glow {
+  position: absolute;
+  inset: 0;
+  opacity: 0.45;
   background: radial-gradient(
     circle at 50% 42%,
-    var(--app-primary-bright, #00ff87) 0%,
-    var(--app-primary, #00e478) 28%,
-    transparent 70%
+    var(--app-primary-bright, #6dffb0) 0%,
+    var(--app-primary, #3df08a) 26%,
+    transparent 68%
   );
 }
 
 .pack__shine {
   position: absolute;
-  inset: 0;
-  border-radius: 1.25rem;
-  overflow: hidden;
+  inset: -10%;
   background: linear-gradient(
     105deg,
-    transparent 35%,
-    rgba(255, 255, 255, 0.18) 50%,
-    transparent 65%
+    transparent 38%,
+    rgba(255, 255, 255, 0.16) 50%,
+    transparent 62%
   );
   transform: translateX(-60%);
   animation: ideal-shine 2.6s ease-in-out infinite;
+}
+
+/* Interior vignette — darkens the edges for depth. */
+.pack__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 45%,
+    transparent 52%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
 }
 
 .pack__logo {
@@ -288,7 +316,8 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    filter: drop-shadow(0 0 18px var(--app-primary-glow));
+    filter: drop-shadow(0 0 16px var(--app-primary-glow));
+    animation: pack-logo-pulse 2.8s ease-in-out infinite;
   }
 }
 
@@ -302,9 +331,9 @@
   color: var(--app-gold, #ffdb3c);
 }
 
-/* Top flap — hinged at the top edge, blends with the pack body at rest and
-   swings back in 3D when opening. Matches the pack gradient so there is no
-   visible seam until it opens. */
+/* Top flap — hinged at the top edge. Uses the SAME surface, sized to the whole
+   pack and pinned to the top, so the visible 46% matches the body exactly and
+   there is no seam at rest; swings back in 3D when opening. */
 .pack__lid {
   position: absolute;
   z-index: 1;
@@ -314,7 +343,9 @@
   height: 46%;
   border-radius: 1.25rem 1.25rem 0 0;
   transform-origin: top center;
-  background: linear-gradient(160deg, #2a2a33 0%, #16161b 130%);
+  background: var(--pack-surface);
+  background-size: 13rem 18rem;
+  background-position: top center;
   overflow: hidden;
   backface-visibility: hidden;
 }
@@ -375,7 +406,7 @@
 .is-opening .pack {
   animation: pack-body 1.1s ease forwards;
 }
-.is-opening .pack__inner {
+.is-opening .pack__glow {
   animation: pack-inner-glow 1.1s ease forwards;
 }
 .is-opening .pack__lid {
@@ -728,9 +759,14 @@
 }
 
 @keyframes pack-inner-glow {
-  0%, 18% { opacity: 0; }
-  45%     { opacity: 1; }
-  100%    { opacity: 0; }
+  0%   { opacity: 0.45; }
+  45%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes pack-logo-pulse {
+  0%, 100% { filter: drop-shadow(0 0 14px var(--app-primary-glow)); }
+  50%      { filter: drop-shadow(0 0 26px var(--app-primary-bright, #6dffb0)); }
 }
 
 @keyframes pack-lid {
@@ -760,6 +796,7 @@
   .loading-logo,
   .pack,
   .pack__shine,
+  .pack__logo img,
   .loading-text,
   .loading-dots span {
     animation: none;
@@ -768,7 +805,7 @@
     transition: none;
   }
   .is-opening .pack,
-  .is-opening .pack__inner,
+  .is-opening .pack__glow,
   .is-opening .pack__lid,
   .is-opening .beam,
   .is-opening .flash {
