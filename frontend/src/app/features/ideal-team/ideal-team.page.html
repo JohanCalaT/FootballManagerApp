@@ -1,0 +1,135 @@
+<ion-content class="ideal-content" [fullscreen]="true">
+  <div class="glow" aria-hidden="true"></div>
+
+  <button
+    type="button"
+    class="back-btn"
+    (click)="goBack()"
+    aria-label="Volver"
+    data-testid="ideal-back">
+    <ion-icon name="arrow-back"></ion-icon>
+  </button>
+
+  @if (phase() === 'form') {
+    <!-- ───────────── FORM ───────────── -->
+    <section class="stage stage--form" data-testid="ideal-form">
+      <header class="form-head">
+        <h1 class="form-title">Equipo Ideal</h1>
+        <p class="form-sub">
+          La IA construye tu once perfecto. Elige la formación y genera.
+        </p>
+      </header>
+
+      <div class="form-card">
+        <label class="field-label">Formación</label>
+        <ion-segment
+          [value]="formation()"
+          (ionChange)="onFormationChange($event)"
+          data-testid="ideal-formation">
+          @for (f of formations; track f) {
+            <ion-segment-button [value]="f">
+              <ion-label>{{ f }}</ion-label>
+            </ion-segment-button>
+          }
+        </ion-segment>
+      </div>
+
+      <ion-button
+        expand="block"
+        class="generate-btn"
+        (click)="onGenerate()"
+        data-testid="ideal-generate">
+        <ion-icon name="sparkles" slot="start"></ion-icon>
+        Generar 11 ideal
+      </ion-button>
+    </section>
+  } @else if (phase() === 'loading') {
+    <!-- ───────────── LOADING ───────────── -->
+    <section class="stage stage--loading" data-testid="ideal-loading">
+      <div class="loading-logo">
+        <img src="assets/img/logo-football-manager.png" alt="" />
+      </div>
+      <p class="loading-text">Construyendo tu equipo ideal…</p>
+      <div class="loading-dots" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+    </section>
+  } @else if (phase() === 'pack' || phase() === 'opening') {
+    <!-- ───────────── PACK (sobre 3D) ───────────── -->
+    <section
+      class="stage stage--pack"
+      [class.is-opening]="phase() === 'opening'"
+      data-testid="ideal-pack">
+      <div class="pack-scene">
+        <button
+          type="button"
+          class="pack"
+          [disabled]="phase() === 'opening'"
+          (click)="onOpenPack()"
+          aria-label="Abrir sobre"
+          data-testid="ideal-open-pack">
+          <div class="pack__inner" aria-hidden="true"></div>
+          <div class="pack__shine" aria-hidden="true"></div>
+          <div class="pack__logo">
+            <img src="assets/img/logo-football-manager.png" alt="" />
+          </div>
+          <span class="pack__ready">Listo</span>
+          <div class="pack__lid" aria-hidden="true">
+            <div class="pack__lid-shine"></div>
+          </div>
+        </button>
+        <div class="beam" aria-hidden="true"></div>
+        <div class="flash" aria-hidden="true"></div>
+      </div>
+
+      @if (phase() === 'pack') {
+        <h2 class="pack-title">Listo para conocer tu equipo ideal</h2>
+        <p class="pack-hint">Toca el sobre para revelarlo</p>
+      }
+    </section>
+  } @else {
+    <!-- ───────────── REVEAL (pitch) ───────────── -->
+    <section class="stage stage--reveal" data-testid="ideal-reveal">
+      <div class="pitch">
+        <div class="pitch__lines" aria-hidden="true">
+          <span class="pitch__halfway"></span>
+          <span class="pitch__circle"></span>
+          <span class="pitch__box pitch__box--top"></span>
+          <span class="pitch__box pitch__box--bottom"></span>
+        </div>
+
+        @for (player of eleven(); track player.id; let i = $index) {
+          <div
+            class="slot"
+            [class.slot--in]="isRevealed(i)"
+            [style.left]="styleFor(player).left"
+            [style.top]="styleFor(player).top">
+            <fma-fut-card
+              [attr.name]="player.name"
+              [attr.team]="player.team"
+              [attr.position]="player.position"
+              [attr.nationality]="player.nationality"
+              [attr.image-url]="player.imageUrl"
+              [attr.overall]="player.overall"
+              [attr.pac]="player.pac"
+              [attr.sho]="player.sho"
+              [attr.pas]="player.pas"
+              [attr.dri]="player.dri"
+              [attr.def]="player.def"
+              [attr.phy]="player.phy"
+              [attr.reason]="player.reason"
+              compact="true">
+            </fma-fut-card>
+          </div>
+        }
+      </div>
+
+      <footer class="reveal-foot">
+        <p class="reveal-formation">{{ team.formation }}</p>
+        <ion-button fill="clear" size="small" (click)="reset()">
+          Generar otro
+        </ion-button>
+      </footer>
+    </section>
+  }
+</ion-content>
