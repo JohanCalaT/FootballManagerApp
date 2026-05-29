@@ -10,7 +10,6 @@ import {
 
 import { PlayersApi } from '../../../core/api/players.api';
 import { AuthService } from '../../../core/services/auth.service';
-import { ComingSoonService } from '../../../core/services/coming-soon.service';
 import { PlayerListItem } from '../../../core/models/player.model';
 import { isAdmin, isAuthenticated } from '../../../core/state/auth.signal';
 import { playersListNeedsRefresh } from '../../../core/state/players-list.signal';
@@ -41,7 +40,6 @@ import { PlayersPagedStore } from './players-paged.store';
 export class PlayersListComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
-  private readonly comingSoon = inject(ComingSoonService);
   private readonly modalCtrl = inject(ModalController);
   private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
@@ -126,8 +124,11 @@ export class PlayersListComponent implements OnInit {
   protected onIdealTeam(): void {
     void this.router.navigate(['/ideal-team']);
   }
+  protected onNews(): void {
+    void this.router.navigate(['/news']);
+  }
   protected onPublishNews(): void {
-    void this.comingSoon.notify('Publicar noticia');
+    void this.router.navigate(['/news/publish']);
   }
 
   protected onPlayerSelected(player: PlayerListItem): void {

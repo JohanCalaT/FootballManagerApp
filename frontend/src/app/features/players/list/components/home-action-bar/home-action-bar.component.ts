@@ -13,6 +13,7 @@ export class HomeActionBarComponent {
   readonly importRequested = output<void>();
   readonly insertRequested = output<void>();
   readonly idealTeamRequested = output<void>();
+  readonly newsRequested = output<void>();
   readonly publishNewsRequested = output<void>();
 
   protected readonly isAdmin = isAdmin;

@@ -3,7 +3,6 @@ import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angul
 import { AlertController, ModalController, ToastController } from '@ionic/angular/standalone';
 
 import { AuthService } from '../../../core/services/auth.service';
-import { ComingSoonService } from '../../../core/services/coming-soon.service';
 import { PlayersApi } from '../../../core/api/players.api';
 import { PagedResponse } from '../../../core/models/api-response.model';
 import { PlayerListItem } from '../../../core/models/player.model';
@@ -33,7 +32,6 @@ function paged(items: PlayerListItem[], total: number, page = 1): PagedResponse<
 describe('PlayersListComponent (home container)', () => {
   let fixture: ComponentFixture<PlayersListComponent>;
   let api: jasmine.SpyObj<PlayersApi>;
-  let comingSoon: jasmine.SpyObj<ComingSoonService>;
   let alertCtrl: jasmine.SpyObj<AlertController>;
   let toastCtrl: jasmine.SpyObj<ToastController>;
 
@@ -45,8 +43,6 @@ describe('PlayersListComponent (home container)', () => {
     ]);
     api.listPage.and.resolveTo(paged([makePlayer('1'), makePlayer('2')], 2));
     api.searchPage.and.resolveTo(paged([], 0));
-    comingSoon = jasmine.createSpyObj<ComingSoonService>('ComingSoonService', ['notify']);
-    comingSoon.notify.and.resolveTo();
     alertCtrl = jasmine.createSpyObj<AlertController>('AlertController', ['create']);
     toastCtrl = jasmine.createSpyObj<ToastController>('ToastController', ['create']);
     toastCtrl.create.and.resolveTo({
@@ -58,7 +54,6 @@ describe('PlayersListComponent (home container)', () => {
       providers: [
         provideRouter([]),
         { provide: PlayersApi, useValue: api },
-        { provide: ComingSoonService, useValue: comingSoon },
         { provide: AlertController, useValue: alertCtrl },
         { provide: ToastController, useValue: toastCtrl },
         {
@@ -124,20 +119,34 @@ describe('PlayersListComponent (home container)', () => {
     expect(navigate).toHaveBeenCalledOnceWith(['/players', '99']);
   });
 
-  it('notifies coming-soon for the publish-news placeholder', async () => {
+  it('navigates to /news/publish when the publish-news action fires', async () => {
     await setup();
     setSession({ uid: 'a', email: 'a@b.com', displayName: 'A', role: 'admin' }, 'tok');
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
 
-    // onImport opens a real modal; onInsert routes to /players/new; onIdealTeam
-    // now routes to /ideal-team — all covered by their own specs. Publish news
-    // is the remaining placeholder.
+    const router = TestBed.inject(Router);
+    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+
     fixture.componentInstance['onPublishNews']();
 
-    const calls = comingSoon.notify.calls.allArgs().map((c) => c[0]);
-    expect(calls).toEqual(['Publicar noticia']);
+    expect(navigate).toHaveBeenCalledOnceWith(['/news/publish']);
+  });
+
+  it('navigates to /news when the news action fires', async () => {
+    await setup();
+    setSession({ uid: 'a', email: 'a@b.com', displayName: 'A', role: 'admin' }, 'tok');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const router = TestBed.inject(Router);
+    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+
+    fixture.componentInstance['onNews']();
+
+    expect(navigate).toHaveBeenCalledOnceWith(['/news']);
   });
 
   it('navigates to /ideal-team when the ideal-team action fires', async () => {

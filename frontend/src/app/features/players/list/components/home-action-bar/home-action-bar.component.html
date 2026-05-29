@@ -26,6 +26,15 @@
     Equipo ideal
   </button>
 
+  <button
+    type="button"
+    class="home-action-bar__btn"
+    (click)="newsRequested.emit()"
+    data-testid="home-news-button">
+    <span class="home-action-bar__btn-icon" aria-hidden="true">◎</span>
+    Noticias
+  </button>
+
   @if (isAdmin()) {
     <button
       type="button"
