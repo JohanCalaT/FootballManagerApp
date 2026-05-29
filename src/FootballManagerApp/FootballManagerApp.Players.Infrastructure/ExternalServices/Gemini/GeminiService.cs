@@ -35,7 +35,7 @@ public sealed class GeminiService : IGeminiService
 
         var configured = config["Gemini:Model"];
         _models = string.IsNullOrWhiteSpace(configured)
-            ? new[] { "gemini-2.5-flash", "gemini-2.0-flash" }
+            ? new[] { "gemini-2.5-pro","gemini-2.5-flash" }
             : configured.Split(
                 ',',
                 StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
