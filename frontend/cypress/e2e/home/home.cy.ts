@@ -61,6 +61,21 @@ describe('Players · Home', () => {
     cy.location('search').should('not.include', 'q=');
   });
 
+  it('shows the empty state when the search returns no matches', () => {
+    cy.intercept('GET', '**/api/players/search?**', {
+      statusCode: 200,
+      body: { status: 200, message: 'ok', data: [], page: 1, limit: 20, total: 0, _links: {} },
+    }).as('searchEmpty');
+
+    cy.visitApp('/players');
+    cy.wait('@listPage1');
+    cy.get('[data-testid=home-search-input]').type('zzz-no-match');
+    cy.wait('@searchEmpty');
+
+    cy.get('[data-testid=home-grid] [data-testid=player-card]').should('not.exist');
+    cy.get('[data-testid=home-grid-empty]').should('be.visible');
+  });
+
   // Tile-click coming-soon assertion intentionally omitted: the toast is
   // temporary scaffolding that will be replaced by real navigation to the
   // player detail page in the next iteration, and the only way to assert

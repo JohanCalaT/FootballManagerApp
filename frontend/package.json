@@ -19,9 +19,11 @@
     "cypress:open": "cypress open",
     "cypress:run:chrome": "cypress run --browser chrome",
     "cypress:run:edge": "cypress run --browser edge",
+    "cypress:run:firefox": "cypress run --browser firefox",
     "e2e:open": "start-server-and-test \"npm run emulator\" \"http-get://localhost:9099\" \"npm run start:e2e\" \"http-get://localhost:4200\" \"npm run cypress:open\"",
     "e2e:chrome": "start-server-and-test \"npm run emulator\" \"http-get://localhost:9099\" \"npm run start:e2e\" \"http-get://localhost:4200\" \"npm run cypress:run:chrome\"",
     "e2e:edge": "start-server-and-test \"npm run emulator\" \"http-get://localhost:9099\" \"npm run start:e2e\" \"http-get://localhost:4200\" \"npm run cypress:run:edge\"",
+    "e2e:firefox": "start-server-and-test \"npm run emulator\" \"http-get://localhost:9099\" \"npm run start:e2e\" \"http-get://localhost:4200\" \"npm run cypress:run:firefox\"",
     "e2e": "npm run e2e:chrome"
   },
   "private": true,
