@@ -62,7 +62,7 @@ jobs:
           if-no-files-found: warn
 
   e2e:
-    name: E2E · Cypress (Chrome + Edge)
+    name: E2E · Cypress (Chrome + Firefox)
     runs-on: ubuntu-latest
     # Runs in parallel with build-test-lint — no `needs`. The two jobs touch
     # different concerns (unit vs end-to-end) and a failure in one should
@@ -89,10 +89,12 @@ jobs:
           key: cypress-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
           restore-keys: cypress-${{ runner.os }}-
 
-      # Edge is not preinstalled on ubuntu-latest runners. browser-actions
-      # is the canonical action used by Cypress' own examples.
-      - name: Setup Microsoft Edge
-        uses: browser-actions/setup-edge@v1
+      # Firefox is the second engine required by the CNSA multi-browser
+      # rubric (Chrome + Firefox — different rendering engines, unlike Edge
+      # which is Chromium too). browser-actions is the canonical action used
+      # by Cypress' own examples.
+      - name: Setup Firefox
+        uses: browser-actions/setup-firefox@v1
 
       - name: Install dependencies
         run: npm ci
@@ -103,11 +105,11 @@ jobs:
       - name: E2E · Chrome
         run: npm run e2e:chrome
 
-      - name: E2E · Edge
-        # Run Edge even if Chrome failed, so the report shows whether the
+      - name: E2E · Firefox
+        # Run Firefox even if Chrome failed, so the report shows whether the
         # regression is browser-specific or universal.
         if: success() || failure()
-        run: npm run e2e:edge
+        run: npm run e2e:firefox
 
       - name: Upload Cypress screenshots
         if: failure()
