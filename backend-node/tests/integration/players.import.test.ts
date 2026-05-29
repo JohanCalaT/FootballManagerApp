@@ -83,6 +83,30 @@ describe('POST /api/players/import', () => {
       expect(reloaded?.imageSource).toBe('api');
     });
 
+    it('derives position from games.position when the player object has none', async () => {
+      // Real API-Football does NOT return a position on the player object; it
+      // lives in statistics[].games.position. The imported player must still
+      // get a position (otherwise it'd be dropped from the ideal-team prompt).
+      const noPlayerPosition: apiFootball.ApiFootballPlayerStatsResponse = {
+        player: { id: 777, name: 'Juan Fernando Quintero' }, // no `position`
+        statistics: [
+          {
+            team:   { id: 435, name: 'River Plate' },
+            league: { id: 128, name: 'Liga Profesional', country: 'Argentina', season: 2024 },
+            games:  { appearences: 20, minutes: 1500, position: 'Midfielder', rating: '7.2' },
+            goals:  { total: 5, assists: 8 },
+          },
+        ],
+      };
+      jest.spyOn(apiFootball, 'getPlayerWithStats').mockResolvedValueOnce(noPlayerPosition);
+
+      const res = await sendImport([{ apiFootballId: 777, season: 2024 }]);
+
+      expect(res.status).toBe(201);
+      const reloaded = await PlayerModel.findOne({ apiFootballId: 777 }).lean();
+      expect(reloaded?.position).toBe('Midfielder');
+    });
+
     it('persists clientGeolocation from X-Client-* headers', async () => {
       jest.spyOn(apiFootball, 'getPlayerWithStats').mockResolvedValueOnce(yamal2024Fixture());
 
