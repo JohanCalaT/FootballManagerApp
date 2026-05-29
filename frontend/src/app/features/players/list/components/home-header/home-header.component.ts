@@ -10,7 +10,8 @@ import {
 } from '@angular/core';
 import { IonPopover } from '@ionic/angular/standalone';
 
-import { backendChoice, toggleBackend } from '../../../../../core/state/backend-choice.signal';
+import { backendChoice } from '../../../../../core/state/backend-choice.signal';
+import { BackendSwitchService } from '../../../../../core/services/backend-switch.service';
 import { currentUser, isAdmin, isAuthenticated } from '../../../../../core/state/auth.signal';
 
 @Component({
@@ -70,7 +71,9 @@ export class HomeHeaderComponent {
     this.logoutRequested.emit();
   }
 
+  private readonly backendSwitch = inject(BackendSwitchService);
+
   protected onToggleBackend(): void {
-    toggleBackend();
+    void this.backendSwitch.toggle();
   }
 }

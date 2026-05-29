@@ -1,7 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { clearSession, setSession } from '../../../../../core/state/auth.signal';
-import { backendChoice, setBackend } from '../../../../../core/state/backend-choice.signal';
+import { setBackend } from '../../../../../core/state/backend-choice.signal';
+import { BackendSwitchService } from '../../../../../core/services/backend-switch.service';
 import { AuthUser } from '../../../../../core/models/user.model';
 
 import { HomeHeaderComponent } from './home-header.component';
@@ -17,12 +18,20 @@ function asUser(role: 'admin' | 'user'): AuthUser {
 
 describe('HomeHeaderComponent', () => {
   let fixture: ComponentFixture<HomeHeaderComponent>;
+  let backendSwitch: jasmine.SpyObj<BackendSwitchService>;
 
   beforeEach(async () => {
     clearSession();
     setBackend('dotnet');
+    backendSwitch = jasmine.createSpyObj<BackendSwitchService>('BackendSwitchService', [
+      'toggle',
+      'sync',
+      'switchTo',
+    ]);
+    backendSwitch.toggle.and.resolveTo();
     await TestBed.configureTestingModule({
       imports: [HomeHeaderComponent],
+      providers: [{ provide: BackendSwitchService, useValue: backendSwitch }],
     }).compileComponents();
     fixture = TestBed.createComponent(HomeHeaderComponent);
   });
@@ -62,11 +71,10 @@ describe('HomeHeaderComponent', () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  it('toggles the backend signal when the menu chip is clicked', () => {
+  it('delegates the backend switch to BackendSwitchService', () => {
     fixture.detectChanges();
-    expect(backendChoice()).toBe('dotnet');
     fixture.componentInstance['onToggleBackend']();
-    expect(backendChoice()).toBe('node');
+    expect(backendSwitch.toggle).toHaveBeenCalledTimes(1);
   });
 
   it('emits logoutRequested when the logout row is invoked', () => {
