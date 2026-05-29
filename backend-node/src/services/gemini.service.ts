@@ -10,8 +10,11 @@ import { GeminiUnavailableError } from '../errors/domain.errors';
  */
 export const generateIdealTeam = async (prompt: string): Promise<string> => {
   const apiKey  = process.env.GEMINI_API_KEY;
-  const model   = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
-  const timeout = Number(process.env.GEMINI_TIMEOUT_MS ?? 30_000);
+  const model   = process.env.GEMINI_MODEL ?? 'gemini-2.5-pro';
+  // gemini-2.5-pro generating the full eleven (big JSON + reasoning) routinely
+  // takes >30s, which aborted the request (ECONNABORTED) even though Gemini
+  // answered. 90s gives it room while staying under YARP's 100s proxy default.
+  const timeout = Number(process.env.GEMINI_TIMEOUT_MS ?? 90_000);
 
   if (!apiKey) {
     throw new GeminiUnavailableError(
