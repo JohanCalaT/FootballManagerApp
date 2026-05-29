@@ -28,6 +28,8 @@ import type {
   IonTextareaCustomEvent,
   TextareaInputEventDetail,
 } from '@ionic/core';
+import { addIcons } from 'ionicons';
+import { star, starOutline, trashOutline } from 'ionicons/icons';
 
 import { CommentsApi } from '../../../../../core/api/comments.api';
 import { GeolocationService } from '../../../../../core/services/geolocation.service';
@@ -111,6 +113,11 @@ export class CommentsSectionComponent {
   private lastPlayerId: string | null = null;
 
   constructor() {
+    // Ionicons used in this component's template. Without registering them the
+    // standalone <ion-icon> renders blank — which is why the rating stars and
+    // the admin delete (trash) icon showed nothing.
+    addIcons({ star, starOutline, trashOutline });
+
     // Pre-fill the author name with the current user's displayName so the
     // most common case is one tap on the rating + one paragraph + submit.
     // Effect runs on signal changes (login/logout / user switch) so the
