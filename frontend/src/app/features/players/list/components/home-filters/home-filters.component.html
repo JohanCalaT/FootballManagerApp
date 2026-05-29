@@ -40,17 +40,24 @@
       [(ngModel)]="to"
       data-testid="filter-to"></ion-input>
   </ion-item>
-</ion-content>
 
-<ion-footer class="ion-no-border">
-  <ion-toolbar>
-    <ion-buttons>
-      <ion-button (click)="clear()" data-testid="filters-clear">Limpiar</ion-button>
-    </ion-buttons>
-    <ion-buttons slot="end">
-      <ion-button fill="solid" color="primary" (click)="apply()" data-testid="filters-apply">
-        Aplicar
-      </ion-button>
-    </ion-buttons>
-  </ion-toolbar>
-</ion-footer>
+  <!-- Actions live inside the content: a sheet modal clips ion-footer below
+       the visible breakpoint, so an in-content row guarantees they show. -->
+  <div class="filters-actions">
+    <ion-button
+      class="filters-actions__btn"
+      fill="outline"
+      (click)="clear()"
+      data-testid="filters-clear">
+      Limpiar
+    </ion-button>
+    <ion-button
+      class="filters-actions__btn"
+      fill="solid"
+      color="primary"
+      (click)="apply()"
+      data-testid="filters-apply">
+      Aplicar
+    </ion-button>
+  </div>
+</ion-content>

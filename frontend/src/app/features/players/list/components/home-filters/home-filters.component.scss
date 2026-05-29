@@ -3,3 +3,15 @@ ion-item {
   --padding-start: 0;
   margin-bottom: 8px;
 }
+
+.filters-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  // Keep the buttons clear of the home indicator / sheet bottom.
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+}
+
+.filters-actions__btn {
+  flex: 1 1 0;
+}
