@@ -44,15 +44,24 @@
       </ion-button>
     </section>
   } @else if (phase() === 'loading') {
-    <!-- ───────────── LOADING ───────────── -->
+    <!-- ───────────── LOADING (narrated) ───────────── -->
     <section class="stage stage--loading" data-testid="ideal-loading">
       <div class="loading-logo">
         <img src="assets/img/logo-football-manager.png" alt="" />
       </div>
-      <p class="loading-text">Construyendo tu equipo ideal…</p>
-      <div class="loading-dots" aria-hidden="true">
-        <span></span><span></span><span></span>
+
+      <p class="loading-text" aria-live="polite">{{ loadingMessage() }}</p>
+
+      <div
+        class="loading-bar"
+        role="progressbar"
+        aria-label="Generando equipo ideal">
+        <div class="loading-bar__fill" [style.width.%]="loadingProgress()"></div>
       </div>
+
+      <p class="loading-count">
+        <span class="loading-count__n">{{ analyzed() }}</span> jugadores analizados
+      </p>
     </section>
   } @else if (phase() === 'pack' || phase() === 'opening') {
     <!-- ───────────── PACK (sobre 3D) ───────────── -->

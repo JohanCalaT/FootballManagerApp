@@ -35,6 +35,25 @@ type Phase = 'form' | 'loading' | 'pack' | 'opening' | 'reveal' | 'error';
 /** Duration of the pack-open animation (must match the CSS keyframes). */
 const PACK_OPEN_MS = 1100;
 
+/** Loading "hype" tuning. */
+const MIN_LOADING_MS = 1400; // floor so a fast response doesn't flash
+const STEP_INTERVAL_MS = 1700; // how often the narrated step advances
+const PROGRESS_TICK_MS = 120; // bar easing cadence
+const PROGRESS_TARGET = 88; // bar holds here until the response lands
+const COUNT_TICK_MS = 90; // "players scanned" counter cadence
+const COUNT_CAP = 99; // counter ceiling while waiting
+
+/** Narrated steps — simulate the AI "thinking" (Gemini gives no real progress). */
+const LOADING_STEPS = [
+  'Analizando jugadores…',
+  'Evaluando la defensa…',
+  'Buscando química entre líneas…',
+  'Eligiendo el once titular…',
+  'Dibujando la formación…',
+];
+/** Shown once the steps are exhausted but the response is still pending. */
+const LOADING_REASSURE = 'Afinando los últimos detalles…';
+
 /**
  * Equipo Ideal — FUT-Champions-inspired reveal flow (design-first branch).
  *
@@ -75,6 +94,19 @@ export class IdealTeamPage implements OnDestroy {
   /** Human-readable failure shown in the `error` phase. */
   protected readonly errorMessage = signal<string | null>(null);
 
+  // ── Loading "hype" state ──────────────────────────────────────────────
+  /** Index into LOADING_STEPS (climbs, then holds on the reassurance line). */
+  private readonly loadingStep = signal(0);
+  /** Narrated message for the current step. */
+  protected readonly loadingMessage = computed(() => {
+    const i = this.loadingStep();
+    return i < LOADING_STEPS.length ? LOADING_STEPS[i] : LOADING_REASSURE;
+  });
+  /** Progress bar 0..100 — eases to PROGRESS_TARGET and waits for the response. */
+  protected readonly loadingProgress = signal(0);
+  /** Simulated "players scanned" counter for movement. */
+  protected readonly analyzed = signal(0);
+
   /**
    * The eleven resolved onto the formation's pitch template (GK→DEF→MID→ATT).
    * The FRONT owns the coordinates; the backend's x/y are ignored — players
@@ -106,6 +138,7 @@ export class IdealTeamPage implements OnDestroy {
   ];
 
   private timers: ReturnType<typeof setTimeout>[] = [];
+  private fxTimers: ReturnType<typeof setInterval>[] = [];
 
   constructor() {
     addIcons({ arrowBack, sparkles, alertCircle });
@@ -113,6 +146,7 @@ export class IdealTeamPage implements OnDestroy {
 
   ngOnDestroy(): void {
     this.clearTimers();
+    this.stopLoadingFx();
   }
 
   protected goBack(): void {
@@ -124,24 +158,83 @@ export class IdealTeamPage implements OnDestroy {
     if (value) this.formation.set(value);
   }
 
-  /** Form → loading → POST /api/ideal-team → pack (or error). */
+  /** Form → loading (narrated) → POST /api/ideal-team → pack (or error). */
   protected async onGenerate(): Promise<void> {
     this.haptics.light();
     this.errorMessage.set(null);
     this.phase.set('loading');
+    this.startLoadingFx();
+    const startedAt = Date.now();
+
     try {
       const res = await this.idealTeamApi.generate({
         formation: this.formation(),
       });
       const data = res.data;
       if (!data) {
+        await this.holdMinLoading(startedAt);
         this.fail(res.message || 'No se pudo generar el equipo.');
         return;
       }
+      // Data is in — complete the bar honestly, respect the min display time.
+      this.loadingProgress.set(100);
+      await this.holdMinLoading(startedAt);
       this.team.set(data);
       this.phase.set('pack');
     } catch (err) {
+      await this.holdMinLoading(startedAt);
       this.fail(this.messageFrom(err));
+    } finally {
+      this.stopLoadingFx();
+    }
+  }
+
+  /** Drive the narrated message, the easing bar and the scan counter. */
+  private startLoadingFx(): void {
+    this.stopLoadingFx();
+    this.loadingStep.set(0);
+    this.loadingProgress.set(0);
+    this.analyzed.set(0);
+
+    // Narrated steps — advance until the reassurance line, then hold.
+    this.fxTimers.push(
+      setInterval(() => {
+        this.loadingStep.update((s) => (s < LOADING_STEPS.length ? s + 1 : s));
+        this.haptics.light();
+      }, STEP_INTERVAL_MS),
+    );
+
+    // Bar eases toward the target and holds there (never fakes 100%).
+    this.fxTimers.push(
+      setInterval(() => {
+        this.loadingProgress.update((p) =>
+          p >= 100 ? p : Math.min(PROGRESS_TARGET, p + (PROGRESS_TARGET - p) * 0.08 + 0.4),
+        );
+      }, PROGRESS_TICK_MS),
+    );
+
+    // Scan counter climbs then settles at the cap.
+    this.fxTimers.push(
+      setInterval(() => {
+        this.analyzed.update((n) =>
+          Math.min(COUNT_CAP, n + Math.ceil(Math.random() * 3)),
+        );
+      }, COUNT_TICK_MS),
+    );
+  }
+
+  private stopLoadingFx(): void {
+    this.fxTimers.forEach(clearInterval);
+    this.fxTimers = [];
+  }
+
+  /** Keep the loading visible at least MIN_LOADING_MS so it never flashes. */
+  private async holdMinLoading(startedAt: number): Promise<void> {
+    const remaining = MIN_LOADING_MS - (Date.now() - startedAt);
+    if (remaining > 0) {
+      await new Promise<void>((resolve) =>
+        this.push(setTimeout(resolve, remaining)),
+      );
     }
   }
 
@@ -235,6 +328,7 @@ export class IdealTeamPage implements OnDestroy {
 
   protected reset(): void {
     this.clearTimers();
+    this.stopLoadingFx();
     this.revealedCount.set(0);
     this.selectedPlayer.set(null);
     this.showAnalysis.set(false);

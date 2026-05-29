@@ -145,24 +145,46 @@
 
 .loading-text {
   margin: 0;
+  // Reserve height so swapping messages of different length doesn't jump.
+  min-height: 1.9rem;
   font-family: 'Chakra Petch', system-ui, sans-serif;
   font-size: 1.5rem;
   letter-spacing: 0.06em;
+  animation: ideal-fade-in 0.35s ease;
 }
 
-.loading-dots {
-  display: flex;
-  gap: 0.5rem;
+/* Neon progress bar — eases toward ~88% and holds until the response lands. */
+.loading-bar {
+  width: min(78vw, 18rem);
+  height: 6px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
 
-  span {
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 9999px;
-    background: var(--app-primary);
-    animation: ideal-bounce 1.2s ease-in-out infinite;
-  }
-  span:nth-child(2) { animation-delay: 0.15s; }
-  span:nth-child(3) { animation-delay: 0.3s; }
+.loading-bar__fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    var(--app-primary),
+    var(--app-primary-bright, #6dffb0)
+  );
+  box-shadow: 0 0 12px var(--app-primary-glow);
+  transition: width 0.25s ease-out;
+}
+
+.loading-count {
+  margin: 0;
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  color: var(--app-on-surface-soft);
+}
+
+.loading-count__n {
+  font-family: 'Chakra Petch', system-ui, sans-serif;
+  font-weight: 700;
+  color: var(--app-primary);
 }
 
 /* ───────────── ERROR ───────────── */
@@ -681,6 +703,11 @@
   40%           { transform: translateY(-6px); opacity: 1; }
 }
 
+@keyframes ideal-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes ideal-float {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-10px); }
@@ -733,8 +760,12 @@
   .loading-logo,
   .pack,
   .pack__shine,
+  .loading-text,
   .loading-dots span {
     animation: none;
+  }
+  .loading-bar__fill {
+    transition: none;
   }
   .is-opening .pack,
   .is-opening .pack__inner,
