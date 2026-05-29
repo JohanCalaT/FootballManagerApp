@@ -2,6 +2,7 @@ package com.footballmanager.news.adapter.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.footballmanager.news.adapter.dto.LimiteDto;
+import com.footballmanager.news.adapter.sse.NewsEventBroadcaster;
 import footballmanager.news.EstadoServicio;
 import footballmanager.news.LimiteInvalido;
 import footballmanager.news.ServicioNoticias;
@@ -27,6 +28,7 @@ class AdminControllerTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
     @MockBean ServicioNoticias servicio;
+    @MockBean NewsEventBroadcaster broadcaster;
 
     @Test
     void status_devuelve_envelope_y_estado() throws Exception {
@@ -43,6 +45,7 @@ class AdminControllerTest {
         mvc.perform(post("/admin/reset"))
                 .andExpect(status().isNoContent());
         verify(servicio).resetear();
+        verify(broadcaster).emitReset();
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.footballmanager.news.adapter.controller;
 
 import com.footballmanager.news.adapter.dto.NoticiaDto;
 import com.footballmanager.news.adapter.mapper.NewsMapper;
+import com.footballmanager.news.adapter.sse.NewsEventBroadcaster;
 import footballmanager.news.DatosInvalidos;
 import footballmanager.news.Noticia;
 import footballmanager.news.NoticiaNoEncontrada;
@@ -25,9 +26,11 @@ import java.util.List;
 public class NewsController {
 
     private final ServicioNoticias servicio;
+    private final NewsEventBroadcaster broadcaster;
 
-    public NewsController(ServicioNoticias servicio) {
+    public NewsController(ServicioNoticias servicio, NewsEventBroadcaster broadcaster) {
         this.servicio = servicio;
+        this.broadcaster = broadcaster;
     }
 
     @GetMapping
@@ -58,12 +61,15 @@ public class NewsController {
             corba.id = newId;
             creada = corba;
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(NewsMapper.toDto(creada));
+        NoticiaDto creadaDto = NewsMapper.toDto(creada);
+        broadcaster.emitCreated(creadaDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(creadaDto);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable String id) throws NoticiaNoEncontrada {
         servicio.eliminar(id);
+        broadcaster.emitDeleted(id);
         return ResponseEntity.noContent().build();
     }
 }
