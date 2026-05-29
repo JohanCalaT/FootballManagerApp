@@ -139,6 +139,13 @@ export const initCache = async (): Promise<CacheService> => {
   // (abortOnConnectFail=false): si no estamos listos en CONNECT_BUDGET_MS,
   // abandonamos y servimos HTTP sin cache.
   const CONNECT_BUDGET_MS = 8_000;
+  // Aspire's LOCAL Redis serves TLS with a self-signed cert, which Node
+  // rejects (DEPTH_ZERO_SELF_SIGNED_CERT) → the cache silently degraded to
+  // NO-OP. On loopback we can't verify a self-signed cert without its CA, so
+  // we skip verification there; on a real host (managed Redis in prod)
+  // verification stays ON.
+  const isLoopbackHost =
+    cfg.host === 'localhost' || cfg.host === '127.0.0.1' || cfg.host === '::1';
   let client: ReturnType<typeof createClient> | undefined;
   try {
     client = createClient({
@@ -147,7 +154,10 @@ export const initCache = async (): Promise<CacheService> => {
         port:           cfg.port,
         // `tls` aquí debe ser literal `true` o ausente — no `undefined`
         // (los types de node-redis rechazan undefined). Spread condicional.
-        ...(cfg.tls ? { tls: true as const } : {}),
+        // En loopback aceptamos el cert autofirmado de Aspire.
+        ...(cfg.tls
+          ? { tls: true as const, ...(isLoopbackHost ? { rejectUnauthorized: false } : {}) }
+          : {}),
         connectTimeout: 5_000,
         // Cap reintentos para que un fallo de AUTH no spinee para siempre.
         reconnectStrategy: (retries: number) =>
