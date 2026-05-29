@@ -124,24 +124,35 @@ describe('PlayersListComponent (home container)', () => {
     expect(navigate).toHaveBeenCalledOnceWith(['/players', '99']);
   });
 
-  it('notifies coming-soon for each action-bar button', async () => {
+  it('notifies coming-soon for the publish-news placeholder', async () => {
     await setup();
     setSession({ uid: 'a', email: 'a@b.com', displayName: 'A', role: 'admin' }, 'tok');
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
 
-    // onImport opens a real modal; onInsert routes to /players/new;
-    // edit/delete now route to /players/:id/edit — all covered by their
-    // own specs below. Here we only verify the remaining placeholders.
-    fixture.componentInstance['onIdealTeam']();
+    // onImport opens a real modal; onInsert routes to /players/new; onIdealTeam
+    // now routes to /ideal-team — all covered by their own specs. Publish news
+    // is the remaining placeholder.
     fixture.componentInstance['onPublishNews']();
 
     const calls = comingSoon.notify.calls.allArgs().map((c) => c[0]);
-    expect(calls).toEqual([
-      'Equipo Ideal',
-      'Publicar noticia',
-    ]);
+    expect(calls).toEqual(['Publicar noticia']);
+  });
+
+  it('navigates to /ideal-team when the ideal-team action fires', async () => {
+    await setup();
+    setSession({ uid: 'a', email: 'a@b.com', displayName: 'A', role: 'admin' }, 'tok');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const router = TestBed.inject(Router);
+    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+
+    fixture.componentInstance['onIdealTeam']();
+
+    expect(navigate).toHaveBeenCalledOnceWith(['/ideal-team']);
   });
 
   it('navigates to /players/new when the insert action fires', async () => {
