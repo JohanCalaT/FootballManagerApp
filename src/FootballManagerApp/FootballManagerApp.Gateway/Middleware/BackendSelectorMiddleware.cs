@@ -16,9 +16,11 @@ public sealed class BackendSelectorMiddleware
 
     private static readonly (string Method, string Path)[] AlwaysDotnetPrefixes =
     {
+        // Read-only API-Football proxies that only exist in .NET. Import is NOT
+        // here: it persists players, so it must follow the toggle (Node imports
+        // into MongoDB via its own apiFootball integration).
         ("GET",  "/api/players/search-external"),
         ("GET",  "/api/players/seasons/"),
-        ("POST", "/api/players/import"),
     };
 
     private readonly RequestDelegate _next;
