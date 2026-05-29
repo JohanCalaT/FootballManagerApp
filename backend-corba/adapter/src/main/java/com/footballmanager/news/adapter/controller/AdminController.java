@@ -3,6 +3,7 @@ package com.footballmanager.news.adapter.controller;
 import com.footballmanager.news.adapter.dto.EstadoDto;
 import com.footballmanager.news.adapter.dto.LimiteDto;
 import com.footballmanager.news.adapter.mapper.NewsMapper;
+import com.footballmanager.news.adapter.sse.NewsEventBroadcaster;
 import footballmanager.news.LimiteInvalido;
 import footballmanager.news.ServicioNoticias;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +21,11 @@ import javax.validation.Valid;
 public class AdminController {
 
     private final ServicioNoticias servicio;
+    private final NewsEventBroadcaster broadcaster;
 
-    public AdminController(ServicioNoticias servicio) {
+    public AdminController(ServicioNoticias servicio, NewsEventBroadcaster broadcaster) {
         this.servicio = servicio;
+        this.broadcaster = broadcaster;
     }
 
     @GetMapping("/status")
@@ -33,6 +36,7 @@ public class AdminController {
     @PostMapping("/reset")
     public ResponseEntity<Void> reset() {
         servicio.resetear();
+        broadcaster.emitReset();
         return ResponseEntity.noContent().build();
     }
 

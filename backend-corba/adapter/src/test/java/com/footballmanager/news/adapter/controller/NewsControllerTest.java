@@ -2,6 +2,7 @@ package com.footballmanager.news.adapter.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.footballmanager.news.adapter.dto.NoticiaDto;
+import com.footballmanager.news.adapter.sse.NewsEventBroadcaster;
 import footballmanager.news.Noticia;
 import footballmanager.news.NoticiaNoEncontrada;
 import footballmanager.news.ServicioNoticias;
@@ -30,6 +31,7 @@ class NewsControllerTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
     @MockBean ServicioNoticias servicio;
+    @MockBean NewsEventBroadcaster broadcaster;
 
     @Test
     void listar_vacio_devuelve_envelope_success() throws Exception {
@@ -84,6 +86,10 @@ class NewsControllerTest {
         ArgumentCaptor<Noticia> cap = ArgumentCaptor.forClass(Noticia.class);
         verify(servicio).publicar(cap.capture());
         assertThat(cap.getValue().titulo).isEqualTo("t");
+
+        ArgumentCaptor<NoticiaDto> emitted = ArgumentCaptor.forClass(NoticiaDto.class);
+        verify(broadcaster).emitCreated(emitted.capture());
+        assertThat(emitted.getValue().getId()).isEqualTo("generated-id");
     }
 
     @Test
@@ -103,6 +109,7 @@ class NewsControllerTest {
     void delete_no_content() throws Exception {
         mvc.perform(delete("/news/abc"))
                 .andExpect(status().isNoContent());
+        verify(broadcaster).emitDeleted("abc");
     }
 
     @Test

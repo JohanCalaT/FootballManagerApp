@@ -1,0 +1,81 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button (click)="goBack()" data-testid="news-back">
+        <ion-icon name="chevron-back-outline" aria-hidden="true"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Noticias</ion-title>
+    <ion-buttons slot="end">
+      <span
+        class="news-live"
+        [class.news-live--on]="store.live()"
+        data-testid="news-live"
+        [attr.aria-label]="store.live() ? 'En vivo' : 'Sin conexión en vivo'">
+        <span class="news-live__dot" aria-hidden="true"></span>
+        {{ store.live() ? 'En vivo' : 'Offline' }}
+      </span>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @if (store.isInitialLoad()) {
+    <div class="news-state" data-testid="news-loading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Cargando noticias…</p>
+    </div>
+  } @else if (store.error()) {
+    <div class="news-state" data-testid="news-error">
+      <ion-icon name="cloud-offline-outline" aria-hidden="true"></ion-icon>
+      <p>{{ store.error() }}</p>
+    </div>
+  } @else if (store.isEmpty()) {
+    <div class="news-state" data-testid="news-empty">
+      <ion-icon name="newspaper-outline" aria-hidden="true"></ion-icon>
+      <p>Todavía no hay noticias.</p>
+    </div>
+  } @else {
+    <ul class="news-list" data-testid="news-list">
+      @for (noticia of store.news(); track noticia.id) {
+        <li class="news-card" data-testid="news-card">
+          @if (noticia.imagenUrl) {
+            <img
+              class="news-card__img"
+              [src]="noticia.imagenUrl"
+              [alt]="noticia.titulo"
+              loading="lazy" />
+          }
+          <div class="news-card__body">
+            <h2 class="news-card__title">{{ noticia.titulo }}</h2>
+            <p class="news-card__meta">
+              {{ noticia.autor }} · {{ formatDate(noticia.fechaPub) }}
+            </p>
+            <p class="news-card__content">{{ noticia.contenido }}</p>
+          </div>
+          @if (isAdmin()) {
+            <ion-button
+              fill="clear"
+              color="danger"
+              size="small"
+              class="news-card__delete"
+              (click)="onDelete(noticia)"
+              data-testid="news-delete-button">
+              <ion-icon name="trash-outline" slot="icon-only" aria-hidden="true"></ion-icon>
+            </ion-button>
+          }
+        </li>
+      }
+    </ul>
+  }
+
+  @if (isAdmin()) {
+    <ion-button
+      class="news-fab"
+      (click)="goToPublish()"
+      data-testid="news-publish-fab">
+      <ion-icon name="add-outline" slot="start" aria-hidden="true"></ion-icon>
+      Publicar
+    </ion-button>
+  }
+</ion-content>

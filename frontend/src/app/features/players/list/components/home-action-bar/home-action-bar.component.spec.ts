@@ -25,12 +25,13 @@ describe('HomeActionBarComponent', () => {
 
   afterEach(() => clearSession());
 
-  it('shows 3 base buttons by default', () => {
+  it('shows the base buttons by default (no admin button)', () => {
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('[data-testid=home-import-button]')).toBeTruthy();
     expect(el.querySelector('[data-testid=home-insert-button]')).toBeTruthy();
     expect(el.querySelector('[data-testid=home-ideal-team-button]')).toBeTruthy();
+    expect(el.querySelector('[data-testid=home-news-button]')).toBeTruthy();
     expect(el.querySelector('[data-testid=home-publish-news-button]')).toBeFalsy();
   });
 
@@ -45,6 +46,14 @@ describe('HomeActionBarComponent', () => {
     const spy = jasmine.createSpy();
     fixture.componentInstance.importRequested.subscribe(spy);
     (fixture.nativeElement.querySelector('[data-testid=home-import-button]') as HTMLElement).click();
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('emits newsRequested when the news button is clicked', () => {
+    fixture.detectChanges();
+    const spy = jasmine.createSpy();
+    fixture.componentInstance.newsRequested.subscribe(spy);
+    (fixture.nativeElement.querySelector('[data-testid=home-news-button]') as HTMLElement).click();
     expect(spy).toHaveBeenCalled();
   });
 });

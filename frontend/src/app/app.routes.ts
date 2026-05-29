@@ -46,6 +46,27 @@ export const routes: Routes = [
       ),
   },
   {
+    // Real-time news feed (registered users). The SSE stream itself is public,
+    // but the guard keeps the page behind auth like the rest of the registered
+    // surface; admins also get publish/delete affordances inside.
+    path: 'news',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/news/news.page').then((m) => m.NewsPage),
+  },
+  {
+    path: 'news/publish',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./features/news/news-publish.page').then((m) => m.NewsPublishPage),
+  },
+  {
+    path: 'news/admin',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./features/news/news-admin.page').then((m) => m.NewsAdminPage),
+  },
+  {
     path: 'players/new',
     canActivate: [authGuard],
     loadComponent: () =>

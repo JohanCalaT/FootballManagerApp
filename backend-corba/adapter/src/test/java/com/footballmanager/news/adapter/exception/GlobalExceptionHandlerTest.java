@@ -3,6 +3,7 @@ package com.footballmanager.news.adapter.exception;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.footballmanager.news.adapter.controller.NewsController;
 import com.footballmanager.news.adapter.dto.NoticiaDto;
+import com.footballmanager.news.adapter.sse.NewsEventBroadcaster;
 import footballmanager.news.DatosInvalidos;
 import footballmanager.news.NoticiaNoEncontrada;
 import footballmanager.news.ServicioNoticias;
@@ -27,6 +28,7 @@ class GlobalExceptionHandlerTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
     @MockBean ServicioNoticias servicio;
+    @MockBean NewsEventBroadcaster broadcaster;
 
     @Test
     void noticia_no_encontrada_404() throws Exception {

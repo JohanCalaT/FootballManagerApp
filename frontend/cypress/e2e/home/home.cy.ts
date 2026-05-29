@@ -68,7 +68,7 @@ describe('Players · Home', () => {
   // wiring is flaky in Edge headless CI. Once the detail route ships, a
   // cy.location('pathname') assertion replaces this gap.
 
-  it('shows the coming-soon toast for the import button when authenticated', () => {
+  it('opens the import dialog when the import button is clicked while authenticated', () => {
     cy.seedUser(users.seeded.email, users.seeded.password, users.seeded.displayName);
     cy.visitApp('/auth/login');
     cy.get('[data-testid=login-email-input]').type(users.seeded.email);
@@ -77,6 +77,8 @@ describe('Players · Home', () => {
     cy.location('pathname').should('eq', '/players');
     cy.wait('@listPage1');
     cy.get('[data-testid=home-import-button]').click();
+    // Import is no longer a coming-soon placeholder: it opens the real
+    // API-Football import modal (title "Importar jugadores").
     cy.contains('Importar jugadores').should('be.visible');
   });
 

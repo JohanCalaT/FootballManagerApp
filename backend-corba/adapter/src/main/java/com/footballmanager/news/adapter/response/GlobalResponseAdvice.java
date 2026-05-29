@@ -7,6 +7,7 @@ import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * Envuelve toda respuesta de los controllers en ApiEnvelope.
@@ -29,6 +30,10 @@ public class GlobalResponseAdvice implements ResponseBodyAdvice<Object> {
                                   ServerHttpRequest request,
                                   ServerHttpResponse response) {
         if (body instanceof ApiEnvelope) {
+            return body;
+        }
+        if (body instanceof SseEmitter) {
+            // El stream SSE no se envuelve: es text/event-stream, no JSON.
             return body;
         }
         if (body == null) {
