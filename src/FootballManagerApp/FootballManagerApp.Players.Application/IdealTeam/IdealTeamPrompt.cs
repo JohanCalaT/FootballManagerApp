@@ -68,6 +68,12 @@ public static class IdealTeamPrompt
         sb.AppendLine("5. Si no hay suficientes en una posición,");
         sb.AppendLine("   adapta jugadores de posición similar");
         sb.AppendLine("6. El id debe ser exactamente el de la lista");
+        sb.AppendLine("7. Para CADA jugador añade atributos estilo FUT,");
+        sb.AppendLine("   enteros de 0 a 99, coherentes con su nivel:");
+        sb.AppendLine("   overall, pac, sho, pas, dri, def, phy.");
+        sb.AppendLine("   overall ~ rating*10 (rating 8.5 -> ~85).");
+        sb.AppendLine("   En porteros estos 6 valores representan");
+        sb.AppendLine("   DIV, HAN, KIC, REF, SPD, POS en ese orden.");
         sb.AppendLine();
 
         sb.AppendLine("COORDENADAS:");
@@ -100,7 +106,9 @@ public static class IdealTeamPrompt
         sb.AppendLine("    \"position\": \"GK\",");
         sb.AppendLine("    \"x\": 0.5,");
         sb.AppendLine("    \"y\": 0.05,");
-        sb.AppendLine("    \"reason\": \"justificación\"");
+        sb.AppendLine("    \"reason\": \"justificación\",");
+        sb.AppendLine("    \"overall\": 0, \"pac\": 0, \"sho\": 0,");
+        sb.AppendLine("    \"pas\": 0, \"dri\": 0, \"def\": 0, \"phy\": 0");
         sb.AppendLine("  },");
         sb.AppendLine("  \"defenders\":   [ /* mismo shape, position ∈ {CB,LB,RB,LWB,RWB} */ ],");
         sb.AppendLine("  \"midfielders\": [ /* mismo shape, position ∈ {CDM,CM,CAM,LM,RM}  */ ],");

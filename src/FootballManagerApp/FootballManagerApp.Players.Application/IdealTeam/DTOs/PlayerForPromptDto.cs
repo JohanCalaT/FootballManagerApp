@@ -12,6 +12,11 @@ public sealed record PlayerForPromptDto
     public required string Team { get; init; }
     public required string Position { get; init; }
 
+    // Used to enrich the AI response (the card portrait + nationality);
+    // never sent into the prompt.
+    public string? ImageUrl { get; init; }
+    public string? Nationality { get; init; }
+
     public decimal? AverageRating { get; init; }
     public int TotalGoals { get; init; }
     public int TotalAssists { get; init; }

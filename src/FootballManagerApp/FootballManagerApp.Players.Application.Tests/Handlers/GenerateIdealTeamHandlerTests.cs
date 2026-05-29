@@ -100,11 +100,10 @@ public class GenerateIdealTeamHandlerTests
     }
 
     [Fact]
-    public async Task Forwards_to_Gemini_even_without_goalkeeper()
+    public async Task Returns_400_when_no_goalkeeper_in_database()
     {
-        // Por diseño no validamos por línea — confiamos en la regla 5 del
-        // prompt ("adapta jugadores de posición similar"). Si el set no
-        // tiene portero, Gemini recibe la lista igual y decide.
+        // Portero obligatorio: con 11+ jugadores pero ningún portero el handler
+        // corta con 400 y NO llama a Gemini.
         var players = ElevenPlayersFor433();
         players.RemoveAll(p => p.Position == "Goalkeeper");
         players.Add(P("Defender", Guid.NewGuid().ToString()));
@@ -114,19 +113,14 @@ public class GenerateIdealTeamHandlerTests
             .ReturnsAsync(players);
 
         var gemini = new Mock<IGeminiService>();
-        gemini.Setup(g => g.GenerateIdealTeamAsync(
-                It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(FakeGeminiResponse(players));
 
         var r = await Build(repo, gemini)
             .HandleAsync(new GenerateIdealTeamDto("4-3-3"), "u", default);
 
-        // El handler no falla; el prompt incluyó "(ninguno)" en PORTEROS
-        // y Gemini eligió un improvisado de la lista de defensas.
+        r.Status.Should().Be(400);
+        r.Message.Should().Contain("porteros");
         gemini.Verify(g => g.GenerateIdealTeamAsync(
-            It.Is<string>(p => p.Contains("(ninguno)")),
-            It.IsAny<CancellationToken>()), Times.Once);
-        r.Status.Should().Be(200);
+            It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

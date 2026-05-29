@@ -158,6 +158,8 @@ public class PlayerRepository : IPlayerRepository
                 Name             = p.Name,
                 Team             = p.Team,
                 Position         = p.Position ?? "Unknown",
+                ImageUrl         = p.ImageUrl,
+                Nationality      = p.Nationality,
                 AverageRating    = p.Statistics
                     .Where(s => s.Rating != null)
                     .Average(s => (decimal?)s.Rating),
