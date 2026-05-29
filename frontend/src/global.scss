@@ -46,7 +46,8 @@ body {
   color: var(--app-on-surface);
 }
 
-// Gridiron Neon toast — used by ComingSoonService and any future global notice.
+// Gridiron Neon toast — shared by all global ion-toast notices (publish,
+// backend switch, form feedback, etc.).
 // Lives here because Ionic renders ion-toast in an overlay outside the component
 // tree, so a scoped style cannot reach the shadow root.
 .fma-toast {
