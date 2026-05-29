@@ -7,6 +7,7 @@ import {
 import { Router } from '@angular/router';
 import {
   AlertController,
+  IonBackButton,
   IonButton,
   IonButtons,
   IonContent,
@@ -36,6 +37,7 @@ import { isAdmin } from '../../core/state/auth.signal';
   host: { class: 'ion-page' },
   providers: [NewsStore],
   imports: [
+    IonBackButton,
     IonButton,
     IonButtons,
     IonContent,
@@ -70,10 +72,6 @@ export class NewsPage implements OnInit {
           hour: '2-digit',
           minute: '2-digit',
         });
-  }
-
-  protected goBack(): void {
-    void this.router.navigate(['/players']);
   }
 
   protected goToPublish(): void {

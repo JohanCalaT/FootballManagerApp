@@ -1,9 +1,7 @@
 <ion-header class="ion-no-border">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-button (click)="goBack()" data-testid="news-back">
-        <ion-icon name="chevron-back-outline" aria-hidden="true"></ion-icon>
-      </ion-button>
+      <ion-back-button defaultHref="/players" text="Volver" data-testid="news-back"></ion-back-button>
     </ion-buttons>
     <ion-title>Noticias</ion-title>
     <ion-buttons slot="end">
@@ -52,18 +50,21 @@
               {{ noticia.autor }} · {{ formatDate(noticia.fechaPub) }}
             </p>
             <p class="news-card__content">{{ noticia.contenido }}</p>
+
+            @if (isAdmin()) {
+              <div class="news-card__admin">
+                <ion-button
+                  fill="outline"
+                  color="danger"
+                  size="small"
+                  (click)="onDelete(noticia)"
+                  data-testid="news-delete-button">
+                  <ion-icon name="trash-outline" slot="start" aria-hidden="true"></ion-icon>
+                  Eliminar
+                </ion-button>
+              </div>
+            }
           </div>
-          @if (isAdmin()) {
-            <ion-button
-              fill="clear"
-              color="danger"
-              size="small"
-              class="news-card__delete"
-              (click)="onDelete(noticia)"
-              data-testid="news-delete-button">
-              <ion-icon name="trash-outline" slot="icon-only" aria-hidden="true"></ion-icon>
-            </ion-button>
-          }
         </li>
       }
     </ul>

@@ -102,12 +102,10 @@
     white-space: pre-line;
   }
 
-  &__delete {
-    position: absolute;
-    top: 6px;
-    inset-inline-end: 6px;
-    --background: rgba(0, 0, 0, 0.35);
-    --border-radius: 50%;
+  &__admin {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
   }
 }
 
