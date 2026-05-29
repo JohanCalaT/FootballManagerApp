@@ -28,7 +28,6 @@ public class BackendSelectorMiddlewareTests
     [Theory]
     [InlineData("GET",  "/api/players/search-external")]
     [InlineData("GET",  "/api/players/seasons/42")]
-    [InlineData("POST", "/api/players/import")]
     public async Task AlwaysDotnetRoutes_DoNotStampBackendTarget(string method, string path)
     {
         var (mw, factory) = Build(active: "node");
@@ -61,6 +60,22 @@ public class BackendSelectorMiddlewareTests
 
         ctx.Request.Headers[BackendSelectorMiddleware.BackendTargetHeader]
             .ToString().Should().Be(expectedHeader);
+    }
+
+    [Theory]
+    [InlineData("dotnet", "dotnet")]
+    [InlineData("node", "node")]
+    public async Task ImportRoute_FollowsActiveBackend(string active, string expected)
+    {
+        // Import persists players, so it must honour the toggle (Node imports
+        // into MongoDB) instead of being hard-pinned to .NET.
+        var (mw, factory) = Build(active);
+
+        var ctx = NewContext("POST", "/api/players/import");
+        await mw.InvokeAsync(ctx, factory);
+
+        ctx.Request.Headers[BackendSelectorMiddleware.BackendTargetHeader]
+            .ToString().Should().Be(expected);
     }
 
     [Fact]

@@ -385,7 +385,15 @@ const buildPlayerFromApi = (
   const height = cleanLabel(profile.height); if (height) player.height = height;
   const weight = cleanLabel(profile.weight); if (weight) player.weight = weight;
   if (typeof profile.injured === 'boolean') player.injured = profile.injured;
-  const position = normalizePosition(profile.position);
+  // API-Football does NOT expose a position on the player object — it lives in
+  // statistics[].games.position. Mirror .NET's fallback chain so imported
+  // players get a real position (otherwise they'd be dropped from ideal-team):
+  // player.position → primary stat games.position → first stat with a position.
+  const rawPosition =
+    profile.position
+    ?? primary.games?.position
+    ?? data.statistics.find((s) => cleanLabel(s.games?.position))?.games?.position;
+  const position = normalizePosition(rawPosition);
   if (position) player.position = position;
   if (typeof profile.number === 'number') player.shirtNumber = profile.number;
   if (profile.photo) player.imageUrl = profile.photo;
