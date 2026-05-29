@@ -3,6 +3,8 @@ import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angul
 import { AlertController, ModalController, ToastController } from '@ionic/angular/standalone';
 
 import { AuthService } from '../../../core/services/auth.service';
+import { BackendSwitchService } from '../../../core/services/backend-switch.service';
+import { setBackend } from '../../../core/state/backend-choice.signal';
 import { PlayersApi } from '../../../core/api/players.api';
 import { PagedResponse } from '../../../core/models/api-response.model';
 import { PlayerListItem } from '../../../core/models/player.model';
@@ -68,13 +70,27 @@ describe('PlayersListComponent (home container)', () => {
           provide: ActivatedRoute,
           useValue: { snapshot: { queryParamMap: convertToParamMap({}) } },
         },
+        {
+          provide: BackendSwitchService,
+          useValue: jasmine.createSpyObj('BackendSwitchService', [
+            'toggle',
+            'sync',
+            'switchTo',
+          ]),
+        },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(PlayersListComponent);
   }
 
-  beforeEach(() => clearSession());
-  afterEach(() => clearSession());
+  beforeEach(() => {
+    clearSession();
+    setBackend('dotnet');
+  });
+  afterEach(() => {
+    clearSession();
+    setBackend('dotnet');
+  });
 
   it('loads page 1 on init and renders the header + grid', async () => {
     await setup();
@@ -103,6 +119,20 @@ describe('PlayersListComponent (home container)', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[data-testid=home-action-bar]')).toBeTruthy();
+  });
+
+  it('reloads the grid when the active backend changes', async () => {
+    await setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const before = api.listPage.calls.count();
+    setBackend('node');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(api.listPage.calls.count()).toBeGreaterThan(before);
   });
 
   it('navigates to /players/:id when a player tile is selected', async () => {

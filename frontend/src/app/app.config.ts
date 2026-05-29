@@ -11,7 +11,6 @@ import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular/standalo
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/http/auth.interceptor';
-import { backendTargetInterceptor } from './core/http/backend-target.interceptor';
 import { errorInterceptor } from './core/http/error.interceptor';
 import { GATEWAY_URL } from './core/tokens/gateway-url.token';
 import { environment } from '../environments/environment';
@@ -31,7 +30,7 @@ export const appConfig: ApplicationConfig = {
     ),
     provideHttpClient(
       withFetch(),
-      withInterceptors([authInterceptor, backendTargetInterceptor, errorInterceptor]),
+      withInterceptors([authInterceptor, errorInterceptor]),
     ),
     { provide: GATEWAY_URL, useValue: environment.gatewayUrl },
   ],

@@ -12,6 +12,7 @@ import { PlayersApi } from '../../../core/api/players.api';
 import { AuthService } from '../../../core/services/auth.service';
 import { PlayerListItem } from '../../../core/models/player.model';
 import { isAdmin, isAuthenticated } from '../../../core/state/auth.signal';
+import { backendChoice } from '../../../core/state/backend-choice.signal';
 import { playersListNeedsRefresh } from '../../../core/state/players-list.signal';
 
 import { ImportPlayersDialogComponent } from '../import/import-players-dialog.component';
@@ -53,6 +54,7 @@ export class PlayersListComponent implements OnInit {
   // the synchronous initial fire (ngOnInit already loads the list once)
   // and only react to actual login/logout/admin-claim transitions.
   private lastAuthFingerprint: string | null = null;
+  private lastBackend: string | null = null;
 
   constructor() {
     // HATEOAS affordances on each PlayerListItem (_links.update, .delete)
@@ -70,6 +72,21 @@ export class PlayersListComponent implements OnInit {
       }
       if (this.lastAuthFingerprint === fingerprint) return;
       this.lastAuthFingerprint = fingerprint;
+      void this.store.reload(this.store.query());
+    });
+
+    // Switching the active backend (.NET <-> Node) swaps the whole dataset
+    // (independent databases), so re-fetch the current view against it. The
+    // BackendSwitchService flips `backendChoice` only after the Gateway
+    // confirms the change via /config/backend.
+    effect(() => {
+      const backend = backendChoice();
+      if (this.lastBackend === null) {
+        this.lastBackend = backend;
+        return;
+      }
+      if (this.lastBackend === backend) return;
+      this.lastBackend = backend;
       void this.store.reload(this.store.query());
     });
   }
