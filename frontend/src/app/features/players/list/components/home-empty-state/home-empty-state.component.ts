@@ -26,7 +26,9 @@ export class HomeEmptyStateComponent {
       case 'error':
         return 'No se pudo cargar';
       case 'no-results':
-        return `Sin resultados para «${this.query()}»`;
+        return this.query()
+          ? `Sin resultados para «${this.query()}»`
+          : 'Sin resultados con los filtros aplicados';
       case 'no-data':
       default:
         return 'Aún no hay jugadores';

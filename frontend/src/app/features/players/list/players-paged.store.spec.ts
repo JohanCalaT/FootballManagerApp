@@ -37,26 +37,41 @@ describe('PlayersPagedStore', () => {
   let api: jasmine.SpyObj<PlayersApi>;
 
   beforeEach(() => {
-    api = jasmine.createSpyObj<PlayersApi>('PlayersApi', ['listPage', 'searchPage']);
+    api = jasmine.createSpyObj<PlayersApi>('PlayersApi', [
+      'listPage',
+      'searchPage',
+      'searchFilteredPage',
+    ]);
     TestBed.configureTestingModule({
       providers: [PlayersPagedStore, { provide: PlayersApi, useValue: api }],
     });
     store = TestBed.inject(PlayersPagedStore);
   });
 
-  it('loads page 1 via listPage when query is empty', async () => {
+  it('loads page 1 via listPage when there are no filters', async () => {
     api.listPage.and.resolveTo(pagedResponse([makePlayer('1', 'Messi')], 1, 1));
-    await store.reload('');
+    await store.reload({});
     expect(api.listPage).toHaveBeenCalledOnceWith(1, 20);
     expect(store.players().length).toBe(1);
     expect(store.total()).toBe(1);
     expect(store.allLoaded()).toBeTrue();
+    expect(store.hasActiveFilters()).toBeFalse();
   });
 
-  it('loads page 1 via searchPage when query is set', async () => {
-    api.searchPage.and.resolveTo(pagedResponse([makePlayer('1', 'Messi')], 1, 1));
-    await store.reload('mes');
-    expect(api.searchPage).toHaveBeenCalledOnceWith('mes', 1, 20);
+  it('loads page 1 via searchFilteredPage when a name filter is set', async () => {
+    api.searchFilteredPage.and.resolveTo(pagedResponse([makePlayer('1', 'Messi')], 1, 1));
+    await store.reload({ name: 'mes' });
+    expect(api.searchFilteredPage).toHaveBeenCalledOnceWith({ name: 'mes' }, 1, 20);
+    expect(store.query()).toBe('mes');
+    expect(store.hasActiveFilters()).toBeTrue();
+  });
+
+  it('searches via searchFilteredPage with team-only filter and counts it', async () => {
+    api.searchFilteredPage.and.resolveTo(pagedResponse([], 1, 0));
+    await store.reload({ team: 'FC Barcelona' });
+    expect(api.searchFilteredPage).toHaveBeenCalledOnceWith({ team: 'FC Barcelona' }, 1, 20);
+    expect(store.hasActiveFilters()).toBeTrue();
+    expect(store.activeFilterCount()).toBe(1);
   });
 
   it('appends results from subsequent loadMore calls', async () => {
@@ -70,7 +85,7 @@ describe('PlayersPagedStore', () => {
       ),
     );
 
-    await store.reload('');
+    await store.reload({});
     await store.loadMore();
     await store.loadMore();
 
@@ -81,14 +96,14 @@ describe('PlayersPagedStore', () => {
 
   it('no-ops loadMore when all items are loaded', async () => {
     api.listPage.and.resolveTo(pagedResponse([makePlayer('1', 'A')], 1, 1));
-    await store.reload('');
+    await store.reload({});
     await store.loadMore();
     expect(api.listPage).toHaveBeenCalledTimes(1);
   });
 
   it('captures the error message and stops loading on failure', async () => {
     api.listPage.and.rejectWith(new Error('boom'));
-    await store.reload('');
+    await store.reload({});
     expect(store.error()).toBe('boom');
     expect(store.loading()).toBeFalse();
     expect(store.players()).toEqual([]);
@@ -96,9 +111,9 @@ describe('PlayersPagedStore', () => {
 
   it('clears previous state when reload runs again', async () => {
     api.listPage.and.resolveTo(pagedResponse([makePlayer('1', 'A')], 1, 5));
-    await store.reload('');
-    api.searchPage.and.resolveTo(pagedResponse([makePlayer('9', 'Z')], 1, 1));
-    await store.reload('z');
+    await store.reload({});
+    api.searchFilteredPage.and.resolveTo(pagedResponse([makePlayer('9', 'Z')], 1, 1));
+    await store.reload({ name: 'z' });
     expect(store.players().map((p) => p.id)).toEqual(['9']);
     expect(store.total()).toBe(1);
   });

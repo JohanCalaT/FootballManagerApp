@@ -14,13 +14,19 @@
       (publishNewsRequested)="onPublishNews()" />
   }
 
-  <app-home-search (queryChange)="onSearchQueryChange($event)" />
+  <app-home-search
+    [filters]="store.filters()"
+    [filterCount]="store.activeFilterCount()"
+    (queryChange)="onSearchQueryChange($event)"
+    (filtersRequested)="openFilters()"
+    (filterRemoved)="removeFilter($event)" />
 
   <app-home-grid
     [players]="store.players()"
     [loading]="store.loading()"
     [error]="store.error()"
     [query]="store.query()"
+    [hasFilters]="store.hasActiveFilters()"
     [allLoaded]="store.allLoaded()"
     [canRegister]="canRegister()"
     (playerSelected)="onPlayerSelected($event)"

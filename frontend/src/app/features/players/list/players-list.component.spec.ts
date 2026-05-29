@@ -41,10 +41,12 @@ describe('PlayersListComponent (home container)', () => {
     api = jasmine.createSpyObj<PlayersApi>('PlayersApi', [
       'listPage',
       'searchPage',
+      'searchFilteredPage',
       'delete',
     ]);
     api.listPage.and.resolveTo(paged([makePlayer('1'), makePlayer('2')], 2));
     api.searchPage.and.resolveTo(paged([], 0));
+    api.searchFilteredPage.and.resolveTo(paged([], 0));
     alertCtrl = jasmine.createSpyObj<AlertController>('AlertController', ['create']);
     toastCtrl = jasmine.createSpyObj<ToastController>('ToastController', ['create']);
     toastCtrl.create.and.resolveTo({
@@ -147,6 +149,32 @@ describe('PlayersListComponent (home container)', () => {
     fixture.componentInstance['onPlayerSelected'](makePlayer('99'));
 
     expect(navigate).toHaveBeenCalledOnceWith(['/players', '99']);
+  });
+
+  it('searches by name via the full filter endpoint', async () => {
+    await setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance['onSearchQueryChange']('messi');
+    await fixture.whenStable();
+
+    expect(api.searchFilteredPage).toHaveBeenCalledWith({ name: 'messi' }, 1, 20);
+    expect(fixture.componentInstance['store'].filters().name).toBe('messi');
+  });
+
+  it('removes a filter chip and reloads without it', async () => {
+    await setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    await fixture.componentInstance['store'].reload({ name: 'messi', team: 'Barça' });
+    expect(fixture.componentInstance['store'].activeFilterCount()).toBe(1);
+
+    fixture.componentInstance['removeFilter']('team');
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance['store'].filters()).toEqual({ name: 'messi' });
   });
 
   it('navigates to /news/publish when the publish-news action fires', async () => {

@@ -77,6 +77,32 @@ describe('HomeSearchComponent', () => {
     expect(emitted).toEqual(['abc', '']);
   }));
 
+  it('emits filtersRequested when the Filtros button is clicked', () => {
+    setup();
+    fixture.detectChanges();
+    const spy = jasmine.createSpy();
+    fixture.componentInstance.filtersRequested.subscribe(spy);
+    (fixture.nativeElement.querySelector('[data-testid=home-filters-button]') as HTMLElement).click();
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('renders a chip per active filter and emits filterRemoved on click', () => {
+    setup();
+    fixture.componentRef.setInput('filters', { team: 'Barça', from: '2024-01-01' });
+    fixture.componentRef.setInput('filterCount', 2);
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('[data-testid=chip-team]')).toBeTruthy();
+    expect(el.querySelector('[data-testid=chip-alta]')).toBeTruthy();
+    expect(el.querySelector('[data-testid=home-filters-badge]')?.textContent?.trim()).toBe('2');
+
+    const removed: string[] = [];
+    fixture.componentInstance.filterRemoved.subscribe((k) => removed.push(k));
+    (el.querySelector('[data-testid=chip-team]') as HTMLElement).click();
+    expect(removed).toEqual(['team']);
+  });
+
   it('updates the URL ?q= on each emission', fakeAsync(() => {
     setup();
     fixture.detectChanges();

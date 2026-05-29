@@ -1,0 +1,56 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>Filtros</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="cancel()" data-testid="filters-close" aria-label="Cerrar">✕</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-item>
+    <ion-input
+      label="Equipo"
+      labelPlacement="stacked"
+      placeholder="FC Barcelona"
+      [(ngModel)]="team"
+      data-testid="filter-team"></ion-input>
+  </ion-item>
+  <ion-item>
+    <ion-input
+      label="Liga"
+      labelPlacement="stacked"
+      placeholder="La Liga"
+      [(ngModel)]="league"
+      data-testid="filter-league"></ion-input>
+  </ion-item>
+  <ion-item>
+    <ion-input
+      type="date"
+      label="Alta desde"
+      labelPlacement="stacked"
+      [(ngModel)]="from"
+      data-testid="filter-from"></ion-input>
+  </ion-item>
+  <ion-item>
+    <ion-input
+      type="date"
+      label="Alta hasta"
+      labelPlacement="stacked"
+      [(ngModel)]="to"
+      data-testid="filter-to"></ion-input>
+  </ion-item>
+</ion-content>
+
+<ion-footer class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons>
+      <ion-button (click)="clear()" data-testid="filters-clear">Limpiar</ion-button>
+    </ion-buttons>
+    <ion-buttons slot="end">
+      <ion-button fill="solid" color="primary" (click)="apply()" data-testid="filters-apply">
+        Aplicar
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-footer>
