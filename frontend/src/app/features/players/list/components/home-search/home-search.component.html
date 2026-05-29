@@ -6,11 +6,12 @@
         <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
       </svg>
       <input
+        #searchInput
         type="search"
         class="home-search__input"
         placeholder="Buscar por nombre…"
         [value]="draft()"
-        (input)="onInput($any($event.target).value)"
+        (input)="onInput(searchInput.value)"
         autocomplete="off"
         data-testid="home-search-input" />
       @if (draft()) {
