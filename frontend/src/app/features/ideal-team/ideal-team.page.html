@@ -87,6 +87,22 @@
         <p class="pack-hint">Toca el sobre para revelarlo</p>
       }
     </section>
+  } @else if (phase() === 'error') {
+    <!-- ───────────── ERROR ───────────── -->
+    <section class="stage stage--error" data-testid="ideal-error">
+      <div class="error-card">
+        <ion-icon name="alert-circle" class="error-icon" aria-hidden="true"></ion-icon>
+        <h2 class="error-title">No se pudo generar</h2>
+        <p class="error-msg">{{ errorMessage() }}</p>
+        <ion-button
+          expand="block"
+          class="generate-btn"
+          (click)="reset()"
+          data-testid="ideal-retry">
+          Volver a intentar
+        </ion-button>
+      </div>
+    </section>
   } @else {
     <!-- ───────────── REVEAL (pitch) ───────────── -->
     <section class="stage stage--reveal" data-testid="ideal-reveal">
@@ -131,7 +147,7 @@
       </div>
 
       <footer class="reveal-foot">
-        <p class="reveal-formation">{{ team().formation }}</p>
+        <p class="reveal-formation">{{ team()?.formation }}</p>
         <div class="reveal-actions">
           <ion-button
             fill="clear"
@@ -203,9 +219,9 @@
       <div class="analysis-sheet" data-testid="ideal-analysis">
         <header class="analysis-head">
           <h2 class="analysis-title">Análisis del equipo</h2>
-          <span class="analysis-formation">{{ team().formation }}</span>
+          <span class="analysis-formation">{{ team()?.formation }}</span>
         </header>
-        <p class="analysis-text">{{ team().generalJustification }}</p>
+        <p class="analysis-text">{{ team()?.generalJustification }}</p>
       </div>
     </ng-template>
   </ion-modal>

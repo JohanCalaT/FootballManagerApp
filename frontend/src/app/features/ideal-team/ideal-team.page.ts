@@ -7,6 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Location } from '@angular/common';
 import {
   IonContent,
@@ -18,18 +19,18 @@ import {
   IonModal,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { arrowBack, sparkles } from 'ionicons/icons';
+import { arrowBack, sparkles, alertCircle } from 'ionicons/icons';
 
 import {
   IdealTeamFormation,
   IdealTeamPlayer,
   IdealTeamResponse,
 } from '../../core/models/ideal-team.model';
+import { IdealTeamApi } from '../../core/api/ideal-team.api';
 import { HapticsService } from '../../core/services/haptics.service';
-import { IDEAL_TEAM_MOCKS } from './ideal-team.mock';
 import { PlacedPlayer, placeTeam } from './ideal-team.layout';
 
-type Phase = 'form' | 'loading' | 'pack' | 'opening' | 'reveal';
+type Phase = 'form' | 'loading' | 'pack' | 'opening' | 'reveal' | 'error';
 
 /** Duration of the pack-open animation (must match the CSS keyframes). */
 const PACK_OPEN_MS = 1100;
@@ -37,12 +38,12 @@ const PACK_OPEN_MS = 1100;
 /**
  * Equipo Ideal — FUT-Champions-inspired reveal flow (design-first branch).
  *
- * State machine: form → loading (simulated) → pack (the "sobre" with the app
- * logo) → reveal (full-screen pitch deploying the 11 cards by x/y). Tapping a
- * pitch card opens its full detail card; a footer action opens the team-level
- * AI analysis. No endpoint is hit here; the eleven comes from the per-formation
- * IDEAL_TEAM_MOCKS so the visual shape can be squared away before wiring the
- * real POST /api/ideal-team (same response shape).
+ * State machine: form → loading → pack (the "sobre" with the app logo) →
+ * reveal (full-screen pitch). The eleven comes from POST /api/ideal-team via
+ * IdealTeamApi; on failure the machine goes to `error`. The pitch layout is
+ * owned by the front (see ideal-team.layout.ts) — the backend's x/y are
+ * ignored. Tapping a pitch card opens its deep-detail sheet; a footer action
+ * opens the team-level AI analysis.
  */
 @Component({
   selector: 'app-ideal-team',
@@ -64,26 +65,25 @@ const PACK_OPEN_MS = 1100;
 export class IdealTeamPage implements OnDestroy {
   private readonly location = inject(Location);
   private readonly haptics = inject(HapticsService);
+  private readonly idealTeamApi = inject(IdealTeamApi);
 
   protected readonly phase = signal<Phase>('form');
   protected readonly formation = signal<IdealTeamFormation>('4-3-3');
 
-  /**
-   * Hardcoded eleven for the selected formation (design branch). When the real
-   * POST /api/ideal-team lands this computed is the only thing that changes —
-   * swap IDEAL_TEAM_MOCKS[...] for the service response of the same shape.
-   */
-  protected readonly team = computed<IdealTeamResponse>(
-    () => IDEAL_TEAM_MOCKS[this.formation()],
-  );
+  /** The eleven returned by POST /api/ideal-team (null until generated). */
+  protected readonly team = signal<IdealTeamResponse | null>(null);
+  /** Human-readable failure shown in the `error` phase. */
+  protected readonly errorMessage = signal<string | null>(null);
+
   /**
    * The eleven resolved onto the formation's pitch template (GK→DEF→MID→ATT).
    * The FRONT owns the coordinates; the backend's x/y are ignored — players
    * are matched to slots by fine position. See ideal-team.layout.ts.
    */
-  protected readonly placed = computed<PlacedPlayer[]>(() =>
-    placeTeam(this.team(), this.formation()),
-  );
+  protected readonly placed = computed<PlacedPlayer[]>(() => {
+    const t = this.team();
+    return t ? placeTeam(t, this.formation()) : [];
+  });
 
   /** How many cards have flown onto the pitch so far (sequential reveal). */
   protected readonly revealedCount = signal(0);
@@ -108,7 +108,7 @@ export class IdealTeamPage implements OnDestroy {
   private timers: ReturnType<typeof setTimeout>[] = [];
 
   constructor() {
-    addIcons({ arrowBack, sparkles });
+    addIcons({ arrowBack, sparkles, alertCircle });
   }
 
   ngOnDestroy(): void {
@@ -124,13 +124,42 @@ export class IdealTeamPage implements OnDestroy {
     if (value) this.formation.set(value);
   }
 
-  /** Form → simulated loading → pack. */
-  protected onGenerate(): void {
+  /** Form → loading → POST /api/ideal-team → pack (or error). */
+  protected async onGenerate(): Promise<void> {
     this.haptics.light();
+    this.errorMessage.set(null);
     this.phase.set('loading');
-    this.push(
-      setTimeout(() => this.phase.set('pack'), 2200),
-    );
+    try {
+      const res = await this.idealTeamApi.generate({
+        formation: this.formation(),
+      });
+      const data = res.data;
+      if (!data) {
+        this.fail(res.message || 'No se pudo generar el equipo.');
+        return;
+      }
+      this.team.set(data);
+      this.phase.set('pack');
+    } catch (err) {
+      this.fail(this.messageFrom(err));
+    }
+  }
+
+  private fail(message: string): void {
+    this.errorMessage.set(message);
+    this.phase.set('error');
+  }
+
+  /** Map an HTTP failure to a user-facing message (401 is handled upstream). */
+  private messageFrom(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      const apiMessage = (err.error as { message?: string } | null)?.message;
+      if (apiMessage) return apiMessage;
+      if (err.status === 0) return 'No hay conexión con el servidor.';
+      if (err.status === 503)
+        return 'La IA no está disponible ahora mismo. Inténtalo de nuevo.';
+    }
+    return 'No se pudo generar el equipo. Inténtalo de nuevo.';
   }
 
   /** Pack tapped → play the 3D open + light-beam, then deploy the eleven. */
@@ -209,6 +238,8 @@ export class IdealTeamPage implements OnDestroy {
     this.revealedCount.set(0);
     this.selectedPlayer.set(null);
     this.showAnalysis.set(false);
+    this.team.set(null);
+    this.errorMessage.set(null);
     this.phase.set('form');
   }
 
