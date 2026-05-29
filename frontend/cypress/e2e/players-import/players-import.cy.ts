@@ -8,7 +8,12 @@ describe('Players · Import', () => {
     cy.intercept('GET', '**/api/players?page=1&limit=20', {
       fixture: 'players-page-1.json',
     }).as('listPage1');
-    cy.intercept('GET', '**/api/players/search-external?**query=messi**', {
+    // Catch every search-external request, not only `query=messi`. Typing
+    // "messi" debounces through partial queries (m, me, mes…); scoping the
+    // stub to the final value let the intermediate ones escape to the (dead)
+    // dev proxy and made Firefox flake when the settled request raced the
+    // wait. A catch-all keeps the stub deterministic across browsers.
+    cy.intercept('GET', '**/api/players/search-external?**', {
       fixture: 'import/search-messi.json',
     }).as('searchExternal');
     cy.intercept('GET', '**/api/players/seasons/154', {
