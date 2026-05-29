@@ -102,29 +102,29 @@
           <span class="pitch__box pitch__box--bottom"></span>
         </div>
 
-        @for (player of eleven(); track player.id; let i = $index) {
+        @for (slot of placed(); track slot.player.id; let i = $index) {
           <div
             class="slot"
             [class.slot--in]="isRevealed(i)"
-            [style.left]="styleFor(player).left"
-            [style.top]="styleFor(player).top"
+            [style.left]="styleFor(slot).left"
+            [style.top]="styleFor(slot).top"
             data-testid="ideal-slot">
             <fma-fut-card
-              [attr.name]="player.name"
-              [attr.team]="player.team"
-              [attr.position]="player.position"
-              [attr.nationality]="player.nationality"
-              [attr.image-url]="player.imageUrl"
-              [attr.overall]="player.overall"
-              [attr.pac]="player.pac"
-              [attr.sho]="player.sho"
-              [attr.pas]="player.pas"
-              [attr.dri]="player.dri"
-              [attr.def]="player.def"
-              [attr.phy]="player.phy"
+              [attr.name]="slot.player.name"
+              [attr.team]="slot.player.team"
+              [attr.position]="slot.player.position"
+              [attr.nationality]="slot.player.nationality"
+              [attr.image-url]="slot.player.imageUrl"
+              [attr.overall]="slot.player.overall"
+              [attr.pac]="slot.player.pac"
+              [attr.sho]="slot.player.sho"
+              [attr.pas]="slot.player.pas"
+              [attr.dri]="slot.player.dri"
+              [attr.def]="slot.player.def"
+              [attr.phy]="slot.player.phy"
               compact="true"
               (flipChange)="onFlip()"
-              (infoClick)="openInfo(player)">
+              (infoClick)="openInfo(slot.player)">
             </fma-fut-card>
           </div>
         }

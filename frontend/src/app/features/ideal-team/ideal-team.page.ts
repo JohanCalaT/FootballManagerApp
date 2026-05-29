@@ -24,10 +24,10 @@ import {
   IdealTeamFormation,
   IdealTeamPlayer,
   IdealTeamResponse,
-  flattenIdealTeam,
 } from '../../core/models/ideal-team.model';
 import { HapticsService } from '../../core/services/haptics.service';
 import { IDEAL_TEAM_MOCKS } from './ideal-team.mock';
+import { PlacedPlayer, placeTeam } from './ideal-team.layout';
 
 type Phase = 'form' | 'loading' | 'pack' | 'opening' | 'reveal';
 
@@ -76,9 +76,13 @@ export class IdealTeamPage implements OnDestroy {
   protected readonly team = computed<IdealTeamResponse>(
     () => IDEAL_TEAM_MOCKS[this.formation()],
   );
-  /** Flattened GK→DEF→MID→ATT for the pitch. */
-  protected readonly eleven = computed<IdealTeamPlayer[]>(() =>
-    flattenIdealTeam(this.team()),
+  /**
+   * The eleven resolved onto the formation's pitch template (GK→DEF→MID→ATT).
+   * The FRONT owns the coordinates; the backend's x/y are ignored — players
+   * are matched to slots by fine position. See ideal-team.layout.ts.
+   */
+  protected readonly placed = computed<PlacedPlayer[]>(() =>
+    placeTeam(this.team(), this.formation()),
   );
 
   /** How many cards have flown onto the pitch so far (sequential reveal). */
@@ -139,8 +143,8 @@ export class IdealTeamPage implements OnDestroy {
       setTimeout(() => {
         this.phase.set('reveal');
         this.revealedCount.set(0);
-        const total = this.eleven().length;
-        this.eleven().forEach((_, i) => {
+        const total = this.placed().length;
+        this.placed().forEach((_, i) => {
           this.push(
             setTimeout(() => {
               this.revealedCount.update((n) => n + 1);
@@ -208,12 +212,12 @@ export class IdealTeamPage implements OnDestroy {
     this.phase.set('form');
   }
 
-  /** Pitch position from normalised x/y (0..1) as CSS percentages. */
-  protected styleFor(player: IdealTeamPlayer): { left: string; top: string } {
+  /** Pitch position from the template slot (0..1) as CSS percentages. */
+  protected styleFor(slot: PlacedPlayer): { left: string; top: string } {
     return {
-      left: `${player.x * 100}%`,
+      left: `${slot.x * 100}%`,
       // y 0 = own goal (bottom) → 1 = rival goal (top): invert for CSS top.
-      top: `${(1 - player.y) * 100}%`,
+      top: `${(1 - slot.y) * 100}%`,
     };
   }
 
