@@ -176,10 +176,17 @@
 
   &__item-head {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 10px;
     margin-bottom: 6px;
+  }
+
+  &__item-head-end {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
   &__item-author {
@@ -219,9 +226,8 @@
     border: 0;
     color: var(--fma-danger);
     font-size: 1.1rem;
-    position: absolute;
-    top: 8px;
-    right: 8px;
+    display: inline-flex;
+    align-items: center;
     padding: 4px;
     cursor: pointer;
 
