@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   OnInit,
+  computed,
   effect,
   inject,
   input,
@@ -12,6 +13,11 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, map } from 'rxjs';
+
+import { PlayerSearchFilters } from '../../../../../core/models/player.model';
+
+/** Removable chip keys (alta = the from/to range as a single chip). */
+export type FilterChipKey = 'team' | 'league' | 'alta';
 
 @Component({
   selector: 'app-home-search',
@@ -26,8 +32,29 @@ export class HomeSearchComponent implements OnInit {
 
   readonly queryChange = output<string>();
 
+  /** Active non-name filters (drives the chips + the badge count). */
+  readonly filters = input<PlayerSearchFilters>({});
+  /** Number of sheet filters active — shown as a badge on the Filtros button. */
+  readonly filterCount = input(0);
+
+  /** User tapped "Filtros" — the container opens the bottom-sheet. */
+  readonly filtersRequested = output<void>();
+  /** User removed a chip — the container drops that filter and reloads. */
+  readonly filterRemoved = output<FilterChipKey>();
+
   /** Two-way bound to the input element. */
   readonly draft = model<string>('');
+
+  protected readonly chips = computed<{ key: FilterChipKey; label: string }[]>(() => {
+    const f = this.filters();
+    const out: { key: FilterChipKey; label: string }[] = [];
+    if (f.team) out.push({ key: 'team', label: `Equipo: ${f.team}` });
+    if (f.league) out.push({ key: 'league', label: `Liga: ${f.league}` });
+    if (f.from || f.to) {
+      out.push({ key: 'alta', label: `Alta: ${f.from ?? '…'} – ${f.to ?? '…'}` });
+    }
+    return out;
+  });
 
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);

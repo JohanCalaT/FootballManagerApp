@@ -1,26 +1,55 @@
 <div class="home-search" data-testid="home-search">
-  <label class="home-search__field">
-    <svg class="home-search__icon" viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
-      <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-    </svg>
-    <input
-      type="search"
-      class="home-search__input"
-      placeholder="Buscar por nombre…"
-      [value]="draft()"
-      (input)="onInput($any($event.target).value)"
-      autocomplete="off"
-      data-testid="home-search-input" />
-    @if (draft()) {
-      <button
-        type="button"
-        class="home-search__clear"
-        (click)="clear()"
-        aria-label="Limpiar búsqueda"
-        data-testid="home-search-clear">
-        ✕
-      </button>
-    }
-  </label>
+  <div class="home-search__row">
+    <label class="home-search__field">
+      <svg class="home-search__icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+        <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      </svg>
+      <input
+        #searchInput
+        type="search"
+        class="home-search__input"
+        placeholder="Buscar por nombre…"
+        [value]="draft()"
+        (input)="onInput(searchInput.value)"
+        autocomplete="off"
+        data-testid="home-search-input" />
+      @if (draft()) {
+        <button
+          type="button"
+          class="home-search__clear"
+          (click)="clear()"
+          aria-label="Limpiar búsqueda"
+          data-testid="home-search-clear">
+          ✕
+        </button>
+      }
+    </label>
+
+    <button
+      type="button"
+      class="home-search__filters-btn"
+      (click)="filtersRequested.emit()"
+      data-testid="home-filters-button">
+      Filtros
+      @if (filterCount() > 0) {
+        <span class="home-search__badge" data-testid="home-filters-badge">{{ filterCount() }}</span>
+      }
+    </button>
+  </div>
+
+  @if (chips().length) {
+    <div class="home-search__chips" data-testid="home-search-chips">
+      @for (chip of chips(); track chip.key) {
+        <button
+          type="button"
+          class="home-search__chip"
+          (click)="filterRemoved.emit(chip.key)"
+          [attr.data-testid]="'chip-' + chip.key">
+          {{ chip.label }}
+          <span class="home-search__chip-x" aria-hidden="true">✕</span>
+        </button>
+      }
+    </div>
+  }
 </div>

@@ -118,6 +118,30 @@ export class PlayersApi {
     );
   }
 
+  /**
+   * Paged search across the full rubric filter set (name + team/league + alta
+   * date range). Only non-empty filters are sent so the backend treats the
+   * rest as "any". `from`/`to` go as ISO `YYYY-MM-DD`. Backs the home grid's
+   * filter sheet (append-on-load, like {@link listPage}).
+   */
+  async searchFilteredPage(
+    filters: PlayerSearchFilters,
+    page: number,
+    limit: number,
+  ): Promise<PagedResponse<PlayerListItem>> {
+    const params: Record<string, string | number> = { page, limit };
+    if (filters.name) params['name'] = filters.name;
+    if (filters.team) params['team'] = filters.team;
+    if (filters.league) params['league'] = filters.league;
+    if (filters.from) params['from'] = filters.from;
+    if (filters.to) params['to'] = filters.to;
+    return firstValueFrom(
+      this.http.get<PagedResponse<PlayerListItem>>(`${this.base}/api/players/search`, {
+        params,
+      }),
+    );
+  }
+
   async create(payload: CreatePlayerRequest): Promise<ApiResponse<Player>> {
     return firstValueFrom(
       this.http.post<ApiResponse<Player>>(`${this.base}/api/players`, payload),

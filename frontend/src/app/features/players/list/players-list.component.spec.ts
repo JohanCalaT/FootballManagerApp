@@ -1,6 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
-import { AlertController, ModalController, ToastController } from '@ionic/angular/standalone';
+import {
+  ActionSheetController,
+  AlertController,
+  ModalController,
+  ToastController,
+} from '@ionic/angular/standalone';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { BackendSwitchService } from '../../../core/services/backend-switch.service';
@@ -41,10 +46,12 @@ describe('PlayersListComponent (home container)', () => {
     api = jasmine.createSpyObj<PlayersApi>('PlayersApi', [
       'listPage',
       'searchPage',
+      'searchFilteredPage',
       'delete',
     ]);
     api.listPage.and.resolveTo(paged([makePlayer('1'), makePlayer('2')], 2));
     api.searchPage.and.resolveTo(paged([], 0));
+    api.searchFilteredPage.and.resolveTo(paged([], 0));
     alertCtrl = jasmine.createSpyObj<AlertController>('AlertController', ['create']);
     toastCtrl = jasmine.createSpyObj<ToastController>('ToastController', ['create']);
     toastCtrl.create.and.resolveTo({
@@ -65,6 +72,10 @@ describe('PlayersListComponent (home container)', () => {
         {
           provide: ModalController,
           useValue: jasmine.createSpyObj('ModalController', ['create', 'dismiss']),
+        },
+        {
+          provide: ActionSheetController,
+          useValue: jasmine.createSpyObj('ActionSheetController', ['create']),
         },
         {
           provide: ActivatedRoute,
@@ -103,22 +114,22 @@ describe('PlayersListComponent (home container)', () => {
     expect(fixture.nativeElement.querySelectorAll('[data-testid=player-card]').length).toBe(2);
   });
 
-  it('does NOT render the action bar when anonymous', async () => {
+  it('does NOT render the add FAB when anonymous', async () => {
     await setup();
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[data-testid=home-action-bar]')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('[data-testid=home-fab]')).toBeFalsy();
   });
 
-  it('renders the action bar when authenticated', async () => {
+  it('renders the add FAB when authenticated', async () => {
     await setup();
     const user: AuthUser = { uid: 'u', email: 'a@b.com', displayName: 'A', role: 'user' };
     setSession(user, 'tok');
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[data-testid=home-action-bar]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid=home-fab]')).toBeTruthy();
   });
 
   it('reloads the grid when the active backend changes', async () => {
@@ -149,49 +160,30 @@ describe('PlayersListComponent (home container)', () => {
     expect(navigate).toHaveBeenCalledOnceWith(['/players', '99']);
   });
 
-  it('navigates to /news/publish when the publish-news action fires', async () => {
+  it('searches by name via the full filter endpoint', async () => {
     await setup();
-    setSession({ uid: 'a', email: 'a@b.com', displayName: 'A', role: 'admin' }, 'tok');
     fixture.detectChanges();
     await fixture.whenStable();
-    fixture.detectChanges();
 
-    const router = TestBed.inject(Router);
-    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+    fixture.componentInstance['onSearchQueryChange']('messi');
+    await fixture.whenStable();
 
-    fixture.componentInstance['onPublishNews']();
-
-    expect(navigate).toHaveBeenCalledOnceWith(['/news/publish']);
+    expect(api.searchFilteredPage).toHaveBeenCalledWith({ name: 'messi' }, 1, 20);
+    expect(fixture.componentInstance['store'].filters().name).toBe('messi');
   });
 
-  it('navigates to /news when the news action fires', async () => {
+  it('removes a filter chip and reloads without it', async () => {
     await setup();
-    setSession({ uid: 'a', email: 'a@b.com', displayName: 'A', role: 'admin' }, 'tok');
     fixture.detectChanges();
     await fixture.whenStable();
-    fixture.detectChanges();
 
-    const router = TestBed.inject(Router);
-    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+    await fixture.componentInstance['store'].reload({ name: 'messi', team: 'Barça' });
+    expect(fixture.componentInstance['store'].activeFilterCount()).toBe(1);
 
-    fixture.componentInstance['onNews']();
-
-    expect(navigate).toHaveBeenCalledOnceWith(['/news']);
-  });
-
-  it('navigates to /ideal-team when the ideal-team action fires', async () => {
-    await setup();
-    setSession({ uid: 'a', email: 'a@b.com', displayName: 'A', role: 'admin' }, 'tok');
-    fixture.detectChanges();
+    fixture.componentInstance['removeFilter']('team');
     await fixture.whenStable();
-    fixture.detectChanges();
 
-    const router = TestBed.inject(Router);
-    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
-
-    fixture.componentInstance['onIdealTeam']();
-
-    expect(navigate).toHaveBeenCalledOnceWith(['/ideal-team']);
+    expect(fixture.componentInstance['store'].filters()).toEqual({ name: 'messi' });
   });
 
   it('navigates to /players/new when the insert action fires', async () => {

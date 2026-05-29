@@ -1,15 +1,18 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { PlayersApi } from '../../../core/api/players.api';
-import { PlayerListItem } from '../../../core/models/player.model';
+import { PlayerListItem, PlayerSearchFilters } from '../../../core/models/player.model';
 
 /**
  * Append-on-load paginated store for the players home grid.
  *
  * `httpResource` is great for replace-on-URL-change reads, but the home grid
  * needs to accumulate pages across infinite-scroll fetches and reset to page
- * one when the search query changes. That state lives here, in a feature-scoped
+ * one when the search filters change. That state lives here, in a feature-scoped
  * service instance the container provides.
+ *
+ * The active search is the full rubric filter set (name + team/league + alta
+ * date range). With no filters it lists; with any filter it searches.
  */
 @Injectable()
 export class PlayersPagedStore {
@@ -20,7 +23,22 @@ export class PlayersPagedStore {
   readonly total = signal<number | null>(null);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
-  readonly query = signal<string>('');
+  readonly filters = signal<PlayerSearchFilters>({});
+
+  /** Name term — kept for the grid empty-state text and the search input. */
+  readonly query = computed(() => this.filters().name ?? '');
+
+  /** True when ANY rubric filter is active (drives the grid "no results"). */
+  readonly hasActiveFilters = computed(() => {
+    const f = this.filters();
+    return !!(f.name || f.team || f.league || f.from || f.to);
+  });
+
+  /** Count of the sheet filters (team/league/alta) for the "Filtros" badge. */
+  readonly activeFilterCount = computed(() => {
+    const f = this.filters();
+    return (f.team ? 1 : 0) + (f.league ? 1 : 0) + (f.from || f.to ? 1 : 0);
+  });
 
   readonly allLoaded = computed(() => {
     const total = this.total();
@@ -31,9 +49,9 @@ export class PlayersPagedStore {
     () => this.loading() && this.players().length === 0,
   );
 
-  /** Reset state and load page 1 with the given query ('' = full list). */
-  async reload(query: string, limit = 20): Promise<void> {
-    this.query.set(query);
+  /** Reset state and load page 1 with the given filters ({} = full list). */
+  async reload(filters: PlayerSearchFilters, limit = 20): Promise<void> {
+    this.filters.set(filters);
     this.players.set([]);
     this.page.set(1);
     this.total.set(null);
@@ -70,9 +88,8 @@ export class PlayersPagedStore {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const q = this.query();
-      const response = q
-        ? await this.api.searchPage(q, page, limit)
+      const response = this.hasActiveFilters()
+        ? await this.api.searchFilteredPage(this.filters(), page, limit)
         : await this.api.listPage(page, limit);
 
       this.players.update((acc) => [...acc, ...(response.data ?? [])]);

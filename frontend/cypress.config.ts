@@ -19,6 +19,13 @@ export default defineConfig({
     fixturesFolder: 'cypress/fixtures',
     video: false,
     screenshotOnRunFailure: true,
+    // Firefox under CI load is noticeably slower than Chrome, so the heavier
+    // specs (debounced search + modal + several stubbed round-trips) flake on
+    // timing — a different test races the 5s default each run while Chrome is
+    // green. Retry failed tests in CI (run mode) so a transient timing miss
+    // does not red the build; interactive runs keep 0 retries for fast
+    // feedback.
+    retries: { runMode: 2, openMode: 0 },
     viewportWidth: 414,
     viewportHeight: 896,
     // Ionic overlays (ion-toast, ion-popover, ion-modal) render inside a

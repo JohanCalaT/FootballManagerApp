@@ -55,10 +55,11 @@ describe('HomeGridComponent', () => {
     expect(empty?.getAttribute('data-kind')).toBe('no-data');
   });
 
-  it('shows no-results empty state when query is set', () => {
+  it('shows no-results empty state when filters are active', () => {
     fixture.componentRef.setInput('players', []);
     fixture.componentRef.setInput('loading', false);
     fixture.componentRef.setInput('query', 'foo');
+    fixture.componentRef.setInput('hasFilters', true);
     fixture.detectChanges();
     expect(
       fixture.nativeElement.querySelector('[data-testid=home-grid-empty]')?.getAttribute('data-kind'),

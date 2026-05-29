@@ -1,26 +1,35 @@
 import { Component, OnInit, computed, effect, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import {
+  ActionSheetController,
   AlertController,
   IonContent,
+  IonFab,
+  IonFabButton,
+  IonIcon,
   ModalController,
   ToastController,
   type InfiniteScrollCustomEvent,
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { addOutline } from 'ionicons/icons';
 
 import { PlayersApi } from '../../../core/api/players.api';
 import { AuthService } from '../../../core/services/auth.service';
-import { PlayerListItem } from '../../../core/models/player.model';
+import { PlayerListItem, PlayerSearchFilters } from '../../../core/models/player.model';
 import { isAdmin, isAuthenticated } from '../../../core/state/auth.signal';
 import { backendChoice } from '../../../core/state/backend-choice.signal';
 import { playersListNeedsRefresh } from '../../../core/state/players-list.signal';
 
 import { ImportPlayersDialogComponent } from '../import/import-players-dialog.component';
-import { HomeActionBarComponent } from './components/home-action-bar/home-action-bar.component';
 import { HomeGridComponent } from './components/home-grid/home-grid.component';
 import { HomeHeaderComponent } from './components/home-header/home-header.component';
 import { HomeHeroComponent } from './components/home-hero/home-hero.component';
-import { HomeSearchComponent } from './components/home-search/home-search.component';
+import {
+  FilterChipKey,
+  HomeSearchComponent,
+} from './components/home-search/home-search.component';
+import { HomeFiltersComponent } from './components/home-filters/home-filters.component';
 import { PlayersPagedStore } from './players-paged.store';
 
 @Component({
@@ -28,9 +37,11 @@ import { PlayersPagedStore } from './players-paged.store';
   standalone: true,
   imports: [
     IonContent,
+    IonFab,
+    IonFabButton,
+    IonIcon,
     HomeHeaderComponent,
     HomeHeroComponent,
-    HomeActionBarComponent,
     HomeSearchComponent,
     HomeGridComponent,
   ],
@@ -43,6 +54,7 @@ export class PlayersListComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly modalCtrl = inject(ModalController);
   private readonly alertCtrl = inject(AlertController);
+  private readonly actionSheetCtrl = inject(ActionSheetController);
   private readonly toastCtrl = inject(ToastController);
   private readonly api = inject(PlayersApi);
   protected readonly store = inject(PlayersPagedStore);
@@ -57,6 +69,8 @@ export class PlayersListComponent implements OnInit {
   private lastBackend: string | null = null;
 
   constructor() {
+    addIcons({ addOutline });
+
     // HATEOAS affordances on each PlayerListItem (_links.update, .delete)
     // are baked server-side from the X-User-Admin header — which the
     // Gateway stamps from the JWT admin claim. If the user signs in
@@ -72,7 +86,7 @@ export class PlayersListComponent implements OnInit {
       }
       if (this.lastAuthFingerprint === fingerprint) return;
       this.lastAuthFingerprint = fingerprint;
-      void this.store.reload(this.store.query());
+      void this.store.reload(this.store.filters());
     });
 
     // Switching the active backend (.NET <-> Node) swaps the whole dataset
@@ -87,12 +101,12 @@ export class PlayersListComponent implements OnInit {
       }
       if (this.lastBackend === backend) return;
       this.lastBackend = backend;
-      void this.store.reload(this.store.query());
+      void this.store.reload(this.store.filters());
     });
   }
 
   ngOnInit(): void {
-    void this.store.reload(this.store.query());
+    void this.store.reload(this.store.filters());
   }
 
   /**
@@ -105,13 +119,53 @@ export class PlayersListComponent implements OnInit {
   ionViewWillEnter(): void {
     if (playersListNeedsRefresh()) {
       playersListNeedsRefresh.set(false);
-      void this.store.reload(this.store.query());
+      void this.store.reload(this.store.filters());
     }
   }
 
-  protected onSearchQueryChange(query: string): void {
-    if (query === this.store.query()) return;
-    void this.store.reload(query);
+  protected onSearchQueryChange(name: string): void {
+    const next = name || undefined;
+    if (next === this.store.filters().name) return;
+    void this.store.reload({ ...this.store.filters(), name: next });
+  }
+
+  /** Open the filters bottom-sheet; on apply, keep the name + replace the rest. */
+  protected async openFilters(): Promise<void> {
+    const f = this.store.filters();
+    const modal = await this.modalCtrl.create({
+      component: HomeFiltersComponent,
+      componentProps: {
+        team: f.team ?? '',
+        league: f.league ?? '',
+        from: f.from ?? '',
+        to: f.to ?? '',
+      },
+      breakpoints: [0, 0.7, 0.95],
+      initialBreakpoint: 0.7,
+      cssClass: 'fma-sheet',
+    });
+    await modal.present();
+    const { data, role } = await modal.onWillDismiss<PlayerSearchFilters>();
+    if (role !== 'apply' || !data) return;
+    void this.store.reload({
+      name: this.store.filters().name,
+      team: data.team,
+      league: data.league,
+      from: data.from,
+      to: data.to,
+    });
+  }
+
+  /** Remove one chip's filter and reload (alta clears both from + to). */
+  protected removeFilter(key: FilterChipKey): void {
+    const f: PlayerSearchFilters = { ...this.store.filters() };
+    if (key === 'alta') {
+      delete f.from;
+      delete f.to;
+    } else {
+      delete f[key];
+    }
+    void this.store.reload(f);
   }
 
   protected goToLogin(): void {
@@ -132,20 +186,35 @@ export class PlayersListComponent implements OnInit {
     await modal.present();
     const { data } = await modal.onWillDismiss<{ importedCount: number }>();
     if ((data?.importedCount ?? 0) > 0) {
-      await this.store.reload(this.store.query());
+      await this.store.reload(this.store.filters());
     }
   }
   protected onInsert(): void {
     void this.router.navigate(['/players/new']);
   }
-  protected onIdealTeam(): void {
-    void this.router.navigate(['/ideal-team']);
-  }
-  protected onNews(): void {
-    void this.router.navigate(['/news']);
-  }
-  protected onPublishNews(): void {
-    void this.router.navigate(['/news/publish']);
+
+  /** FAB "+" → action sheet with the two create paths (manual / API-Football). */
+  protected async openActions(): Promise<void> {
+    const sheet = await this.actionSheetCtrl.create({
+      header: 'Añadir jugadores',
+      cssClass: 'fma-action-sheet',
+      buttons: [
+        {
+          text: 'Insertar manualmente',
+          handler: () => {
+            this.onInsert();
+          },
+        },
+        {
+          text: 'Importar de API-Football',
+          handler: () => {
+            void this.onImport();
+          },
+        },
+        { text: 'Cancelar', role: 'cancel' },
+      ],
+    });
+    await sheet.present();
   }
 
   protected onPlayerSelected(player: PlayerListItem): void {
@@ -215,6 +284,6 @@ export class PlayersListComponent implements OnInit {
   }
 
   protected onRetry(): void {
-    void this.store.reload(this.store.query());
+    void this.store.reload(this.store.filters());
   }
 }

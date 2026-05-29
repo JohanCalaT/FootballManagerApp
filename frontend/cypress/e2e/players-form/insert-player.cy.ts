@@ -30,7 +30,9 @@ const emptySearch = {
 };
 
 function openInsertForm(attempt = 0): void {
-  cy.get('[data-testid=home-insert-button]').click();
+  // Insert now lives behind the add FAB → action sheet on the Jugadores tab.
+  cy.get('[data-testid=home-fab]').click();
+  cy.contains('Insertar manualmente').click();
   cy.location('pathname').then((path) => {
     if (path !== '/players/new' && attempt < 4) {
       cy.wait(400);
@@ -75,7 +77,7 @@ describe('Players · Insert from form', () => {
     cy.wait('@list');
     cy.wait('@lookup'); // post-login claims resolution finished → auth settled
     cy.get('[data-testid=home-user-menu-trigger]').should('be.visible');
-    cy.get('[data-testid=home-action-bar]').should('be.visible');
+    cy.get('[data-testid=home-fab]').should('be.visible');
 
     // The first programmatic navigation right after a fresh sign-in can be
     // bounced back to /players; retry the open until the form actually mounts.

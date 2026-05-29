@@ -13,19 +13,19 @@ describe('Players · Home', () => {
     }).as('search');
   });
 
-  it('renders the grid for an anonymous visitor and does not show the action bar', () => {
+  it('renders the grid for an anonymous visitor and does not show the add FAB', () => {
     cy.visitApp('/players');
     cy.wait('@listPage1');
 
     cy.get('[data-testid=home-header]').should('be.visible');
     cy.get('[data-testid=home-grid] [data-testid=player-card]').should('have.length', 2);
-    cy.get('[data-testid=home-action-bar]').should('not.exist');
+    cy.get('[data-testid=home-fab]').should('not.exist');
     cy.get('[data-testid=home-login-button]').should('be.visible');
     cy.get('[data-testid=home-settings-trigger]').should('be.visible');
     cy.get('[data-testid=home-user-menu-trigger]').should('not.exist');
   });
 
-  it('shows the action bar after signing in', () => {
+  it('shows the add FAB and the registered tabs after signing in', () => {
     cy.seedUser(users.seeded.email, users.seeded.password, users.seeded.displayName);
     cy.visitApp('/auth/login');
     cy.get('[data-testid=login-email-input]').type(users.seeded.email);
@@ -34,11 +34,10 @@ describe('Players · Home', () => {
 
     cy.location('pathname').should('eq', '/players');
     cy.wait('@listPage1');
-    cy.get('[data-testid=home-action-bar]').should('be.visible');
-    cy.get('[data-testid=home-import-button]').should('be.visible');
-    cy.get('[data-testid=home-insert-button]').should('be.visible');
-    cy.get('[data-testid=home-ideal-team-button]').should('be.visible');
-    cy.get('[data-testid=home-publish-news-button]').should('not.exist');
+    cy.get('[data-testid=home-fab]').should('be.visible');
+    cy.get('[data-testid=tab-players]').should('be.visible');
+    cy.get('[data-testid=tab-ideal-team]').should('be.visible');
+    cy.get('[data-testid=tab-news]').should('be.visible');
   });
 
   it('filters the grid as the user types in the search box', () => {
@@ -83,7 +82,7 @@ describe('Players · Home', () => {
   // wiring is flaky in Edge headless CI. Once the detail route ships, a
   // cy.location('pathname') assertion replaces this gap.
 
-  it('opens the import dialog when the import button is clicked while authenticated', () => {
+  it('opens the import dialog from the add FAB while authenticated', () => {
     cy.seedUser(users.seeded.email, users.seeded.password, users.seeded.displayName);
     cy.visitApp('/auth/login');
     cy.get('[data-testid=login-email-input]').type(users.seeded.email);
@@ -91,9 +90,9 @@ describe('Players · Home', () => {
     cy.get('[data-testid=login-submit-button]').click();
     cy.location('pathname').should('eq', '/players');
     cy.wait('@listPage1');
-    cy.get('[data-testid=home-import-button]').click();
-    // Import is no longer a coming-soon placeholder: it opens the real
-    // API-Football import modal (title "Importar jugadores").
+    // FAB → action sheet → Importar opens the API-Football modal.
+    cy.get('[data-testid=home-fab]').click();
+    cy.contains('Importar de API-Football').click();
     cy.contains('Importar jugadores').should('be.visible');
   });
 

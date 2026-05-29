@@ -31,6 +31,9 @@ export class HomeGridComponent {
   readonly loading = input(false);
   readonly error = input<string | null>(null);
   readonly query = input('');
+  /** True when ANY search filter is active (name/team/league/alta) so an empty
+   *  grid reads as "no results" rather than "no data". */
+  readonly hasFilters = input(false);
   readonly allLoaded = input(false);
   readonly canRegister = input(false);
 
@@ -48,7 +51,7 @@ export class HomeGridComponent {
     if (this.error()) return 'error';
     if (this.loading()) return null;
     if (this.players().length > 0) return null;
-    return this.query() ? 'no-results' : 'no-data';
+    return this.hasFilters() ? 'no-results' : 'no-data';
   }
 
   protected get isInitialLoad(): boolean {
