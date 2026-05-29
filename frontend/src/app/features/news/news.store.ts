@@ -88,12 +88,12 @@ export class NewsStore {
     source.onerror = () => this.live.set(false); // EventSource reintenta solo
 
     source.addEventListener('created', (e) => {
-      const noticia = this.parse<Noticia>((e as MessageEvent).data);
+      const noticia = this.parseNoticia((e as MessageEvent).data);
       if (noticia) this.upsert(noticia);
     });
     source.addEventListener('deleted', (e) => {
-      const payload = this.parse<{ id: string }>((e as MessageEvent).data);
-      if (payload?.id) this.removeById(payload.id);
+      const id = this.parseDeletedId((e as MessageEvent).data);
+      if (id) this.removeById(id);
     });
     source.addEventListener('reset', () => this.news.set([]));
   }
@@ -109,11 +109,53 @@ export class NewsStore {
     this.news.update((list) => list.filter((n) => n.id !== id));
   }
 
-  private parse<T>(raw: string): T | null {
+  /**
+   * SSE payloads arrive as JSON strings of unknown shape. We parse to
+   * `unknown` and validate structurally before trusting the data — never a
+   * blind `as` cast (the project bans `any`/unsafe assertions). Malformed
+   * events are ignored rather than corrupting the list.
+   */
+  private parseNoticia(raw: string): Noticia | null {
+    const value = this.safeParse(raw);
+    if (!this.isRecord(value)) return null;
+    const { id, titulo, contenido, autor, fechaPub, imagenUrl } = value;
+    if (
+      typeof id === 'string' &&
+      typeof titulo === 'string' &&
+      typeof contenido === 'string' &&
+      typeof autor === 'string' &&
+      typeof fechaPub === 'string'
+    ) {
+      return {
+        id,
+        titulo,
+        contenido,
+        autor,
+        fechaPub,
+        imagenUrl: typeof imagenUrl === 'string' ? imagenUrl : undefined,
+      };
+    }
+    return null;
+  }
+
+  private parseDeletedId(raw: string): string | null {
+    const value = this.safeParse(raw);
+    if (this.isRecord(value)) {
+      const id = value['id'];
+      if (typeof id === 'string') return id;
+    }
+    return null;
+  }
+
+  private safeParse(raw: string): unknown {
     try {
-      return JSON.parse(raw) as T;
+      return JSON.parse(raw) as unknown;
     } catch {
       return null;
     }
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
   }
 }
