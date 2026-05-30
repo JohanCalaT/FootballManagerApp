@@ -1,0 +1,106 @@
+name: APK · Android (Capacitor)
+
+# Builds the installable Android APK and publishes it as a downloadable run
+# artifact — the CNSA "APK generada como artefacto del pipeline" deliverable.
+# It is a DEBUG APK (auto-signed with the Android debug key) so it installs on
+# any device with "unknown sources" enabled, without managing a release
+# keystore (we don't publish to any store).
+#
+# The APK has no nginx proxy in front of it, so unlike the web build it can't
+# use relative /api paths. write-config.js bakes the absolute staging Gateway
+# URL into assets/config.json (GATEWAY_URL), and the Gateway enables CORS for
+# the Capacitor origin, so the installed app talks to staging directly.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/ci-android-apk.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  build-apk:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # Android Gradle Plugin 8 requires JDK 17.
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Provisions cmdline-tools and accepts the SDK licenses so Gradle can
+      # resolve the compile/build-tools versions from variables.gradle.
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Same Stencil prebuild as ci-frontend: its dist/ + loader/ output is
+      # gitignored, and ng build can't resolve @football-manager/stencil/loader
+      # without it.
+      - name: Build Stencil web-components package
+        working-directory: frontend/stencil
+        run: npm ci --no-audit --no-fund && npm run build
+
+      # Bake the runtime config the APK bundles: Firebase web config + the
+      # ABSOLUTE staging Gateway URL (the APK has no proxy, so relative /api
+      # would resolve to the local bundle origin and never reach the backend).
+      - name: Generate runtime config.json
+        run: node scripts/write-config.js
+        env:
+          FIREBASE_API_KEY: ${{ vars.AZURE_FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN: ${{ vars.AZURE_FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_PROJECT_ID: ${{ vars.AZURE_FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.AZURE_FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ vars.AZURE_FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_ID: ${{ vars.AZURE_FIREBASE_APP_ID }}
+          FIREBASE_MEASUREMENT_ID: ${{ vars.AZURE_FIREBASE_MEASUREMENT_ID }}
+          # Set repo variable STAGING_GATEWAY_URL to your Gateway's public URL.
+          # Falls back to the current staging host if the var isn't set yet.
+          GATEWAY_URL: ${{ vars.STAGING_GATEWAY_URL || 'https://gateway.wonderfulcliff-daf9df1d.francecentral.azurecontainerapps.io' }}
+
+      - name: Build web bundle (production)
+        run: npx ng build --configuration=production
+
+      - name: Capacitor sync (Android)
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: frontend/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: football-manager-debug-apk
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 90
