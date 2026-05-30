@@ -56,13 +56,22 @@ function signIn(email: string, password: string): void {
 // auth-gated comment form would never appear; navigating within the app keeps
 // the live session. The list fixture puts player 1111 first, so .first() is
 // the player whose detail/comments we stub.
-function openDetail(): void {
-  // force: the Ionic tabs shell can briefly keep pointer-events:none right
-  // after the post-login transition; the card's host onClick still fires and
-  // routes to the detail. signIn already waits for the transition to settle.
+function openDetail(attempt = 0): void {
+  // Wait for the Ionic transition to settle before clicking (clears the
+  // pointer-events:none the tabs shell carries during the post-login push).
+  cy.get('ion-router-outlet').should('not.have.class', 'ion-transitioning');
   cy.get('[data-testid=player-card]', { timeout: 10000 }).first().click({ force: true });
-  cy.location('pathname').should('eq', DETAIL_URL);
-  cy.wait('@detail');
+  // The first route push after a cold login can be bounced back to /players by
+  // Firebase's late auth-state churn (same reason insert-player retries). If we
+  // did not land on the detail, let the churn settle and retry.
+  cy.location('pathname').then((path) => {
+    if (path !== DETAIL_URL && attempt < 5) {
+      cy.wait(400);
+      openDetail(attempt + 1);
+      return;
+    }
+    cy.wrap(path).should('eq', DETAIL_URL);
+  });
 }
 
 describe('Comments · CRUD', () => {
@@ -123,7 +132,7 @@ describe('Comments · CRUD', () => {
 
     cy.get('[data-testid=star-4]').click({ force: true });
     cy.get('[data-testid=comments-author]').find('input').clear({ force: true }).type('Juan E2E', { force: true });
-    cy.get('[data-testid=comments-text]').find('textarea').type('Crack absoluto, lo da todo.', { force: true });
+    cy.get('[data-testid=comments-text]').find('textarea').clear({ force: true }).type('Crack absoluto, lo da todo.', { force: true });
 
     cy.get('[data-testid=comments-submit]').should('not.be.disabled').click({ force: true });
     cy.wait('@create');
@@ -149,7 +158,7 @@ describe('Comments · CRUD', () => {
     cy.get('[data-testid=comments-form]', { timeout: 10000 }).should('exist');
     cy.get('[data-testid=star-3]').click({ force: true });
     cy.get('[data-testid=comments-author]').find('input').clear({ force: true }).type('Juan E2E', { force: true });
-    cy.get('[data-testid=comments-text]').find('textarea').type('Comentario que el backend rechaza.', { force: true });
+    cy.get('[data-testid=comments-text]').find('textarea').clear({ force: true }).type('Comentario que el backend rechaza.', { force: true });
     cy.get('[data-testid=comments-submit]').should('not.be.disabled').click({ force: true });
     cy.wait('@createError');
 
