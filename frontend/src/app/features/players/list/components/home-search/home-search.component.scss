@@ -1,7 +1,10 @@
 :host {
   display: block;
   position: sticky;
-  top: 64px;
+  // Must match the header height exactly (.home-header is 56px). A larger
+  // offset leaves a transparent strip between the stuck header and this bar
+  // through which scrolling content shows — the "ugly gap" on scroll.
+  top: 56px;
   z-index: 20;
   background: var(--app-glass-fill);
   backdrop-filter: blur(var(--app-glass-blur));
