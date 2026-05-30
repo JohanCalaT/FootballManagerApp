@@ -1,10 +1,11 @@
 :host {
   display: block;
   position: sticky;
-  // Must match the header height exactly (.home-header is 56px). A larger
-  // offset leaves a transparent strip between the stuck header and this bar
-  // through which scrolling content shows — the "ugly gap" on scroll.
-  top: 56px;
+  // Must match the rendered header height exactly. The header is 56px plus the
+  // status-bar safe-area inset on native (edge-to-edge), so mirror that formula
+  // here — a fixed 56px would tuck this bar behind the header on notched
+  // devices, and a larger value would leave a transparent strip on scroll.
+  top: calc(56px + var(--ion-safe-area-top, 0px));
   z-index: 20;
   background: var(--app-glass-fill);
   backdrop-filter: blur(var(--app-glass-blur));

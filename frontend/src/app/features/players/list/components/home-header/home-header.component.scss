@@ -9,12 +9,16 @@
   display: flex;
   align-items: center;
   gap: var(--app-space-3);
+  // Glass fills full-bleed behind the status bar (edge-to-edge); only the
+  // inner row is pushed below the inset so the logo/avatar never collide with
+  // the clock/battery. --ion-safe-area-top is device-aware (notch, punch-hole).
   padding: var(--app-space-2) var(--app-space-4);
+  padding-top: calc(var(--app-space-2) + var(--ion-safe-area-top, 0px));
   background: var(--app-glass-fill);
   backdrop-filter: blur(var(--app-glass-blur));
   -webkit-backdrop-filter: blur(var(--app-glass-blur));
   border-bottom: 1px solid var(--app-outline-variant);
-  height: 56px;
+  min-height: calc(56px + var(--ion-safe-area-top, 0px));
 }
 
 .home-header__brand {
