@@ -42,6 +42,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # @football-manager/stencil is a `file:./stencil` symlink dep whose
+      # dist/ + loader/ output is gitignored, so a clean checkout lacks it and
+      # `npm ci` won't regenerate it (no `prepare` runs for a linked dep).
+      # Without loader/, `ng test`/`ng build` can't resolve
+      # `@football-manager/stencil/loader` (src/main.ts). Build it explicitly.
+      - name: Build Stencil web-components package
+        working-directory: frontend/stencil
+        run: npm ci --no-audit --no-fund && npm run build
+
       - name: Lint (ng lint)
         run: npm run lint -- --format=stylish
         continue-on-error: false
@@ -98,6 +107,13 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Same reason as the build job: the Stencil package's loader/ output is
+      # gitignored, and `ionic serve` (started by `npm run e2e:*`) compiles
+      # src/main.ts which imports `@football-manager/stencil/loader`.
+      - name: Build Stencil web-components package
+        working-directory: frontend/stencil
+        run: npm ci --no-audit --no-fund && npm run build
 
       # `npm run e2e:*` spins up the Firebase Auth Emulator (uses the
       # preinstalled OpenJDK on ubuntu-latest) + the ionic dev server +

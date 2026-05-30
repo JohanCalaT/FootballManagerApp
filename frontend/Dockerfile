@@ -16,6 +16,16 @@ FROM node:20-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# El dep @football-manager/stencil es un `file:./stencil` que npm instala
+# como SYMLINK (node_modules/@football-manager/stencil -> ../../stencil).
+# Su salida (`dist/` + `loader/`) está en .gitignore, así que en un checkout
+# limpio de CI NO existe, y `npm ci` no la regenera (no corre el `prepare`
+# de un dep enlazado). Sin `loader/`, `ng build` no resuelve el import
+# `@football-manager/stencil/loader` en src/main.ts y aborta. Lo compilamos
+# aquí dentro: stencil.config.ts emite dist-custom-elements (loader) + dist.
+RUN cd stencil \
+    && npm ci --no-audit --no-fund --prefer-offline \
+    && npm run build
 # 3 GB de heap es suficiente para Angular prod y reduce presión de RAM
 # en el runner de GitHub Actions (~7 GB total).
 ENV NODE_OPTIONS=--max_old_space_size=3072
