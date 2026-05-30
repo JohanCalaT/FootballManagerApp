@@ -37,8 +37,15 @@ RUN npx ng build
 
 FROM nginx:alpine
 COPY --from=build /app/www /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
+# nginx.conf es un TEMPLATE: Aspire/ACA inyectan el puerto de ingress vía $PORT
+# (AppHost: ionic-app WithHttpEndpoint(env: "PORT")). El contenedor DEBE escuchar
+# en ese puerto o el StartUp probe de ACA falla (status 1) y no llega tráfico.
+# 05-listen-port.sh renderiza la config real antes de arrancar nginx. Default 80
+# para `docker run` local sin PORT (ACA lo sobrescribe).
+ENV PORT=80
+COPY nginx.conf /etc/nginx/nginx.conf.template
+COPY docker-entrypoint.d/05-listen-port.sh /docker-entrypoint.d/05-listen-port.sh
 # Genera /assets/config.json desde las env de runtime antes de arrancar nginx.
 COPY docker-entrypoint.d/40-firebase-config.sh /docker-entrypoint.d/40-firebase-config.sh
-RUN chmod +x /docker-entrypoint.d/40-firebase-config.sh
+RUN chmod +x /docker-entrypoint.d/05-listen-port.sh /docker-entrypoint.d/40-firebase-config.sh
 EXPOSE 80
