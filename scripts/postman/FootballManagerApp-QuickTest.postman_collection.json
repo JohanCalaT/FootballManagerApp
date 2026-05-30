@@ -1,0 +1,412 @@
+{
+  "info": {
+    "_postman_id": "fma-quicktest-gateway-2026",
+    "name": "FootballManagerApp — Quick Test (Gateway)",
+    "description": "Colección **fácil** para probar TODA la app a través del API Gateway YARP (un solo `baseUrl`), tal y como la consume el frontend.\n\n## Cómo usar\n\n1. Pon `baseUrl` apuntando a tu Gateway:\n   - **Local**: `http://localhost:5000` (levanta `dotnet run --project src/FootballManagerApp/FootballManagerApp.AppHost`).\n   - **Staging (Azure)**: pega la URL pública del Container App `gateway` (algo como `https://gateway.<env>.<region>.azurecontainerapps.io`).\n2. (Opcional) Cambia `userId` por tu UID de Firebase.\n3. Dispara los requests en orden dentro de cada carpeta — los IDs (`playerId`, `commentId`, `newsId`, `apiFootballId`) se guardan solos entre llamadas.\n\n## Qué incluye\n\n- ⚙️ **Toggle de backend** (.NET ↔ Node) — el Gateway recuerda cuál está activo.\n- 📚 **Documentación** — Scalar (.NET) y Swagger (Node), abrir en navegador.\n- 🟢 **Status** — panel Pug del backend Node (matrícula TRWM).\n- 👤 **Players** CRUD completo.\n- 🌍 **API-Football** (búsqueda/temporadas/import) — siempre va a .NET.\n- 🧠 **Equipo Ideal** (Gemini).\n- 💬 **Comments** (crear/listar/borrar).\n- 📰 **Noticias** (CORBA vía adapter).\n\n## Notas\n\n- El Gateway elige .NET o Node según el toggle (carpeta ⚙️). NO mandes `X-Backend-Target` tú: el Gateway lo descarta por seguridad y lo sella él.\n- Endpoints `search-external`, `seasons` e `import` SIEMPRE usan .NET (dependen de la integración API-Football).\n- Para operaciones admin se manda `X-User-Admin: true`. Para crear, `X-User-Id`.\n- Esta colección es la **fácil/rápida**. Para el recorrido exhaustivo con todas las validaciones (412, 429, 409, idempotencia…) usa `FootballManagerApp.postman_collection.json`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",       "value": "http://localhost:5000", "type": "string" },
+    { "key": "userId",        "value": "uid-demo",              "type": "string" },
+    { "key": "playerId",      "value": "",                      "type": "string" },
+    { "key": "commentId",     "value": "",                      "type": "string" },
+    { "key": "newsId",        "value": "",                      "type": "string" },
+    { "key": "apiFootballId", "value": "154",                   "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "⚙️ 0. Toggle backend (.NET ↔ Node)",
+      "description": "El Gateway recuerda qué backend está activo (estado en memoria). El frontend lo cambia con estos endpoints; el resto de carpetas heredan ese toggle (excepto las que SIEMPRE van a .NET).",
+      "item": [
+        {
+          "name": "GET ver backend activo",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "console.log('Backend activo:', pm.response.json().active);"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/config/backend" }
+        },
+        {
+          "name": "POST usar .NET",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('activo = dotnet', () => pm.expect(pm.response.json().active).to.eql('dotnet'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"backend\": \"dotnet\" }" },
+            "url": "{{baseUrl}}/config/backend"
+          }
+        },
+        {
+          "name": "POST usar Node",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('activo = node', () => pm.expect(pm.response.json().active).to.eql('node'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"backend\": \"node\" }" },
+            "url": "{{baseUrl}}/config/backend"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📚 1. Documentación (abrir en navegador)",
+      "description": "Páginas de documentación servidas por cada servicio y multiplexadas por el Gateway. Ábrelas en el navegador pegando `{{baseUrl}}/docs/...`. Los GET aquí solo comprueban que respondan 200.",
+      "item": [
+        {
+          "name": "GET /docs/players (Scalar .NET)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/docs/players", "description": "Scalar UI de Players.API. Mejor en navegador: {{baseUrl}}/docs/players" }
+        },
+        {
+          "name": "GET /docs/comments (Scalar .NET)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/docs/comments", "description": "Scalar UI de Comments.API. Mejor en navegador: {{baseUrl}}/docs/comments" }
+        },
+        {
+          "name": "GET /docs/node (Swagger Node)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/docs/node", "description": "Swagger UI del backend Node. Mejor en navegador: {{baseUrl}}/docs/node" }
+        },
+        {
+          "name": "GET /openapi/players/v1.json",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('es OpenAPI', () => pm.expect(pm.response.json()).to.have.property('openapi'));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/openapi/players/v1.json" }
+        },
+        {
+          "name": "GET /openapi/comments/v1.json",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('es OpenAPI', () => pm.expect(pm.response.json()).to.have.property('openapi'));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/openapi/comments/v1.json" }
+        }
+      ]
+    },
+    {
+      "name": "🟢 2. Status (panel Pug — Node, matrícula TRWM)",
+      "item": [
+        {
+          "name": "GET /status (HTML Pug)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('HTML', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('html'));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/status", "description": "Panel de estado del backend Node (Mongo, uptime, totales). Mejor en navegador: {{baseUrl}}/status" }
+        }
+      ]
+    },
+    {
+      "name": "👤 3. Players (CRUD)",
+      "description": "Va al backend activo según el toggle (carpeta ⚙️). Crea → lee → edita → borra. El `playerId` se guarda solo tras crear.",
+      "item": [
+        {
+          "name": "GET listado paginado",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/players?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","players"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "GET buscar por nombre",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/players/search?name=Pedri",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","players","search"],
+              "query": [
+                { "key": "name", "value": "Pedri" },
+                { "key": "team", "value": "", "disabled": true },
+                { "key": "league", "value": "", "disabled": true },
+                { "key": "from", "value": "", "disabled": true },
+                { "key": "to", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST crear jugador (guarda playerId)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "const id = pm.response.json().data.id;",
+            "pm.collectionVariables.set('playerId', id);",
+            "console.log('playerId =', id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-Client-Lat", "value": "36.834" },
+              { "key": "X-Client-Lng", "value": "-2.464" },
+              { "key": "X-Client-City", "value": "Almería" },
+              { "key": "X-Client-Country", "value": "España" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pedri González\",\n  \"team\": \"FC Barcelona\",\n  \"league\": \"La Liga\",\n  \"position\": \"Midfielder\",\n  \"nationality\": \"Spain\",\n  \"birthDate\": \"2002-11-25\",\n  \"height\": \"174 cm\",\n  \"weight\": \"60 kg\",\n  \"shirtNumber\": 8,\n  \"imageUrl\": \"https://media.api-sports.io/football/players/909.png\",\n  \"imageSource\": \"api\"\n}"
+            },
+            "url": "{{baseUrl}}/api/players"
+          }
+        },
+        {
+          "name": "GET detalle del jugador",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/players/{{playerId}}" }
+        },
+        {
+          "name": "PUT editar jugador (admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Admin", "value": "true" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pedri González\",\n  \"team\": \"FC Barcelona\",\n  \"league\": \"La Liga\",\n  \"position\": \"Midfielder\",\n  \"shirtNumber\": 8,\n  \"injured\": false\n}"
+            },
+            "url": "{{baseUrl}}/api/players/{{playerId}}"
+          }
+        },
+        {
+          "name": "DELETE jugador (admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Admin", "value": "true" }
+            ],
+            "url": "{{baseUrl}}/api/players/{{playerId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🌍 4. API-Football (siempre .NET)",
+      "description": "Búsqueda externa, temporadas disponibles e importación. Estos endpoints SIEMPRE van a .NET (dependen de la integración API-Football). ⚠️ Gastan cuota real (10/min, 100/día) la primera vez; luego salen de Redis.",
+      "item": [
+        {
+          "name": "GET buscar externo (guarda apiFootballId)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const data = pm.response.json().data;",
+            "if (data && data.length > 0) {",
+            "  pm.collectionVariables.set('apiFootballId', String(data[0].apiFootballId));",
+            "  console.log('apiFootballId =', data[0].apiFootballId);",
+            "}"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/players/search-external?query=Messi&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","players","search-external"],
+              "query": [{ "key": "query", "value": "Messi" }, { "key": "page", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "GET temporadas disponibles",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/players/seasons/{{apiFootballId}}", "description": "El frontend solo muestra 2022-2024 (plan free)." }
+        },
+        {
+          "name": "POST importar jugador (guarda playerId)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 o 207', () => pm.expect([201,207]).to.include(pm.response.code));",
+            "const imported = pm.response.json().data.imported;",
+            "if (imported && imported.length > 0) {",
+            "  pm.collectionVariables.set('playerId', imported[0].id);",
+            "  console.log('playerId importado =', imported[0].id);",
+            "}"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-Client-Lat", "value": "36.834" },
+              { "key": "X-Client-Lng", "value": "-2.464" },
+              { "key": "X-Client-City", "value": "Almería" },
+              { "key": "X-Client-Country", "value": "España" }
+            ],
+            "body": { "mode": "raw", "raw": "[\n  { \"apiFootballId\": {{apiFootballId}}, \"season\": 2022 }\n]" },
+            "url": "{{baseUrl}}/api/players/import"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧠 5. Equipo Ideal (Gemini)",
+      "item": [
+        {
+          "name": "POST generar once ideal",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK (o 400 si <11 jugadores en BD)', () => pm.expect([200,400]).to.include(pm.response.code));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"formation\": \"4-3-3\" }" },
+            "url": "{{baseUrl}}/api/ideal-team",
+            "description": "Requiere ≥11 jugadores en la BD del backend activo. Formaciones válidas: 4-4-2, 4-3-3, 4-2-3-1, 3-5-2, 5-3-2, etc."
+          }
+        }
+      ]
+    },
+    {
+      "name": "💬 6. Comments",
+      "description": "Comentarios de un jugador. Necesitas un `playerId` (créalo o impórtalo en las carpetas anteriores). Va al backend activo según el toggle.",
+      "item": [
+        {
+          "name": "GET comentarios del jugador",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/comments/player/{{playerId}}" }
+        },
+        {
+          "name": "POST añadir comentario (guarda commentId)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('commentId', pm.response.json().data.id);",
+            "console.log('commentId =', pm.response.json().data.id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-Client-Lat", "value": "36.834" },
+              { "key": "X-Client-Lng", "value": "-2.464" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"author\": \"Johan\",\n  \"text\": \"Visión de juego espectacular, marca la diferencia.\",\n  \"rating\": 5\n}" },
+            "url": "{{baseUrl}}/api/comments/player/{{playerId}}"
+          }
+        },
+        {
+          "name": "DELETE comentario (admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Admin", "value": "true" }
+            ],
+            "url": "{{baseUrl}}/api/comments/{{commentId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📰 7. Noticias (CORBA vía adapter)",
+      "description": "Subsistema de noticias en memoria (FIFO) servido por el servidor CORBA + adapter, expuesto por el Gateway en `/api/news` y `/api/news-admin`.",
+      "item": [
+        {
+          "name": "GET listar noticias",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/news" }
+        },
+        {
+          "name": "POST publicar noticia (guarda newsId)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('newsId', pm.response.json().data.id);",
+            "console.log('newsId =', pm.response.json().data.id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"Messi marca su gol 800\",\n  \"contenido\": \"El astro argentino marcó hoy un gol histórico.\",\n  \"autor\": \"admin\",\n  \"imagenUrl\": \"https://example.com/img.jpg\"\n}" },
+            "url": "{{baseUrl}}/api/news"
+          }
+        },
+        {
+          "name": "GET detalle de noticia",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/news/{{newsId}}" }
+        },
+        {
+          "name": "DELETE noticia",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/news/{{newsId}}" }
+        },
+        {
+          "name": "GET estado del subsistema noticias",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/news-admin/status" }
+        },
+        {
+          "name": "PUT cambiar límite FIFO",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"limite\": 50 }" },
+            "url": "{{baseUrl}}/api/news-admin/config/max-size"
+          }
+        },
+        {
+          "name": "POST vaciar noticias (reset)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/news-admin/reset" }
+        }
+      ]
+    }
+  ]
+}
