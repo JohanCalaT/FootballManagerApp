@@ -56,22 +56,30 @@ function signIn(email: string, password: string): void {
 // auth-gated comment form would never appear; navigating within the app keeps
 // the live session. The list fixture puts player 1111 first, so .first() is
 // the player whose detail/comments we stub.
-function openDetail(attempt = 0): void {
+// The first route push after a cold login can be bounced back to /players by
+// Firebase's late auth-state churn (same reason insert-player retries). Click
+// the card; if we did not land on the detail, let the churn settle and retry.
+function navigateToDetail(attempt = 0): void {
   // Wait for the Ionic transition to settle before clicking (clears the
   // pointer-events:none the tabs shell carries during the post-login push).
   cy.get('ion-router-outlet').should('not.have.class', 'ion-transitioning');
   cy.get('[data-testid=player-card]', { timeout: 10000 }).first().click({ force: true });
-  // The first route push after a cold login can be bounced back to /players by
-  // Firebase's late auth-state churn (same reason insert-player retries). If we
-  // did not land on the detail, let the churn settle and retry.
   cy.location('pathname').then((path) => {
-    if (path !== DETAIL_URL && attempt < 5) {
-      cy.wait(400);
-      openDetail(attempt + 1);
-      return;
+    if (path !== DETAIL_URL && attempt < 6) {
+      cy.wait(500);
+      navigateToDetail(attempt + 1);
     }
-    cy.wrap(path).should('eq', DETAIL_URL);
   });
+}
+
+function openDetail(): void {
+  navigateToDetail();
+  cy.location('pathname', { timeout: 10000 }).should('eq', DETAIL_URL);
+  // Wait for the detail's own comment list GET to resolve: it only fires once
+  // the detail page is mounted and stays mounted, so reaching here means the
+  // post-login churn has fully settled and we are not mid-bounce.
+  cy.wait('@comments');
+  cy.location('pathname').should('eq', DETAIL_URL);
 }
 
 describe('Comments · CRUD', () => {
@@ -128,13 +136,13 @@ describe('Comments · CRUD', () => {
     // fixed tab bar / fold, so assert existence (auth settled) and drive the
     // actions with force to avoid Cypress visibility/overlay flakiness from the
     // Ionic layout — the form's real handlers still run.
-    cy.get('[data-testid=comments-form]', { timeout: 10000 }).should('exist');
+    cy.get('[data-testid=comments-form]', { timeout: 15000 }).should('exist');
 
     cy.get('[data-testid=star-4]').click({ force: true });
     cy.get('[data-testid=comments-author]').find('input').clear({ force: true }).type('Juan E2E', { force: true });
     cy.get('[data-testid=comments-text]').find('textarea').clear({ force: true }).type('Crack absoluto, lo da todo.', { force: true });
 
-    cy.get('[data-testid=comments-submit]').should('not.be.disabled').click({ force: true });
+    cy.get('[data-testid=comments-submit]', { timeout: 15000 }).should('not.be.disabled').click({ force: true });
     cy.wait('@create');
 
     // The new comment is in the list with its text…
@@ -155,11 +163,11 @@ describe('Comments · CRUD', () => {
     signIn(users.seeded.email, users.seeded.password);
     openDetail();
 
-    cy.get('[data-testid=comments-form]', { timeout: 10000 }).should('exist');
+    cy.get('[data-testid=comments-form]', { timeout: 15000 }).should('exist');
     cy.get('[data-testid=star-3]').click({ force: true });
     cy.get('[data-testid=comments-author]').find('input').clear({ force: true }).type('Juan E2E', { force: true });
     cy.get('[data-testid=comments-text]').find('textarea').clear({ force: true }).type('Comentario que el backend rechaza.', { force: true });
-    cy.get('[data-testid=comments-submit]').should('not.be.disabled').click({ force: true });
+    cy.get('[data-testid=comments-submit]', { timeout: 15000 }).should('not.be.disabled').click({ force: true });
     cy.wait('@createError');
 
     // Error toast surfaced (top-layer overlay) and the optimistic row rolled
