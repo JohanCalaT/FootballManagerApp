@@ -70,6 +70,18 @@ jobs:
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
       # Parámetros Aspire no-secretos a nivel de job (los lee azd al provision).
       AZURE_POSTGRES_USER: ${{ vars.AZURE_POSTGRES_USER }}
+      # Config web de Firebase: el AppHost la declara con AddParameter() SIN
+      # secret:true (el apiKey de Firebase es público por diseño — la seguridad
+      # viene de Authorized Domains + Security Rules + validación del JWT en el
+      # Gateway). Por eso van como GitHub Variables, no Secrets. azd las exige
+      # al `provision`; sin ellas falla con "7 required inputs missing".
+      AZURE_FIREBASE_API_KEY:             ${{ vars.AZURE_FIREBASE_API_KEY }}
+      AZURE_FIREBASE_AUTH_DOMAIN:         ${{ vars.AZURE_FIREBASE_AUTH_DOMAIN }}
+      AZURE_FIREBASE_PROJECT_ID:          ${{ vars.AZURE_FIREBASE_PROJECT_ID }}
+      AZURE_FIREBASE_STORAGE_BUCKET:      ${{ vars.AZURE_FIREBASE_STORAGE_BUCKET }}
+      AZURE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.AZURE_FIREBASE_MESSAGING_SENDER_ID }}
+      AZURE_FIREBASE_APP_ID:              ${{ vars.AZURE_FIREBASE_APP_ID }}
+      AZURE_FIREBASE_MEASUREMENT_ID:      ${{ vars.AZURE_FIREBASE_MEASUREMENT_ID }}
       # Effective deploy inputs. workflow_dispatch los toma del UI;
       # push events caen al default `all` / `true`.
       TARGET: ${{ github.event.inputs.target || 'all' }}
