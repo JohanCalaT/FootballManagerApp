@@ -30,9 +30,15 @@ const emptySearch = {
 };
 
 function openInsertForm(attempt = 0): void {
-  // Insert now lives behind the add FAB → action sheet on the Jugadores tab.
+  // Insert now lives behind the add FAB → themed bottom sheet on the Jugadores
+  // tab. The option dismisses the sheet (animation) and THEN navigates, so wait
+  // for the sheet to be gone before checking the path / retrying — re-clicking
+  // the FAB mid-dismiss is what made Firefox flaky.
   cy.get('[data-testid=home-fab]').click();
-  cy.contains('Insertar manualmente').click();
+  cy.get('[data-testid=add-player-manual]', { timeout: 8000 })
+    .should('be.visible')
+    .click();
+  cy.get('app-add-players-sheet').should('not.exist');
   cy.location('pathname').then((path) => {
     if (path !== '/players/new' && attempt < 4) {
       cy.wait(400);

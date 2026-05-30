@@ -7,7 +7,7 @@
   </header>
 
   <div class="sheet__options" role="group" aria-label="Opciones para añadir jugadores">
-    <button type="button" class="option option--manual" (click)="choose('insert')">
+    <button type="button" class="option option--manual" data-testid="add-player-manual" (click)="choose('insert')">
       <span class="option__icon">
         <ion-icon name="create-outline" aria-hidden="true"></ion-icon>
       </span>
@@ -18,7 +18,7 @@
       <ion-icon class="option__chevron" name="chevron-forward-outline" aria-hidden="true"></ion-icon>
     </button>
 
-    <button type="button" class="option option--import" (click)="choose('import')">
+    <button type="button" class="option option--import" data-testid="add-player-import" (click)="choose('import')">
       <span class="option__icon">
         <ion-icon name="download-outline" aria-hidden="true"></ion-icon>
       </span>

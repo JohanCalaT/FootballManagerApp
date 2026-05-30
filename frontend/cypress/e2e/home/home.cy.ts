@@ -90,9 +90,9 @@ describe('Players · Home', () => {
     cy.get('[data-testid=login-submit-button]').click();
     cy.location('pathname').should('eq', '/players');
     cy.wait('@listPage1');
-    // FAB → action sheet → Importar opens the API-Football modal.
+    // FAB → bottom sheet → Importar opens the API-Football modal.
     cy.get('[data-testid=home-fab]').click();
-    cy.contains('Importar de API-Football').click();
+    cy.get('[data-testid=add-player-import]').should('be.visible').click();
     cy.contains('Importar jugadores').should('be.visible');
   });
 
