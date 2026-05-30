@@ -103,6 +103,10 @@ stitch-export/
 **/serviceAccountKey.json
 **/google-services.json
 
-# --- Capacitor / Android / iOS (generados por Ionic build) ---
-android/
+# --- Capacitor / Android / iOS ---
+# The Android native project (frontend/android/) IS committed: it holds the
+# custom launcher icons, splash screens and AndroidManifest the APK build needs,
+# and there is no resources/ source to regenerate them. Build artifacts (build/,
+# .gradle/, local.properties, the copied web bundle, generated config) stay
+# ignored via frontend/android/.gitignore. iOS is not built → stays ignored.
 ios/

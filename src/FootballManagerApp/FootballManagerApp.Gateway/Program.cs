@@ -3,7 +3,23 @@ using FootballManagerApp.Gateway.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CORS policy for the Capacitor APK. The web app is same-origin (nginx proxies
+// /api + /config), so it needs no CORS; the installed APK runs at a different
+// origin (capacitor:// or https://localhost) and calls the Gateway directly.
+// Auth is via Bearer JWT (no cookies), so AllowAnyOrigin is safe — it is NOT
+// combined with credentials. The downstream services still gate on the
+// validated token, so this only governs the browser/WebView preflight.
+const string ApkCorsPolicy = "apk-cors";
+
 builder.AddServiceDefaults();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(ApkCorsPolicy, policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
 
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
@@ -21,6 +37,10 @@ builder.Services.AddControllers();
 builder.Services.AddFirebaseAuth(builder.Configuration);
 
 var app = builder.Build();
+
+// CORS first so the WebView preflight (OPTIONS) is answered before auth and the
+// proxy run. Harmless for the same-origin web app (no Origin header → no-op).
+app.UseCors(ApkCorsPolicy);
 
 // Authentication must run BEFORE HeaderForwardingMiddleware so the
 // middleware sees a populated ClaimsPrincipal and can stamp X-User-* from

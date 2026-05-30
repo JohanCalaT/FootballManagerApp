@@ -9,6 +9,7 @@ import { appConfig } from './app/app.config';
 import { AppComponent } from './app/app.component';
 import { APP_CONFIG } from './app/core/config/app-config.token';
 import { AppConfig } from './app/core/config/app-config.model';
+import { GATEWAY_URL } from './app/core/tokens/gateway-url.token';
 
 // Register the Stencil-built web components (e.g. <fma-player-card>) on the
 // global custom-elements registry before Angular bootstraps, so the first
@@ -48,6 +49,11 @@ async function main(): Promise<void> {
     providers: [
       ...appConfig.providers,
       { provide: APP_CONFIG, useValue: config },
+      // Override the build-time GATEWAY_URL with the runtime one from
+      // config.json: '' on the web (relative paths → nginx proxy), the absolute
+      // staging Gateway URL in the Capacitor APK (no proxy → direct + CORS).
+      // Listed AFTER ...appConfig.providers so this wins for the token.
+      { provide: GATEWAY_URL, useValue: config.gatewayUrl ?? '' },
       provideFirebaseApp(() => initializeApp(config.firebase)),
       provideAuth(() => {
         const auth = getAuth();
