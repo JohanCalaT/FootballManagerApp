@@ -33,24 +33,20 @@ on:
         default: 'true'
         type: boolean
 
-  # === AUTO-DEPLOY PAUSADO PARA AHORRAR COSTOS AZURE ===
-  # Para reactivar: descomentar el bloque `push:` de abajo.
-  # Mientras esté pausado, el deploy SOLO se dispara manualmente desde
-  # GitHub Actions → "Run workflow" (usa el bloque workflow_dispatch).
-  # Si la rama es develop  → environment "staging"
-  # Si la rama es main     → environment "production"
-  # ----------------------------------------------------
-  # push:
-  #   branches: [develop, main]
-  #   paths:
-  #     - 'src/FootballManagerApp/**'
-  #     - 'frontend/**'
-  #     - 'backend-node/**'
-  #     - 'backend-corba/**'
-  #     - 'azure.yaml'
-  #     - 'infra/**'
-  #     - '.github/workflows/deploy-azure.yml'
-  # =====================================================
+  # === AUTO-DEPLOY ACTIVO ===
+  # Cada push a develop (→ staging) o main (→ production) que toque estos
+  # paths dispara el deploy automáticamente. Para volver a pausarlo (ahorrar
+  # costes Azure) comentar el bloque `push:` y usar solo "Run workflow".
+  push:
+    branches: [develop, main]
+    paths:
+      - 'src/FootballManagerApp/**'
+      - 'frontend/**'
+      - 'backend-node/**'
+      - 'backend-corba/**'
+      - 'azure.yaml'
+      - 'infra/**'
+      - '.github/workflows/deploy-azure.yml'
 
 permissions:
   id-token: write

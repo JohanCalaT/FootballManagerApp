@@ -95,7 +95,19 @@
           [attr.data-testid]="'comment-' + comment.id">
           <header class="comments__item-head">
             <strong class="comments__item-author">{{ comment.author }}</strong>
-            <time class="comments__item-date">{{ comment.createdAt | date: 'short' }}</time>
+            <div class="comments__item-head-end">
+              <time class="comments__item-date">{{ comment.createdAt | date: 'short' }}</time>
+              @if (isAdmin()) {
+                <button
+                  type="button"
+                  class="comments__item-delete"
+                  (click)="onDelete(comment)"
+                  [attr.aria-label]="'Eliminar comentario de ' + comment.author"
+                  [attr.data-testid]="'comment-delete-' + comment.id">
+                  <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+                </button>
+              }
+            </div>
           </header>
 
           <div class="comments__item-rating" aria-label="Valoración">
@@ -107,17 +119,6 @@
           </div>
 
           <p class="comments__item-text">{{ comment.text }}</p>
-
-          @if (isAdmin()) {
-            <button
-              type="button"
-              class="comments__item-delete"
-              (click)="onDelete(comment)"
-              [attr.aria-label]="'Eliminar comentario de ' + comment.author"
-              [attr.data-testid]="'comment-delete-' + comment.id">
-              <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
-            </button>
-          }
         </li>
       }
     </ul>
