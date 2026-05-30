@@ -1,12 +1,27 @@
 :host {
   display: block;
-  padding: var(--app-space-4);
+  padding: var(--app-space-3);
 }
 
 .home-grid {
   display: grid;
-  gap: var(--app-space-3);
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--app-space-2);
+  // Phones: always exactly 2 cards per row. `auto-fill` with a 180px floor
+  // collapses to a single column on real ~360px devices (after host padding
+  // + gap there isn't room for two 180px tracks), even though browser device
+  // emulation at 412px shows two. Pin 2 columns until we have tablet width.
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+// Tablet / desktop: let the cards breathe and pack more per row.
+@media (min-width: 600px) {
+  :host {
+    padding: var(--app-space-4);
+  }
+  .home-grid {
+    gap: var(--app-space-3);
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
 }
 
 .home-grid__skeleton {
