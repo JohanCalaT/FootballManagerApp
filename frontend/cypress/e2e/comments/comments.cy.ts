@@ -41,7 +41,16 @@ function denyGeolocation(win: Window): void {
 }
 
 function signIn(email: string, password: string): void {
-  cy.visit('/auth/login?e2e=1', { onBeforeLoad: denyGeolocation });
+  cy.visit('/auth/login?e2e=1', {
+    onBeforeLoad(win) {
+      // Cypress keeps IndexedDB between tests AND between retry attempts, so a
+      // stale Firebase session lingers and makes the next cold login churn —
+      // which is what bounces the post-login navigation back to /players. Wipe
+      // the persisted session before the app boots so every login is truly cold.
+      win.indexedDB.deleteDatabase('firebaseLocalStorageDb');
+      denyGeolocation(win);
+    },
+  });
   cy.get('[data-testid=login-email-input]').type(email);
   cy.get('[data-testid=login-password-input]').type(password);
   cy.get('[data-testid=login-submit-button]').click();
