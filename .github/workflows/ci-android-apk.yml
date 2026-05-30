@@ -14,7 +14,7 @@ name: APK · Android (Capacitor)
 on:
   workflow_dispatch:
   push:
-    branches: [develop, main, ci/android-apk-pipeline]
+    branches: [develop, main]
     paths:
       - 'frontend/**'
       - '.github/workflows/ci-android-apk.yml'
