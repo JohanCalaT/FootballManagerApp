@@ -150,6 +150,15 @@ export class IdealTeamPage implements OnDestroy {
     this.stopLoadingFx();
   }
 
+  /**
+   * Ionic keeps tab pages alive in the router-outlet stack, so ngOnDestroy
+   * never fires on a tab switch. Reset the state machine here so leaving the
+   * tab discards the generated eleven and re-entering starts on the form.
+   */
+  ionViewDidLeave(): void {
+    this.reset();
+  }
+
   protected goBack(): void {
     this.location.back();
   }
