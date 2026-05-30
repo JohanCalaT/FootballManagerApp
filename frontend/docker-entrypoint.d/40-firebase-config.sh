@@ -22,7 +22,8 @@ cat > "$ASSETS_DIR/config.json" <<JSON
     "messagingSenderId": "${FIREBASE_MESSAGING_SENDER_ID}",
     "appId": "${FIREBASE_APP_ID}",
     "measurementId": "${FIREBASE_MEASUREMENT_ID}"
-  }
+  },
+  "gatewayUrl": "${GATEWAY_URL}"
 }
 JSON
 

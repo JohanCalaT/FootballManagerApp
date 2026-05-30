@@ -40,6 +40,10 @@ const config = {
     appId: process.env.FIREBASE_APP_ID,
     measurementId: process.env.FIREBASE_MEASUREMENT_ID || '',
   },
+  // Empty on the web build (relative paths → nginx proxies /api + /config to
+  // the Gateway). The Capacitor APK build sets GATEWAY_URL to the absolute
+  // staging Gateway URL so the installed app reaches the backend directly.
+  gatewayUrl: process.env.GATEWAY_URL || '',
 };
 
 const outDir = path.resolve(__dirname, '..', 'src', 'assets');
