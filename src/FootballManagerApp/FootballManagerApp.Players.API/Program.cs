@@ -1,6 +1,7 @@
 using FootballManagerApp.Players.API.Middleware;
 using FootballManagerApp.Players.Infrastructure.DependencyInjection;
 using FootballManagerApp.Players.Infrastructure.Persistence;
+using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,6 +36,21 @@ builder.Services.AddInfrastructure();
 
 var app = builder.Build();
 
+// Behind the YARP Gateway (and ACA's internal ingress). Honor X-Forwarded-*
+// so Request.Host/Scheme reflect the public Gateway, and Url.Link() emits
+// absolute _links (HATEOAS) pointing at the Gateway instead of the internal
+// service name. The Gateway runs at an unknown internal ACA IP and is the only
+// reachable caller (internal ingress), so we clear the proxy allowlist.
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor
+        | ForwardedHeaders.XForwardedProto
+        | ForwardedHeaders.XForwardedHost,
+};
+forwardedHeadersOptions.KnownIPNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
+
 app.MapDefaultEndpoints();
 
 app.UseMiddleware<ExceptionMiddleware>();
@@ -50,8 +66,6 @@ app.MapScalarApiReference("/docs/players", options =>
 
 app.MapGet("/", () => Results.Redirect("/docs/players"))
    .ExcludeFromDescription();
-
-app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

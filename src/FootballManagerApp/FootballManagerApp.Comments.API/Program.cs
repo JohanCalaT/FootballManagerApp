@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using FootballManagerApp.Comments.API.Middleware;
 using FootballManagerApp.Comments.Infrastructure.DependencyInjection;
 using FootballManagerApp.Comments.Infrastructure.Persistence;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Scalar.AspNetCore;
 
@@ -55,6 +56,21 @@ builder.Services.AddInfrastructure();
 
 var app = builder.Build();
 
+// Behind the YARP Gateway (and ACA's internal ingress). Honor X-Forwarded-*
+// so Request.Host/Scheme reflect the public Gateway, and Url.Link() emits
+// absolute _links (HATEOAS) pointing at the Gateway instead of the internal
+// service name. The Gateway runs at an unknown internal ACA IP and is the only
+// reachable caller (internal ingress), so we clear the proxy allowlist.
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor
+        | ForwardedHeaders.XForwardedProto
+        | ForwardedHeaders.XForwardedHost,
+};
+forwardedHeadersOptions.KnownIPNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
+
 app.MapDefaultEndpoints();
 
 app.UseMiddleware<ExceptionMiddleware>();
@@ -70,8 +86,6 @@ app.MapScalarApiReference("/docs/comments", options =>
 
 app.MapGet("/", () => Results.Redirect("/docs/comments"))
    .ExcludeFromDescription();
-
-app.UseHttpsRedirection();
 
 app.UseRateLimiter();
 app.UseAuthorization();
