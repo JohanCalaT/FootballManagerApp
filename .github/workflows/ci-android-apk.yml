@@ -47,12 +47,13 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      # Android Gradle Plugin 8 requires JDK 17.
-      - name: Setup JDK 17
+      # Capacitor 8's Android libraries compile with sourceCompatibility 21,
+      # so the build needs JDK 21 (JDK 17 fails: "invalid source release: 21").
+      - name: Setup JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       # Provisions cmdline-tools and accepts the SDK licenses so Gradle can
       # resolve the compile/build-tools versions from variables.gradle.
