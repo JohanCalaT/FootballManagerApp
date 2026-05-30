@@ -1,0 +1,78 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/news" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>Publicar noticia</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    @if (ownerUid()) {
+      <section class="news-form__card">
+        <app-player-image-picker [ownerUid]="ownerUid()"></app-player-image-picker>
+      </section>
+    }
+
+    <section class="news-form__card">
+      <ion-input
+        label="Título"
+        labelPlacement="stacked"
+        formControlName="titulo"
+        [maxlength]="limits.titulo"
+        [counter]="true"
+        data-testid="news-titulo-input"
+        placeholder="Messi marca su gol 800"></ion-input>
+      @if (form.controls.titulo.touched && form.controls.titulo.invalid) {
+        <p class="news-form__error" data-testid="news-titulo-error">
+          El título es obligatorio (máx. {{ limits.titulo }}).
+        </p>
+      }
+
+      <ion-input
+        label="Autor"
+        labelPlacement="stacked"
+        formControlName="autor"
+        [maxlength]="limits.autor"
+        data-testid="news-autor-input"></ion-input>
+      @if (form.controls.autor.touched && form.controls.autor.invalid) {
+        <p class="news-form__error">El autor es obligatorio.</p>
+      }
+
+      <ion-textarea
+        label="Contenido"
+        labelPlacement="stacked"
+        formControlName="contenido"
+        [autoGrow]="true"
+        [maxlength]="limits.contenido"
+        [counter]="true"
+        [rows]="6"
+        data-testid="news-contenido-input"
+        placeholder="El astro argentino…"></ion-textarea>
+      @if (form.controls.contenido.touched && form.controls.contenido.invalid) {
+        <p class="news-form__error" data-testid="news-contenido-error">
+          El contenido es obligatorio (máx. {{ limits.contenido }}).
+        </p>
+      }
+    </section>
+  </form>
+</ion-content>
+
+<ion-footer class="ion-no-border">
+  <ion-toolbar>
+    <ion-button
+      expand="block"
+      class="news-form__submit"
+      [disabled]="isSaving()"
+      (click)="onSubmit()"
+      data-testid="news-submit-button">
+      @if (isSaving()) {
+        <ion-spinner name="dots" slot="start"></ion-spinner>
+        Publicando…
+      } @else {
+        Publicar noticia
+      }
+    </ion-button>
+  </ion-toolbar>
+</ion-footer>

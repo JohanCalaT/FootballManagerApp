@@ -1,0 +1,49 @@
+<section class="import-result" data-testid="import-result">
+  @if (error()) {
+    <div class="import-result__banner import-result__banner--error" data-testid="import-error-banner">
+      {{ error() }}
+    </div>
+  }
+
+  @if (result().imported.length > 0) {
+    <div class="import-result__section import-result__section--ok"
+      data-testid="import-result-imported">
+      <h3 class="import-result__title t-label-sm">
+        Importados · {{ result().imported.length }}
+      </h3>
+      <ul class="import-result__list">
+        @for (p of result().imported; track p.id) {
+          <li>
+            <span class="import-result__name">{{ p.name }}</span>
+            <span class="import-result__meta">{{ p.team }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+
+  @if (result().failed.length > 0) {
+    <div class="import-result__section import-result__section--fail"
+      data-testid="import-result-failed">
+      <h3 class="import-result__title t-label-sm">
+        Con errores · {{ result().failed.length }}
+      </h3>
+      <ul class="import-result__list">
+        @for (f of result().failed; track $index) {
+          <li>
+            <span class="import-result__name">#{{ f.apiFootballId }} · {{ f.season }}</span>
+            <span class="import-result__meta">{{ f.reason }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+
+  <button
+    type="button"
+    class="import-result__back"
+    (click)="closeRequested.emit()"
+    data-testid="import-result-back-button">
+    Volver al roster ✓
+  </button>
+</section>

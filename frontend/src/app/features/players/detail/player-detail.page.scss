@@ -1,0 +1,271 @@
+// Player detail page — Gridiron Neon. Mobile-first, single column. Reuses
+// the same dark-card surface treatment from the manual create / edit
+// pages so the visual language stays uniform across the players area.
+
+:host {
+  --fma-surface-card: #1f1f25;
+  --fma-input-bg: #050505;
+  --fma-input-border: rgba(255, 255, 255, 0.12);
+  --fma-neon: #00ff87;
+  --fma-gold: #ffdb3c;
+  --fma-danger: #ffb4ab;
+}
+
+ion-header ion-toolbar {
+  --background: rgba(19, 19, 24, 0.7);
+  --color: #e4e1e9;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+ion-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.detail {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 32px;
+
+  &__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding-top: 64px;
+    color: #b9cbb9;
+  }
+
+  &__hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 16px 24px;
+    margin-bottom: 16px;
+    background: radial-gradient(circle at 50% 0%, rgba(0, 255, 135, 0.08) 0%, transparent 70%),
+      var(--fma-surface-card);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+  }
+
+  &__token {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 35%, #1c1c22, #050507);
+    box-shadow:
+      0 0 0 2px rgba(0, 255, 135, 0.4),
+      0 0 30px rgba(0, 255, 135, 0.2);
+    display: grid;
+    place-items: center;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+    }
+  }
+
+  &__initials {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 44px;
+    letter-spacing: 0.08em;
+    color: #b9cbb9;
+  }
+
+  &__name {
+    margin: 0;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #e4e1e9;
+    text-align: center;
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  &__chip {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    color: #e4e1e9;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    &--ghost {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #b9cbb9;
+    }
+
+    &--position {
+      background: rgba(0, 255, 135, 0.12);
+      color: var(--fma-neon);
+    }
+
+    &--shirt {
+      background: rgba(255, 219, 60, 0.12);
+      color: var(--fma-gold);
+    }
+
+    &--injured {
+      background: rgba(255, 180, 171, 0.12);
+      color: var(--fma-danger);
+
+      ion-icon { font-size: 0.9rem; }
+    }
+
+    &--api {
+      background: rgba(255, 219, 60, 0.08);
+      color: var(--fma-gold);
+      border: 1px solid rgba(255, 219, 60, 0.3);
+    }
+  }
+
+  &__card {
+    background: var(--fma-surface-card);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  &__heading {
+    margin: 0 0 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #e4e1e9;
+  }
+
+  &__bio {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+
+    div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    dt {
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #6e6e76;
+    }
+    dd {
+      margin: 0;
+      color: #e4e1e9;
+      font-size: 14px;
+    }
+  }
+
+  &__empty {
+    margin: 0;
+    color: #b9cbb9;
+    font-size: 13px;
+
+    a {
+      color: var(--fma-neon);
+      margin-left: 4px;
+      text-decoration: none;
+
+      &:hover { text-decoration: underline; }
+    }
+  }
+}
+
+.stats {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__row {
+    background: var(--fma-input-bg);
+    border: 1px solid var(--fma-input-border);
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+
+    strong {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 0.04em;
+      color: var(--fma-neon);
+    }
+
+    span {
+      color: #e4e1e9;
+      font-size: 13px;
+    }
+  }
+
+  &__league { color: #b9cbb9 !important; }
+
+  &__rating {
+    margin-left: auto;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: var(--fma-gold);
+  }
+
+  &__grid {
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+
+    div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    dt {
+      font-family: 'Inter', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #6e6e76;
+    }
+    dd {
+      margin: 0;
+      color: #e4e1e9;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+    }
+  }
+}

@@ -8,11 +8,20 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6" />
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.2.3" />
+    <PackageReference Include="Aspire.StackExchange.Redis.DistributedCaching" Version="13.2.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Scalar.AspNetCore" Version="2.*" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\FootballManagerApp.ServiceDefaults\FootballManagerApp.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\FootballManagerApp.Comments.Application\FootballManagerApp.Comments.Application.csproj" />
+    <ProjectReference Include="..\FootballManagerApp.Comments.Infrastructure\FootballManagerApp.Comments.Infrastructure.csproj" />
+    <ProjectReference Include="..\FootballManagerApp.Shared\FootballManagerApp.Shared.csproj" />
   </ItemGroup>
 
 </Project>

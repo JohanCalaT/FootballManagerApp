@@ -1,0 +1,370 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/players" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>Editar jugador</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="edit-form" [fullscreen]="true">
+  @if (isLoading()) {
+    <div class="edit-form__loading" data-testid="edit-loading">
+      <ion-spinner name="dots"></ion-spinner>
+      <span>Cargando jugador…</span>
+    </div>
+  } @else if (player(); as p) {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" data-testid="edit-form">
+      <!-- Origin banner -->
+      <section
+        class="edit-form__origin"
+        [class.edit-form__origin--imported]="isImported()"
+        data-testid="origin-banner">
+        <ion-icon
+          [name]="isImported() ? 'lock-closed-outline' : 'create-outline'"
+          aria-hidden="true"></ion-icon>
+        <div class="edit-form__origin-text">
+          <strong>{{ originLabel() }}</strong>
+          <small>Creado el {{ p.registeredAt | date: 'short' }}</small>
+        </div>
+      </section>
+
+      <!-- Estado del día -->
+      <section class="edit-form__card edit-form__card--state" aria-labelledby="state-heading">
+        <h2 id="state-heading" class="edit-form__heading">Estado del día</h2>
+
+        <label class="edit-form__row edit-form__row--inline">
+          <span class="edit-form__label">Lesionado</span>
+          <ion-toggle
+            formControlName="injured"
+            data-testid="field-injured"></ion-toggle>
+        </label>
+
+        <label class="edit-form__field">
+          <span class="edit-form__label">Dorsal</span>
+          <ion-input
+            formControlName="shirtNumber"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            max="99"
+            data-testid="field-shirtNumber"></ion-input>
+        </label>
+      </section>
+
+      <!-- Imagen -->
+      <section class="edit-form__card" aria-labelledby="img-heading">
+        <h2 id="img-heading" class="edit-form__heading">Foto</h2>
+        @if (ownerUid()) {
+          <app-player-image-picker
+            [ownerUid]="ownerUid()"
+            [initial]="initialImage()"></app-player-image-picker>
+        }
+      </section>
+
+      <!-- Identidad y club -->
+      <section class="edit-form__card" aria-labelledby="id-heading">
+        <h2 id="id-heading" class="edit-form__heading">Identidad y club</h2>
+
+        <label class="edit-form__field">
+          <span class="edit-form__label">
+            Nombre *
+            @if (isImported()) {
+              <ion-icon name="lock-closed" aria-hidden="true" class="edit-form__lock"></ion-icon>
+            }
+          </span>
+          <ion-input
+            formControlName="name"
+            type="text"
+            autocomplete="off"
+            data-testid="field-name"></ion-input>
+        </label>
+
+        <fieldset class="edit-form__field">
+          <legend class="edit-form__label">Posición *</legend>
+          <div
+            class="position-grid"
+            role="radiogroup"
+            aria-label="Posición del jugador"
+            data-testid="field-position">
+            @for (pos of positions; track pos) {
+              <button
+                type="button"
+                role="radio"
+                class="position-grid__pill"
+                [class.position-grid__pill--active]="form.controls.position.value === pos"
+                [attr.aria-checked]="form.controls.position.value === pos"
+                (click)="selectPosition(pos)"
+                [attr.data-testid]="'pos-' + pos">
+                {{ pos }}
+              </button>
+            }
+          </div>
+        </fieldset>
+
+        <label class="edit-form__field">
+          <span class="edit-form__label">Equipo *</span>
+          <ion-input
+            formControlName="team"
+            type="text"
+            autocomplete="off"
+            data-testid="field-team"></ion-input>
+        </label>
+
+        <label class="edit-form__field">
+          <span class="edit-form__label">Liga *</span>
+          <ion-input
+            formControlName="league"
+            type="text"
+            autocomplete="off"
+            data-testid="field-league"></ion-input>
+        </label>
+      </section>
+
+      <!-- Más datos -->
+      <app-collapsible-section
+        title="Más datos"
+        icon="add-circle-outline"
+        [badge]="isImported() ? 'Algunos bloqueados' : undefined">
+        <div class="edit-form__grid">
+          <label class="edit-form__field">
+            <span class="edit-form__label">
+              Nombre de pila
+              @if (isImported()) {
+                <ion-icon name="lock-closed" aria-hidden="true" class="edit-form__lock"></ion-icon>
+              }
+            </span>
+            <ion-input formControlName="firstName" type="text" data-testid="field-firstName"></ion-input>
+          </label>
+          <label class="edit-form__field">
+            <span class="edit-form__label">
+              Apellido
+              @if (isImported()) {
+                <ion-icon name="lock-closed" aria-hidden="true" class="edit-form__lock"></ion-icon>
+              }
+            </span>
+            <ion-input formControlName="lastName" type="text" data-testid="field-lastName"></ion-input>
+          </label>
+          <label class="edit-form__field">
+            <span class="edit-form__label">
+              Nacionalidad
+              @if (isImported()) {
+                <ion-icon name="lock-closed" aria-hidden="true" class="edit-form__lock"></ion-icon>
+              }
+            </span>
+            <ion-input formControlName="nationality" type="text" data-testid="field-nationality"></ion-input>
+          </label>
+          <label class="edit-form__field">
+            <span class="edit-form__label">
+              Fecha de nacimiento
+              @if (isImported()) {
+                <ion-icon name="lock-closed" aria-hidden="true" class="edit-form__lock"></ion-icon>
+              }
+            </span>
+            <ion-input formControlName="birthDate" type="date" data-testid="field-birthDate"></ion-input>
+          </label>
+          <label class="edit-form__field">
+            <span class="edit-form__label">
+              Ciudad de nacimiento
+              @if (isImported()) {
+                <ion-icon name="lock-closed" aria-hidden="true" class="edit-form__lock"></ion-icon>
+              }
+            </span>
+            <ion-input formControlName="birthPlace" type="text" data-testid="field-birthPlace"></ion-input>
+          </label>
+          <label class="edit-form__field">
+            <span class="edit-form__label">
+              País de nacimiento
+              @if (isImported()) {
+                <ion-icon name="lock-closed" aria-hidden="true" class="edit-form__lock"></ion-icon>
+              }
+            </span>
+            <ion-input formControlName="birthCountry" type="text" data-testid="field-birthCountry"></ion-input>
+          </label>
+          <label class="edit-form__field">
+            <span class="edit-form__label">Altura</span>
+            <ion-input formControlName="height" type="text" placeholder="170 cm" data-testid="field-height"></ion-input>
+          </label>
+          <label class="edit-form__field">
+            <span class="edit-form__label">Peso</span>
+            <ion-input formControlName="weight" type="text" placeholder="72 kg" data-testid="field-weight"></ion-input>
+          </label>
+        </div>
+      </app-collapsible-section>
+
+      <!-- Estadísticas manuales (solo manuales) -->
+      @if (!isImported()) {
+        <app-collapsible-section
+          title="Estadísticas por temporada"
+          icon="stats-chart-outline"
+          [badge]="statisticsArray.length > 0 ? (statisticsArray.length + ' temporada' + (statisticsArray.length === 1 ? '' : 's')) : undefined">
+          <p class="edit-form__hint">
+            Añade una entrada por temporada para que el Equipo Ideal pueda valorar a este jugador.
+          </p>
+
+          <div formArrayName="statistics" class="stats-list" data-testid="stats-list">
+            @for (row of statisticsArray.controls; track row; let i = $index) {
+              <fieldset [formGroupName]="i" class="stats-list__row" [attr.data-testid]="'stats-row-' + i">
+                <header class="stats-list__row-head">
+                  <strong>Temporada #{{ i + 1 }}</strong>
+                  <button
+                    type="button"
+                    class="stats-list__remove"
+                    (click)="removeStatRow(i)"
+                    [attr.data-testid]="'stats-remove-' + i"
+                    aria-label="Quitar temporada">
+                    <ion-icon name="close-circle-outline" aria-hidden="true"></ion-icon>
+                  </button>
+                </header>
+
+                <div class="edit-form__grid">
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Temporada</span>
+                    <select
+                      class="stats-list__select"
+                      formControlName="season"
+                      [attr.data-testid]="'stats-season-' + i">
+                      @for (s of allowedSeasons; track s) {
+                        <option [value]="s">{{ s }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Posición</span>
+                    <select
+                      class="stats-list__select"
+                      formControlName="position"
+                      [attr.data-testid]="'stats-position-' + i">
+                      <option value="">—</option>
+                      @for (p of positions; track p) {
+                        <option [value]="p">{{ p }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Equipo</span>
+                    <ion-input
+                      formControlName="teamName"
+                      type="text"
+                      [attr.data-testid]="'stats-team-' + i"></ion-input>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Liga</span>
+                    <ion-input
+                      formControlName="leagueName"
+                      type="text"
+                      [attr.data-testid]="'stats-league-' + i"></ion-input>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Partidos</span>
+                    <ion-input
+                      formControlName="appearances"
+                      type="number"
+                      inputmode="numeric"
+                      min="0"
+                      [attr.data-testid]="'stats-appearances-' + i"></ion-input>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Goles</span>
+                    <ion-input
+                      formControlName="goals"
+                      type="number"
+                      inputmode="numeric"
+                      min="0"
+                      [attr.data-testid]="'stats-goals-' + i"></ion-input>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Asistencias</span>
+                    <ion-input
+                      formControlName="assists"
+                      type="number"
+                      inputmode="numeric"
+                      min="0"
+                      [attr.data-testid]="'stats-assists-' + i"></ion-input>
+                  </label>
+                  <label class="edit-form__field">
+                    <span class="edit-form__label">Rating</span>
+                    <ion-input
+                      formControlName="rating"
+                      type="number"
+                      inputmode="decimal"
+                      step="0.1"
+                      min="0"
+                      max="10"
+                      placeholder="0–10"
+                      [attr.data-testid]="'stats-rating-' + i"></ion-input>
+                  </label>
+                </div>
+              </fieldset>
+            }
+          </div>
+
+          <ion-button
+            expand="block"
+            fill="outline"
+            (click)="addStatRow()"
+            data-testid="stats-add">
+            <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
+            Añadir temporada
+          </ion-button>
+        </app-collapsible-section>
+      }
+
+      <!-- Mapa -->
+      <app-collapsible-section
+        title="Marcar en mapa"
+        icon="map-outline"
+        [(open)]="mapSectionOpen"
+        [badge]="playerGeolocation() ? 'Ubicación elegida' : undefined">
+        @defer (when mapSectionOpen()) {
+          <app-player-geolocation-picker
+            [initial]="playerGeolocation()"
+            (changed)="onPlayerGeolocationChange($event)"
+            data-testid="player-geo-picker"></app-player-geolocation-picker>
+        } @placeholder {
+          <p class="edit-form__defer-hint">El mapa se cargará al abrir esta sección.</p>
+        }
+      </app-collapsible-section>
+
+      <!-- Zona peligrosa -->
+      <section class="edit-form__danger" aria-labelledby="danger-heading">
+        <h2 id="danger-heading" class="edit-form__heading edit-form__heading--danger">Zona peligrosa</h2>
+        <p class="edit-form__hint">
+          Eliminar a este jugador borra permanentemente sus datos.
+        </p>
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="danger"
+          (click)="onDelete()"
+          [disabled]="isSaving()"
+          data-testid="action-delete">
+          <ion-icon slot="start" name="trash-outline" aria-hidden="true"></ion-icon>
+          Eliminar jugador
+        </ion-button>
+      </section>
+    </form>
+  }
+</ion-content>
+
+@if (!isLoading() && player()) {
+  <ion-footer class="edit-form__footer ion-no-border">
+    <ion-toolbar>
+      <div class="edit-form__cta">
+        <ion-button
+          expand="block"
+          color="primary"
+          (click)="onSubmit()"
+          [disabled]="isSaving() || form.invalid || form.pending"
+          data-testid="action-submit">
+          @if (isSaving()) {
+            <ion-spinner name="dots" slot="start"></ion-spinner>
+            Guardando…
+          } @else {
+            Guardar cambios
+          }
+        </ion-button>
+      </div>
+    </ion-toolbar>
+  </ion-footer>
+}

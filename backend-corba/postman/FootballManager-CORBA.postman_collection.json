@@ -1,0 +1,124 @@
+{
+  "info": {
+    "name": "FootballManager - News (via API Gateway)",
+    "_postman_id": "fm-news-gateway",
+    "description": "Endpoints de noticias expuestos por el API Gateway YARP en http://localhost:5000. Arranca el backend con `aspire run` (o `dotnet run`) desde src/FootballManagerApp/FootballManagerApp.AppHost/.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "GET /api/news (listar)",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:5000/api/news"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('200 OK', () => pm.response.to.have.status(200));",
+          "pm.test('envelope success', () => pm.expect(pm.response.json().status).to.eql('success'));"
+        ]}
+      }]
+    },
+    {
+      "name": "POST /api/news (publicar)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"titulo\": \"Messi marca su gol 800\",\n  \"contenido\": \"El astro argentino marco hoy un gol historico.\",\n  \"autor\": \"admin\",\n  \"imagenUrl\": \"https://example.com/img.jpg\"\n}"
+        },
+        "url": "http://localhost:5000/api/news"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('201 Created', () => pm.response.to.have.status(201));",
+          "const j = pm.response.json();",
+          "pm.test('envelope success', () => pm.expect(j.status).to.eql('success'));",
+          "pm.test('id devuelto', () => pm.expect(j.data.id).to.be.a('string').and.not.empty);",
+          "pm.collectionVariables.set('lastId', j.data.id);"
+        ]}
+      }]
+    },
+    {
+      "name": "GET /api/news/{id} (detalle)",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:5000/api/news/{{lastId}}",
+        "description": "Pega aqui el id devuelto por POST /api/news, o ejecuta POST primero (deja {{lastId}} guardado)."
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('200 OK', () => pm.response.to.have.status(200));"
+        ]}
+      }]
+    },
+    {
+      "name": "DELETE /api/news/{id} (eliminar)",
+      "request": {
+        "method": "DELETE",
+        "url": "http://localhost:5000/api/news/{{lastId}}"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+        ]}
+      }]
+    },
+    {
+      "name": "GET /api/news-admin/status",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:5000/api/news-admin/status"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('200 OK', () => pm.response.to.have.status(200));",
+          "const j = pm.response.json();",
+          "pm.test('campos esperados', () => {",
+          "  pm.expect(j.data).to.have.property('totalNoticias');",
+          "  pm.expect(j.data).to.have.property('limiteMaximo');",
+          "  pm.expect(j.data).to.have.property('fechaUltimoReset');",
+          "});"
+        ]}
+      }]
+    },
+    {
+      "name": "POST /api/news-admin/reset (vaciar todo)",
+      "request": {
+        "method": "POST",
+        "url": "http://localhost:5000/api/news-admin/reset"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+        ]}
+      }]
+    },
+    {
+      "name": "PUT /api/news-admin/config/max-size",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"limite\": 50\n}" },
+        "url": "http://localhost:5000/api/news-admin/config/max-size"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('200 OK', () => pm.response.to.have.status(200));",
+          "pm.test('limite=50', () => pm.expect(pm.response.json().data.limiteMaximo).to.eql(50));"
+        ]}
+      }]
+    }
+  ],
+  "variable": [
+    { "key": "lastId", "value": "" }
+  ]
+}

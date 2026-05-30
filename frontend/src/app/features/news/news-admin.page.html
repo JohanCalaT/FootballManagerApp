@@ -1,0 +1,74 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/news" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>Noticias · Admin</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @if (loading()) {
+    <div class="news-admin__loading" data-testid="news-admin-loading">
+      <ion-spinner name="crescent"></ion-spinner>
+    </div>
+  } @else {
+    <section class="news-admin__card" data-testid="news-admin-status">
+      <h2 class="news-admin__heading">Estado del repositorio</h2>
+      <dl class="news-admin__stats">
+        <div>
+          <dt>Noticias</dt>
+          <dd data-testid="news-admin-total">{{ estado()?.totalNoticias ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Límite (FIFO)</dt>
+          <dd data-testid="news-admin-limite">{{ estado()?.limiteMaximo ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Último reset</dt>
+          <dd>{{ estado()?.fechaUltimoReset ?? '—' }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="news-admin__card">
+      <h2 class="news-admin__heading">Límite máximo</h2>
+      <form [formGroup]="form" (ngSubmit)="onSaveLimit()" novalidate>
+        <ion-input
+          type="number"
+          label="Máximo de noticias"
+          labelPlacement="stacked"
+          formControlName="limite"
+          [min]="limits.maxSizeMin"
+          [max]="limits.maxSizeMax"
+          data-testid="news-admin-limit-input"></ion-input>
+        @if (form.controls.limite.touched && form.controls.limite.invalid) {
+          <p class="news-admin__error">
+            Introduce un valor entre {{ limits.maxSizeMin }} y {{ limits.maxSizeMax }}.
+          </p>
+        }
+        <ion-button
+          expand="block"
+          type="submit"
+          [disabled]="busy()"
+          data-testid="news-admin-save-limit">
+          Guardar límite
+        </ion-button>
+      </form>
+    </section>
+
+    <section class="news-admin__card news-admin__card--danger">
+      <h2 class="news-admin__heading">Zona peligrosa</h2>
+      <p class="news-admin__hint">Elimina todas las noticias del repositorio.</p>
+      <ion-button
+        expand="block"
+        color="danger"
+        fill="outline"
+        [disabled]="busy()"
+        (click)="onReset()"
+        data-testid="news-admin-reset">
+        Vaciar noticias
+      </ion-button>
+    </section>
+  }
+</ion-content>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.footballmanager.news</groupId>
+        <artifactId>backend-corba-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>idl-stubs</artifactId>
+    <name>FootballManagerApp :: CORBA News (IDL stubs)</name>
+    <description>Java stubs/skeletons (POA) generados de News.idl, compartidos por server y adapter.</description>
+
+    <properties>
+        <idl.generated.dir>${project.build.directory}/generated-sources/idl</idl.generated.dir>
+    </properties>
+
+    <build>
+        <plugins>
+            <!-- Invoca idlj del JDK 8 directamente. -fall emite client + server;
+                 los skeletons salen como %POA por defecto (ServicioNoticiasPOA),
+                 sin -oldImplBase. Generamos en target/generated-sources/idl. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-corba-stubs</id>
+                        <phase>generate-sources</phase>
+                        <goals><goal>run</goal></goals>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${idl.generated.dir}"/>
+                                <exec executable="idlj" failonerror="true">
+                                    <arg value="-fall"/>
+                                    <arg value="-td"/>
+                                    <arg value="${idl.generated.dir}"/>
+                                    <arg value="${project.basedir}/src/main/idl/News.idl"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.4.0</version>
+                <executions>
+                    <execution>
+                        <id>add-corba-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals><goal>add-source</goal></goals>
+                        <configuration>
+                            <sources>
+                                <source>${idl.generated.dir}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>

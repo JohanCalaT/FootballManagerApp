@@ -1,0 +1,126 @@
+<section class="comments" data-testid="comments-section">
+  <header class="comments__header">
+    <h2 class="comments__heading">Comentarios</h2>
+    @if (hasComments()) {
+      <span class="comments__count">{{ comments().length }}</span>
+    }
+  </header>
+
+  @if (isAuthenticated()) {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="comments__form" data-testid="comments-form">
+      <label class="comments__field">
+        <span class="comments__label">Tu valoración</span>
+        <div class="comments__stars" role="radiogroup" aria-label="Valoración">
+          @for (i of stars; track i) {
+            <button
+              type="button"
+              role="radio"
+              class="comments__star"
+              [class.comments__star--filled]="form.controls.rating.value >= i"
+              [attr.aria-checked]="form.controls.rating.value === i"
+              [attr.aria-label]="i + ' de 5'"
+              (click)="setRating(i)"
+              [attr.data-testid]="'star-' + i">
+              <ion-icon
+                [name]="form.controls.rating.value >= i ? 'star' : 'star-outline'"
+                aria-hidden="true"></ion-icon>
+            </button>
+          }
+        </div>
+      </label>
+
+      <label class="comments__field">
+        <span class="comments__label">Tu nombre</span>
+        <ion-input
+          formControlName="author"
+          type="text"
+          placeholder="Cómo aparecerás"
+          data-testid="comments-author"></ion-input>
+      </label>
+
+      <label class="comments__field">
+        <span class="comments__label">
+          Tu comentario
+          <span class="comments__counter" [class.comments__counter--warn]="displayLength() > 900">
+            {{ displayLength() }} / 1000
+          </span>
+        </span>
+        <ion-textarea
+          formControlName="text"
+          rows="3"
+          maxlength="1000"
+          placeholder="¿Qué te parece este jugador?"
+          (ionInput)="onTextInput($event)"
+          data-testid="comments-text"></ion-textarea>
+      </label>
+
+      <ion-button
+        expand="block"
+        color="primary"
+        type="submit"
+        [disabled]="form.invalid || isSaving()"
+        data-testid="comments-submit">
+        @if (isSaving()) {
+          <ion-spinner name="dots" slot="start"></ion-spinner>
+          Publicando…
+        } @else {
+          Publicar comentario
+        }
+      </ion-button>
+    </form>
+  } @else {
+    <div class="comments__signin-prompt" data-testid="comments-signin-prompt">
+      <ion-icon name="lock-closed-outline" aria-hidden="true"></ion-icon>
+      <span>Inicia sesión para comentar.</span>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="comments__loading" data-testid="comments-loading">
+      <ion-spinner name="dots"></ion-spinner>
+      <span>Cargando comentarios…</span>
+    </div>
+  } @else if (loadError(); as err) {
+    <p class="comments__error" role="alert" data-testid="comments-load-error">{{ err }}</p>
+  } @else if (!hasComments()) {
+    <p class="comments__empty" data-testid="comments-empty">
+      Sé el primero en comentar este jugador.
+    </p>
+  } @else {
+    <ul class="comments__list">
+      @for (comment of comments(); track comment.id) {
+        <li
+          class="comments__item"
+          [class.comments__item--pending]="isPending(comment)"
+          [attr.data-testid]="'comment-' + comment.id">
+          <header class="comments__item-head">
+            <strong class="comments__item-author">{{ comment.author }}</strong>
+            <div class="comments__item-head-end">
+              <time class="comments__item-date">{{ comment.createdAt | date: 'short' }}</time>
+              @if (isAdmin()) {
+                <button
+                  type="button"
+                  class="comments__item-delete"
+                  (click)="onDelete(comment)"
+                  [attr.aria-label]="'Eliminar comentario de ' + comment.author"
+                  [attr.data-testid]="'comment-delete-' + comment.id">
+                  <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+                </button>
+              }
+            </div>
+          </header>
+
+          <div class="comments__item-rating" aria-label="Valoración">
+            @for (i of stars; track i) {
+              <ion-icon
+                [name]="comment.rating >= i ? 'star' : 'star-outline'"
+                aria-hidden="true"></ion-icon>
+            }
+          </div>
+
+          <p class="comments__item-text">{{ comment.text }}</p>
+        </li>
+      }
+    </ul>
+  }
+</section>

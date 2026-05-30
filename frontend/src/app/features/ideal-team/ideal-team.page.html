@@ -1,0 +1,243 @@
+<ion-content class="ideal-content" [fullscreen]="true">
+  <div class="glow" aria-hidden="true"></div>
+
+  <button
+    type="button"
+    class="back-btn"
+    (click)="goBack()"
+    aria-label="Volver"
+    data-testid="ideal-back">
+    <ion-icon name="arrow-back"></ion-icon>
+  </button>
+
+  @if (phase() === 'form') {
+    <!-- ───────────── FORM ───────────── -->
+    <section class="stage stage--form" data-testid="ideal-form">
+      <header class="form-head">
+        <h1 class="form-title">Equipo Ideal</h1>
+        <p class="form-sub">
+          La IA construye tu once perfecto. Elige la formación y genera.
+        </p>
+      </header>
+
+      <div class="form-card">
+        <label class="field-label">Formación</label>
+        <ion-segment
+          [value]="formation()"
+          (ionChange)="onFormationChange($event)"
+          data-testid="ideal-formation">
+          @for (f of formations; track f) {
+            <ion-segment-button [value]="f">
+              <ion-label>{{ f }}</ion-label>
+            </ion-segment-button>
+          }
+        </ion-segment>
+      </div>
+
+      <ion-button
+        expand="block"
+        class="generate-btn"
+        (click)="onGenerate()"
+        data-testid="ideal-generate">
+        <ion-icon name="sparkles" slot="start"></ion-icon>
+        Generar 11 ideal
+      </ion-button>
+    </section>
+  } @else if (phase() === 'loading') {
+    <!-- ───────────── LOADING (narrated) ───────────── -->
+    <section class="stage stage--loading" data-testid="ideal-loading">
+      <div class="loading-logo">
+        <img src="assets/img/logo-football-manager.png" alt="" />
+      </div>
+
+      <p class="loading-text" aria-live="polite">{{ loadingMessage() }}</p>
+
+      <div
+        class="loading-bar"
+        role="progressbar"
+        aria-label="Generando equipo ideal">
+        <div class="loading-bar__fill" [style.width.%]="loadingProgress()"></div>
+      </div>
+
+      <p class="loading-count">
+        <span class="loading-count__n">{{ analyzed() }}</span> jugadores analizados
+      </p>
+    </section>
+  } @else if (phase() === 'pack' || phase() === 'opening') {
+    <!-- ───────────── PACK (sobre 3D) ───────────── -->
+    <section
+      class="stage stage--pack"
+      [class.is-opening]="phase() === 'opening'"
+      data-testid="ideal-pack">
+      <div class="pack-scene">
+        <button
+          type="button"
+          class="pack"
+          [disabled]="phase() === 'opening'"
+          (click)="onOpenPack()"
+          aria-label="Abrir sobre"
+          data-testid="ideal-open-pack">
+          <!-- Clipped surface: radial glow + diagonal sweep + vignette.
+               Separate from the 3D lid so overflow:hidden here doesn't
+               flatten the lid's rotateX swing. -->
+          <div class="pack__clip" aria-hidden="true">
+            <div class="pack__glow"></div>
+            <div class="pack__shine"></div>
+            <div class="pack__vignette"></div>
+          </div>
+          <div class="pack__logo">
+            <img src="assets/img/logo-football-manager.png" alt="" />
+          </div>
+          <span class="pack__ready">Listo</span>
+          <div class="pack__lid" aria-hidden="true">
+            <div class="pack__lid-shine"></div>
+          </div>
+        </button>
+        <div class="beam" aria-hidden="true"></div>
+        <div class="flash" aria-hidden="true"></div>
+      </div>
+
+      @if (phase() === 'pack') {
+        <h2 class="pack-title">Listo para conocer tu equipo ideal</h2>
+        <p class="pack-hint">Toca el sobre para revelarlo</p>
+      }
+    </section>
+  } @else if (phase() === 'error') {
+    <!-- ───────────── ERROR ───────────── -->
+    <section class="stage stage--error" data-testid="ideal-error">
+      <div class="error-card">
+        <ion-icon name="alert-circle" class="error-icon" aria-hidden="true"></ion-icon>
+        <h2 class="error-title">No se pudo generar</h2>
+        <p class="error-msg">{{ errorMessage() }}</p>
+        <ion-button
+          expand="block"
+          class="generate-btn"
+          (click)="reset()"
+          data-testid="ideal-retry">
+          Volver a intentar
+        </ion-button>
+      </div>
+    </section>
+  } @else {
+    <!-- ───────────── REVEAL (pitch) ───────────── -->
+    <section class="stage stage--reveal" data-testid="ideal-reveal">
+      <p class="pitch-hint">
+        Toca una carta para girarla · <span class="pitch-hint__i">ⓘ</span> para ver el detalle
+      </p>
+
+      <div class="pitch">
+        <div class="pitch__lines" aria-hidden="true">
+          <span class="pitch__halfway"></span>
+          <span class="pitch__circle"></span>
+          <span class="pitch__box pitch__box--top"></span>
+          <span class="pitch__box pitch__box--bottom"></span>
+        </div>
+
+        @for (slot of placed(); track slot.player.id; let i = $index) {
+          <div
+            class="slot"
+            [class.slot--in]="isRevealed(i)"
+            [style.left]="styleFor(slot).left"
+            [style.top]="styleFor(slot).top"
+            data-testid="ideal-slot">
+            <fma-fut-card
+              [attr.name]="slot.player.name"
+              [attr.team]="slot.player.team"
+              [attr.position]="slot.player.position"
+              [attr.nationality]="slot.player.nationality"
+              [attr.image-url]="slot.player.imageUrl"
+              [attr.overall]="slot.player.overall"
+              [attr.pac]="slot.player.pac"
+              [attr.sho]="slot.player.sho"
+              [attr.pas]="slot.player.pas"
+              [attr.dri]="slot.player.dri"
+              [attr.def]="slot.player.def"
+              [attr.phy]="slot.player.phy"
+              compact="true"
+              (flipChange)="onFlip()"
+              (infoClick)="openInfo(slot.player)">
+            </fma-fut-card>
+          </div>
+        }
+      </div>
+
+      <footer class="reveal-foot">
+        <p class="reveal-formation">{{ team()?.formation }}</p>
+        <div class="reveal-actions">
+          <ion-button
+            fill="clear"
+            size="small"
+            (click)="openAnalysis()"
+            data-testid="ideal-analysis-open">
+            <ion-icon name="sparkles" slot="start"></ion-icon>
+            Análisis IA
+          </ion-button>
+          <ion-button fill="clear" size="small" (click)="reset()">
+            Generar otro
+          </ion-button>
+        </div>
+      </footer>
+    </section>
+  }
+
+  <!-- ───────────── Deep detail (ⓘ): animated bars + AI reason ───────────── -->
+  <ion-modal
+    class="detail-modal"
+    [isOpen]="selectedPlayer() !== null"
+    [initialBreakpoint]="0.6"
+    [breakpoints]="[0, 0.6, 0.95]"
+    (didDismiss)="closeInfo()">
+    <ng-template>
+      @if (selectedPlayer(); as p) {
+        <div class="detail-sheet" data-testid="ideal-player-detail">
+          <header class="detail-head">
+            <span class="detail-overall">{{ p.overall }}</span>
+            <div class="detail-id">
+              <h2 class="detail-name">{{ p.name }}</h2>
+              <p class="detail-pos">{{ p.position }} · {{ p.team }}</p>
+            </div>
+          </header>
+
+          <div class="detail-bars">
+            @for (a of selectedAttributes(); track a.label) {
+              <div class="bar">
+                <div class="bar__top">
+                  <span class="bar__label">{{ a.label }}</span>
+                  <span class="bar__val">{{ a.value }}</span>
+                </div>
+                <div class="bar__track">
+                  <div class="bar__fill" [style.width.%]="a.value"></div>
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (p.reason) {
+            <div class="detail-reason">
+              <span class="detail-reason__label">Por qué juega</span>
+              <p class="detail-reason__text">{{ p.reason }}</p>
+            </div>
+          }
+        </div>
+      }
+    </ng-template>
+  </ion-modal>
+
+  <!-- ───────────── Team-level AI analysis ───────────── -->
+  <ion-modal
+    class="analysis-modal"
+    [isOpen]="showAnalysis()"
+    [initialBreakpoint]="0.5"
+    [breakpoints]="[0, 0.5, 0.9]"
+    (didDismiss)="closeAnalysis()">
+    <ng-template>
+      <div class="analysis-sheet" data-testid="ideal-analysis">
+        <header class="analysis-head">
+          <h2 class="analysis-title">Análisis del equipo</h2>
+          <span class="analysis-formation">{{ team()?.formation }}</span>
+        </header>
+        <p class="analysis-text">{{ team()?.generalJustification }}</p>
+      </div>
+    </ng-template>
+  </ion-modal>
+</ion-content>

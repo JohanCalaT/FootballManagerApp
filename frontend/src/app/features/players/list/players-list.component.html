@@ -1,0 +1,37 @@
+<ion-content class="players-content" [scrollEvents]="true">
+  <app-home-header
+    (loginRequested)="goToLogin()"
+    (logoutRequested)="signOut()" />
+
+  <app-home-hero [count]="store.total()" />
+
+  <app-home-search
+    [filters]="store.filters()"
+    [filterCount]="store.activeFilterCount()"
+    (queryChange)="onSearchQueryChange($event)"
+    (filtersRequested)="openFilters()"
+    (filterRemoved)="removeFilter($event)" />
+
+  <app-home-grid
+    [players]="store.players()"
+    [loading]="store.loading()"
+    [error]="store.error()"
+    [query]="store.query()"
+    [hasFilters]="store.hasActiveFilters()"
+    [allLoaded]="store.allLoaded()"
+    [canRegister]="canRegister()"
+    (playerSelected)="onPlayerSelected($event)"
+    (editRequested)="onEditPlayer($event)"
+    (deleteRequested)="onDeletePlayer($event)"
+    (loadMoreRequested)="onLoadMore($event)"
+    (retryRequested)="onRetry()"
+    (registerRequested)="goToRegister()" />
+
+  @if (isAuthenticated()) {
+    <ion-fab slot="fixed" vertical="bottom" horizontal="end">
+      <ion-fab-button (click)="openActions()" data-testid="home-fab" aria-label="Añadir jugadores">
+        <ion-icon name="add-outline"></ion-icon>
+      </ion-fab-button>
+    </ion-fab>
+  }
+</ion-content>

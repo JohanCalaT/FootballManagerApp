@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-FootballManagerApp.Comments.MigrationService-c23c27dc-5bfa-41c6-bfd8-44b44bc5c90d</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.2.3" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FootballManagerApp.ServiceDefaults\FootballManagerApp.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\FootballManagerApp.Comments.Infrastructure\FootballManagerApp.Comments.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

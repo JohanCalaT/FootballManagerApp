@@ -1,0 +1,128 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/players" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ player()?.name ?? 'Jugador' }}</ion-title>
+    @if (isAdmin() && player(); as p) {
+      <ion-buttons slot="end">
+        <ion-button [routerLink]="['/players', p.id, 'edit']" data-testid="action-edit">
+          <ion-icon name="create-outline" slot="icon-only" aria-hidden="true"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    }
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="detail" [fullscreen]="true">
+  @if (isLoading()) {
+    <div class="detail__loading" data-testid="detail-loading">
+      <ion-spinner name="dots"></ion-spinner>
+      <span>Cargando jugador…</span>
+    </div>
+  } @else if (player(); as p) {
+    <!-- Hero -->
+    <section class="detail__hero" data-testid="detail-hero">
+      <div class="detail__token">
+        @if (p.imageUrl) {
+          <img [src]="p.imageUrl" [alt]="p.name" />
+        } @else {
+          <span class="detail__initials" aria-hidden="true">{{ initials() }}</span>
+        }
+      </div>
+      <h1 class="detail__name">{{ p.name }}</h1>
+      <div class="detail__chips">
+        <span class="detail__chip">{{ p.team }}</span>
+        <span class="detail__chip detail__chip--ghost">{{ p.league }}</span>
+        @if (p.position) {
+          <span class="detail__chip detail__chip--position">{{ p.position }}</span>
+        }
+        @if (p.shirtNumber) {
+          <span class="detail__chip detail__chip--shirt">#{{ p.shirtNumber }}</span>
+        }
+        @if (p.injured) {
+          <span class="detail__chip detail__chip--injured" data-testid="chip-injured">
+            <ion-icon name="medkit-outline" aria-hidden="true"></ion-icon>
+            Lesionado
+          </span>
+        }
+        @if (isImported()) {
+          <span class="detail__chip detail__chip--api" data-testid="chip-imported">
+            API-Football
+          </span>
+        }
+      </div>
+    </section>
+
+    <!-- Bio -->
+    @if (p.nationality || p.birthDate || p.height || p.weight) {
+      <section class="detail__card" data-testid="detail-bio">
+        <h2 class="detail__heading">Biografía</h2>
+        <dl class="detail__bio">
+          @if (p.nationality) {
+            <div><dt>Nacionalidad</dt><dd>{{ p.nationality }}</dd></div>
+          }
+          @if (p.birthDate) {
+            <div><dt>Nacimiento</dt><dd>{{ p.birthDate | date: 'longDate' }}</dd></div>
+          }
+          @if (p.birthPlace || p.birthCountry) {
+            <div>
+              <dt>Lugar</dt>
+              <dd>{{ p.birthPlace }}@if (p.birthPlace && p.birthCountry) {, } {{ p.birthCountry }}</dd>
+            </div>
+          }
+          @if (p.height) { <div><dt>Altura</dt><dd>{{ p.height }}</dd></div> }
+          @if (p.weight) { <div><dt>Peso</dt><dd>{{ p.weight }}</dd></div> }
+        </dl>
+      </section>
+    }
+
+    <!-- Stats -->
+    <app-collapsible-section
+      title="Estadísticas por temporada"
+      icon="stats-chart-outline"
+      [open]="true"
+      [badge]="hasStats() ? (p.statistics.length + ' temporada' + (p.statistics.length === 1 ? '' : 's')) : undefined">
+      @if (hasStats()) {
+        <ul class="stats" data-testid="detail-stats">
+          @for (s of p.statistics; track s.id) {
+            <li class="stats__row" [attr.data-testid]="'stat-' + s.id">
+              <header class="stats__head">
+                <strong>{{ s.season }}</strong>
+                <span>{{ s.teamName }}</span>
+                @if (s.leagueName) {
+                  <span class="stats__league">· {{ s.leagueName }}</span>
+                }
+                @if (s.rating !== null) {
+                  <span class="stats__rating">{{ s.rating | number: '1.1-1' }}</span>
+                }
+              </header>
+              <dl class="stats__grid">
+                <div><dt>Partidos</dt><dd>{{ s.appearances }}</dd></div>
+                <div><dt>Goles</dt><dd>{{ s.goals }}</dd></div>
+                <div><dt>Asistencias</dt><dd>{{ s.assists }}</dd></div>
+                @if (s.position) {
+                  <div><dt>Posición</dt><dd>{{ s.position }}</dd></div>
+                }
+              </dl>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="detail__empty" data-testid="stats-empty">
+          Este jugador todavía no tiene estadísticas registradas.
+          @if (isAdmin() && !isImported()) {
+            <a [routerLink]="['/players', p.id, 'edit']">Añadirlas →</a>
+          }
+        </p>
+      }
+    </app-collapsible-section>
+
+    <!-- Comments — always last -->
+    <section class="detail__card">
+      <app-comments-section
+        [playerId]="playerIdSignal()"
+        data-testid="comments-mount"></app-comments-section>
+    </section>
+  }
+</ion-content>

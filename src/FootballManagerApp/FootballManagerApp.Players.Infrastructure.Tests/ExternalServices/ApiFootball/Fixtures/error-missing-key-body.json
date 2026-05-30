@@ -1,0 +1,10 @@
+{
+  "get": "players",
+  "parameters": { "id": "154", "season": "2022" },
+  "errors": {
+    "token": "Error/Missing application key. Go to https://www.api-football.com/documentation-v3 to learn how to authenticate your requests."
+  },
+  "results": 0,
+  "paging": { "current": 1, "total": 1 },
+  "response": []
+}

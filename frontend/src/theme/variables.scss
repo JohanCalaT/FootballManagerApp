@@ -1,2 +1,166 @@
-// For information on how to create your own theme, please refer to:
-// https://ionicframework.com/docs/theming/
+// Gridiron Neon design tokens — see DESIGN.md at repo root.
+//
+// Custom properties are namespaced under --app-* so the design system stays
+// readable independently of Ionic. The mappings to --ion-color-* at the
+// bottom make Ionic components (ion-button, ion-input, ion-toolbar, …)
+// inherit the palette automatically.
+
+:root {
+  // Surface tones (deep slate → bright)
+  --app-bg:                       #131318;
+  --app-surface-floor:            #0e0e13;
+  --app-surface-low:              #1b1b20;
+  --app-surface:                  #1f1f25;
+  --app-surface-high:             #2a292f;
+  --app-surface-highest:          #35343a;
+  --app-surface-bright:           #39383e;
+
+  // Foreground
+  --app-on-surface:               #e4e1e9;
+  --app-on-surface-variant:       #b9cbb9;
+  --app-outline:                  #849585;
+  --app-outline-variant:          #3b4b3d;
+  --app-on-surface-soft:          rgba(228, 225, 233, 0.64);
+  --app-on-surface-faint:         rgba(228, 225, 233, 0.38);
+
+  // Brand
+  --app-primary:                  #00e478;
+  --app-primary-bright:           #00ff87;
+  --app-on-primary:               #003919;
+  --app-primary-glow:             rgba(0, 228, 120, 0.45);
+  --app-primary-glow-soft:        rgba(0, 228, 120, 0.18);
+  --app-secondary:                #ffdb3c;
+  --app-on-secondary:             #3a3000;
+  --app-tertiary:                 #dedcf8;
+  --app-error:                    #ffb4ab;
+  --app-on-error:                 #690005;
+  --app-error-container:          #93000a;
+
+  // Radius
+  --app-radius-sm:                0.25rem;
+  --app-radius:                   0.5rem;
+  --app-radius-md:                0.75rem;
+  --app-radius-lg:                1rem;
+  --app-radius-xl:                1.5rem;
+  --app-radius-full:              9999px;
+
+  // Spacing — 8px grid with 4px sub-steps
+  --app-space-1:                  4px;
+  --app-space-2:                  8px;
+  --app-space-3:                  12px;
+  --app-space-4:                  16px;
+  --app-space-5:                  24px;
+  --app-space-6:                  32px;
+  --app-space-7:                  48px;
+
+  // Elevation — luminescence over shadows (see DESIGN.md "Elevation & Depth")
+  --app-glow-primary:             0 0 20px var(--app-primary-glow);
+  --app-glow-primary-soft:        0 0 12px var(--app-primary-glow-soft);
+  --app-glass-blur:               12px;
+  --app-glass-fill:               rgba(31, 31, 37, 0.5);
+
+  // -------------------------------------------------------------------
+  // Ionic theme mapping — bind the system palette to Ionic CSS vars so
+  // out-of-the-box ion-* components pick up the look automatically.
+  // -------------------------------------------------------------------
+  --ion-background-color:                 var(--app-bg);
+  --ion-background-color-rgb:             19, 19, 24;
+  --ion-text-color:                       var(--app-on-surface);
+  --ion-text-color-rgb:                   228, 225, 233;
+
+  --ion-color-primary:                    var(--app-primary);
+  --ion-color-primary-rgb:                0, 228, 120;
+  --ion-color-primary-contrast:           var(--app-on-primary);
+  --ion-color-primary-contrast-rgb:       0, 57, 25;
+  --ion-color-primary-shade:              #00c869;
+  --ion-color-primary-tint:               #1ae786;
+
+  --ion-color-secondary:                  var(--app-secondary);
+  --ion-color-secondary-rgb:              255, 219, 60;
+  --ion-color-secondary-contrast:         var(--app-on-secondary);
+  --ion-color-secondary-contrast-rgb:     58, 48, 0;
+  --ion-color-secondary-shade:            #e0c135;
+  --ion-color-secondary-tint:             #ffdf50;
+
+  --ion-color-danger:                     var(--app-error);
+  --ion-color-danger-rgb:                 255, 180, 171;
+  --ion-color-danger-contrast:            var(--app-on-error);
+  --ion-color-danger-contrast-rgb:        105, 0, 5;
+
+  --ion-toolbar-background:               var(--app-surface-low);
+  --ion-toolbar-color:                    var(--app-on-surface);
+  --ion-item-background:                  var(--app-surface);
+  --ion-card-background:                  var(--app-surface);
+}
+
+// -----------------------------------------------------------------------
+// Typography utility classes — type ramp from DESIGN.md, applied as
+// `class="t-headline-md"` etc. Defined globally so feature components
+// don't need to import this file.
+// -----------------------------------------------------------------------
+.t-display-lg {
+  font-family: 'Bebas Neue', system-ui, sans-serif;
+  font-size: 48px;
+  font-weight: 400;
+  line-height: 48px;
+  letter-spacing: 0.02em;
+}
+
+.t-headline-lg {
+  font-family: 'Bebas Neue', system-ui, sans-serif;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 36px;
+  letter-spacing: 0.01em;
+
+  @media (max-width: 768px) {
+    font-size: 28px;
+    line-height: 32px;
+  }
+}
+
+.t-headline-md {
+  font-family: 'Bebas Neue', system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 28px;
+}
+
+.t-headline-sm {
+  font-family: 'Bebas Neue', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.t-body-lg {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.t-body-md {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.t-label-lg {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.t-label-sm {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

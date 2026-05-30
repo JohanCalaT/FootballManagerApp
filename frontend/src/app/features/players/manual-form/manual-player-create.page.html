@@ -1,0 +1,187 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/players" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>Nuevo jugador</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="manual-form" [fullscreen]="true">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" data-testid="manual-form">
+    <!-- Sección 1 — Imagen -->
+    <section class="manual-form__card" aria-labelledby="img-heading">
+      <h2 id="img-heading" class="manual-form__heading">Foto</h2>
+      @if (ownerUid()) {
+        <app-player-image-picker [ownerUid]="ownerUid()"></app-player-image-picker>
+      }
+    </section>
+
+    <!-- Sección 2 — Identidad y club (obligatorio) -->
+    <section class="manual-form__card" aria-labelledby="id-heading">
+      <h2 id="id-heading" class="manual-form__heading">Identidad y club</h2>
+
+      <label class="manual-form__field">
+        <span class="manual-form__label">Nombre *</span>
+        <ion-input
+          formControlName="name"
+          type="text"
+          autocomplete="off"
+          placeholder="Lionel Messi"
+          data-testid="field-name"></ion-input>
+        @if (form.controls.name.touched && form.controls.name.hasError('required')) {
+          <span class="manual-form__error" data-testid="error-name">El nombre es obligatorio.</span>
+        }
+      </label>
+
+      <fieldset class="manual-form__field">
+        <legend class="manual-form__label">Posición *</legend>
+        <div
+          class="position-grid"
+          role="radiogroup"
+          aria-label="Posición del jugador"
+          data-testid="field-position">
+          @for (pos of positions; track pos) {
+            <button
+              type="button"
+              role="radio"
+              class="position-grid__pill"
+              [class.position-grid__pill--active]="form.controls.position.value === pos"
+              [attr.aria-checked]="form.controls.position.value === pos"
+              (click)="selectPosition(pos)"
+              [attr.data-testid]="'pos-' + pos">
+              {{ pos }}
+            </button>
+          }
+        </div>
+        @if (form.controls.position.touched && form.controls.position.hasError('required')) {
+          <span class="manual-form__error" data-testid="error-position">
+            Elige una posición.
+          </span>
+        }
+      </fieldset>
+
+      <label class="manual-form__field">
+        <span class="manual-form__label">Equipo *</span>
+        <ion-input
+          formControlName="team"
+          type="text"
+          autocomplete="off"
+          placeholder="Inter Miami"
+          data-testid="field-team"></ion-input>
+        @if (form.controls.team.touched && form.controls.team.hasError('required')) {
+          <span class="manual-form__error" data-testid="error-team">El equipo es obligatorio.</span>
+        }
+        @if (hasDuplicate()) {
+          <span class="manual-form__error manual-form__error--warn" data-testid="error-duplicate">
+            Ya existe un jugador con ese nombre en ese equipo.
+          </span>
+        }
+      </label>
+
+      <label class="manual-form__field">
+        <span class="manual-form__label">Liga *</span>
+        <ion-input
+          formControlName="league"
+          type="text"
+          autocomplete="off"
+          placeholder="MLS"
+          data-testid="field-league"></ion-input>
+        @if (form.controls.league.touched && form.controls.league.hasError('required')) {
+          <span class="manual-form__error" data-testid="error-league">La liga es obligatoria.</span>
+        }
+      </label>
+    </section>
+
+    <!-- Sección 3 — Más datos (opcional) -->
+    <app-collapsible-section title="Más datos" icon="add-circle-outline">
+      <div class="manual-form__grid">
+        <label class="manual-form__field">
+          <span class="manual-form__label">Nombre de pila</span>
+          <ion-input formControlName="firstName" type="text" data-testid="field-firstName"></ion-input>
+        </label>
+        <label class="manual-form__field">
+          <span class="manual-form__label">Apellido</span>
+          <ion-input formControlName="lastName" type="text" data-testid="field-lastName"></ion-input>
+        </label>
+        <label class="manual-form__field">
+          <span class="manual-form__label">Nacionalidad</span>
+          <ion-input formControlName="nationality" type="text" data-testid="field-nationality"></ion-input>
+        </label>
+        <label class="manual-form__field">
+          <span class="manual-form__label">Fecha de nacimiento</span>
+          <ion-input formControlName="birthDate" type="date" data-testid="field-birthDate"></ion-input>
+        </label>
+        <label class="manual-form__field">
+          <span class="manual-form__label">Ciudad de nacimiento</span>
+          <ion-input formControlName="birthPlace" type="text" data-testid="field-birthPlace"></ion-input>
+        </label>
+        <label class="manual-form__field">
+          <span class="manual-form__label">País de nacimiento</span>
+          <ion-input formControlName="birthCountry" type="text" data-testid="field-birthCountry"></ion-input>
+        </label>
+        <label class="manual-form__field">
+          <span class="manual-form__label">Altura</span>
+          <ion-input formControlName="height" type="text" placeholder="170 cm" data-testid="field-height"></ion-input>
+        </label>
+        <label class="manual-form__field">
+          <span class="manual-form__label">Peso</span>
+          <ion-input formControlName="weight" type="text" placeholder="72 kg" data-testid="field-weight"></ion-input>
+        </label>
+        <label class="manual-form__field">
+          <span class="manual-form__label">Dorsal</span>
+          <ion-input
+            formControlName="shirtNumber"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            max="99"
+            data-testid="field-shirtNumber"></ion-input>
+        </label>
+      </div>
+    </app-collapsible-section>
+
+    <!-- Sección 4 — Marcar en mapa (opcional, lazy) -->
+    <app-collapsible-section
+      title="Marcar en mapa"
+      icon="map-outline"
+      [(open)]="mapSectionOpen"
+      [badge]="playerGeolocation() ? 'Ubicación elegida' : undefined">
+      @defer (when mapSectionOpen()) {
+        <app-player-geolocation-picker
+          [initial]="playerGeolocation()"
+          (changed)="onPlayerGeolocationChange($event)"
+          data-testid="player-geo-picker"></app-player-geolocation-picker>
+      } @placeholder {
+        <p class="manual-form__defer-hint">El mapa se cargará al abrir esta sección.</p>
+      } @loading (minimum 200ms) {
+        <p class="manual-form__defer-hint">Cargando mapa…</p>
+      }
+    </app-collapsible-section>
+
+    <p class="manual-form__hint">
+      <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+      Tu ubicación se guardará automáticamente al pulsar guardar.
+    </p>
+  </form>
+</ion-content>
+
+<ion-footer class="manual-form__footer ion-no-border">
+  <ion-toolbar>
+    <div class="manual-form__cta">
+      <ion-button
+        expand="block"
+        color="primary"
+        (click)="onSubmit()"
+        [disabled]="isSaving() || form.invalid || form.pending"
+        data-testid="action-submit">
+        @if (isSaving()) {
+          <ion-spinner name="dots" slot="start"></ion-spinner>
+          Guardando…
+        } @else {
+          Guardar jugador
+        }
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

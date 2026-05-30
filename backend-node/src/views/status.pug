@@ -1,6 +1,329 @@
 doctype html
-html(lang="es")
+html(lang='es')
   head
-    title= title
+    meta(charset='UTF-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1')
+    title Status · FootballManager · Node Backend
+    link(rel='preconnect' href='https://fonts.googleapis.com')
+    link(rel='preconnect' href='https://fonts.gstatic.com' crossorigin)
+    link(rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap')
+    style.
+      :root {
+        /* Gridiron Neon — mirror of frontend/src/theme/variables.scss */
+        --app-bg:                 #131318;
+        --app-surface-floor:      #0e0e13;
+        --app-surface-low:        #1b1b20;
+        --app-surface:            #1f1f25;
+        --app-on-surface:         #e4e1e9;
+        --app-on-surface-soft:    rgba(228, 225, 233, 0.64);
+        --app-on-surface-faint:   rgba(228, 225, 233, 0.38);
+        --app-outline-variant:    #3b4b3d;
+        --app-primary:            #00e478;
+        --app-primary-bright:     #00ff87;
+        --app-on-primary:         #003919;
+        --app-primary-glow:       rgba(0, 228, 120, 0.45);
+        --app-primary-glow-soft:  rgba(0, 228, 120, 0.18);
+        --app-secondary:          #ffdb3c;
+        --app-error:              #ffb4ab;
+        --app-error-container:    #93000a;
+        --app-radius:             0.5rem;
+        --app-radius-md:          0.75rem;
+        --app-space-2:            8px;
+        --app-space-3:            12px;
+        --app-space-4:            16px;
+        --app-space-5:            24px;
+        --app-space-6:            32px;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: 'Inter', system-ui, sans-serif;
+        background: var(--app-bg);
+        color: var(--app-on-surface);
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(circle at 18% 12%, rgba(0, 228, 120, 0.18) 0%, transparent 50%),
+          radial-gradient(circle at 82% 88%, rgba(0, 228, 120, 0.12) 0%, transparent 55%);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .shell {
+        position: relative;
+        z-index: 1;
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: var(--app-space-6) var(--app-space-4);
+      }
+
+      header.brand {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--app-space-4);
+        padding-bottom: var(--app-space-3);
+        border-bottom: 1px solid var(--app-outline-variant);
+        flex-wrap: wrap;
+      }
+
+      .eyebrow {
+        margin: 0;
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--app-primary);
+      }
+
+      h1 {
+        margin: 4px 0 0;
+        font-family: 'Bebas Neue', system-ui, sans-serif;
+        font-size: 36px;
+        font-weight: 400;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--app-on-surface);
+      }
+
+      .meta {
+        margin: 0;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--app-on-surface-soft);
+      }
+      .meta strong { color: var(--app-on-surface); font-weight: 600; }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: var(--app-space-3);
+        margin-top: var(--app-space-5);
+      }
+
+      .card {
+        position: relative;
+        padding: var(--app-space-5);
+        background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-floor) 100%);
+        border: 1px solid var(--app-outline-variant);
+        border-radius: var(--app-radius-md);
+        box-shadow:
+          0 0 12px var(--app-primary-glow-soft),
+          inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        display: flex;
+        flex-direction: column;
+        gap: var(--app-space-2);
+      }
+
+      .card h3 {
+        margin: 0;
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--app-on-surface-soft);
+      }
+
+      .num {
+        margin: 0;
+        font-family: 'Bebas Neue', system-ui, sans-serif;
+        font-size: 48px;
+        line-height: 48px;
+        letter-spacing: 0.02em;
+        color: var(--app-primary);
+        text-shadow: 0 0 16px var(--app-primary-glow-soft);
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        align-self: flex-start;
+      }
+      .pill::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 9999px;
+        background: currentColor;
+        box-shadow: 0 0 8px currentColor;
+      }
+      .pill.ok { color: var(--app-primary); background: rgba(0, 228, 120, 0.10); border: 1px solid rgba(0, 228, 120, 0.45); }
+      .pill.ko { color: var(--app-error);   background: rgba(147, 0, 10, 0.18); border: 1px solid var(--app-error-container); }
+
+      .hint {
+        margin: 0;
+        font-size: 12px;
+        line-height: 16px;
+        color: var(--app-on-surface-faint);
+      }
+
+      section.recent {
+        margin-top: var(--app-space-6);
+      }
+
+      .section-title {
+        font-family: 'Bebas Neue', system-ui, sans-serif;
+        font-size: 24px;
+        font-weight: 400;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        margin: 0 0 var(--app-space-3);
+        color: var(--app-on-surface);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: var(--app-surface-low);
+        border: 1px solid var(--app-outline-variant);
+        border-radius: var(--app-radius-md);
+        overflow: hidden;
+      }
+      th, td {
+        text-align: left;
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+      th {
+        background: var(--app-surface-floor);
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--app-on-surface-soft);
+        border-bottom: 1px solid var(--app-outline-variant);
+      }
+      tbody tr { transition: background-color 0.15s ease; }
+      tbody tr:hover { background: rgba(0, 228, 120, 0.04); }
+      tbody td { border-bottom: 1px solid var(--app-outline-variant); }
+      tbody tr:last-child td { border-bottom: none; }
+
+      td.name { color: var(--app-on-surface); font-weight: 600; }
+      td.team { color: var(--app-on-surface-soft); }
+      td.league { color: var(--app-on-surface-soft); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+      td.date { color: var(--app-on-surface-faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+      .empty {
+        padding: var(--app-space-5);
+        background: var(--app-surface-low);
+        border: 1px dashed var(--app-outline-variant);
+        border-radius: var(--app-radius-md);
+        color: var(--app-on-surface-soft);
+        text-align: center;
+        font-size: 14px;
+      }
+      .empty code {
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        font-size: 12px;
+        padding: 2px 6px;
+        background: var(--app-surface-floor);
+        border: 1px solid var(--app-outline-variant);
+        border-radius: 4px;
+        color: var(--app-primary);
+      }
+
+      footer.foot {
+        margin-top: var(--app-space-6);
+        padding-top: var(--app-space-3);
+        border-top: 1px solid var(--app-outline-variant);
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--app-on-surface-faint);
+        text-align: center;
+      }
+
+      @media (max-width: 600px) {
+        .shell { padding: var(--app-space-5) var(--app-space-3); }
+        h1 { font-size: 28px; }
+        .num { font-size: 36px; line-height: 36px; }
+      }
   body
-    h1 Panel de Estado
+    .shell
+      header.brand
+        div
+          p.eyebrow Football Manager · Node Backend
+          h1 Status panel
+        p.meta
+          | servicio
+          |
+          strong= service
+          |  · versión
+          |
+          strong= version
+          |  · uptime
+          |
+          strong= uptime
+
+      .grid
+        .card
+          h3 MongoDB
+          if dbConnected
+            span.pill.ok Conectado
+            p.hint Host: #{dbHost}
+          else
+            span.pill.ko Desconectado
+            p.hint Sin acceso a la base de datos
+
+        .card
+          h3 Jugadores
+          p.num= totalPlayers
+          p.hint Documentos en la colección players
+
+        .card
+          h3 Comentarios
+          p.num= totalComments
+          p.hint Suma de comments[] vía aggregate $size
+
+        .card
+          h3 Peticiones
+          p.num= requestsToday
+          p.hint Contador en memoria desde el arranque
+
+      section.recent
+        h2.section-title Últimos 5 jugadores insertados
+        if recentPlayers.length === 0
+          .empty
+            | Aún no hay jugadores. Importa desde
+            code POST /api/players/import
+            |  o crea uno con
+            code POST /api/players
+            | .
+        else
+          table
+            thead
+              tr
+                th Nombre
+                th Equipo
+                th Liga
+                th Registrado
+            tbody
+              each p in recentPlayers
+                tr
+                  td.name= p.name
+                  td.team= p.team
+                  td.league= p.league
+                  td.date= p.registeredAt.toISOString().slice(0, 19).replace('T', ' ')
+
+      footer.foot Panel renderizado por Pug · matrícula TRWM

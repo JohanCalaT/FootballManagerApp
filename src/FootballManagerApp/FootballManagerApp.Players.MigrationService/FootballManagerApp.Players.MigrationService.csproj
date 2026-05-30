@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-FootballManagerApp.Players.MigrationService-2c5036c8-35f0-4e34-896d-c1a9417a8d4e</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.2.3" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FootballManagerApp.ServiceDefaults\FootballManagerApp.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\FootballManagerApp.Players.Infrastructure\FootballManagerApp.Players.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,41 @@
+{
+  "status": 200,
+  "message": "OK",
+  "data": [
+    {
+      "apiFootballId": 154,
+      "name": "L. Messi",
+      "firstName": "Lionel",
+      "lastName": "Messi",
+      "nationality": "Argentina",
+      "birthDate": "1987-06-24",
+      "birthPlace": "Rosario",
+      "birthCountry": "Argentina",
+      "height": "170 cm",
+      "weight": "72 kg",
+      "shirtNumber": 10,
+      "position": "Attacker",
+      "photo": "https://media.api-sports.io/football/players/154.png"
+    },
+    {
+      "apiFootballId": 999,
+      "name": "Messi Junior",
+      "firstName": null,
+      "lastName": null,
+      "nationality": "Argentina",
+      "birthDate": null,
+      "birthPlace": null,
+      "birthCountry": null,
+      "height": null,
+      "weight": null,
+      "shirtNumber": null,
+      "position": "Midfielder",
+      "photo": null
+    }
+  ],
+  "page": 1,
+  "limit": 10,
+  "total": 2,
+  "pages": 1,
+  "_links": {}
+}

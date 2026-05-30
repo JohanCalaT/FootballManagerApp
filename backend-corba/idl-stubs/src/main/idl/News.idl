@@ -1,0 +1,58 @@
+// News.idl — Contrato CORBA del subsistema de noticias.
+// Mapea al paquete Java footballmanager.news (generado por idlj).
+//
+// NOTA sobre wstring: usamos `wstring` (UTF-16) en lugar de `string` para todo
+// texto que pueda llevar caracteres fuera de ISO-8859-1 (em dash «—», comillas
+// tipográficas «“ ”», etc.). El ORB del JDK codifica `string` IDL con el code
+// set char negociado (ISO-8859-1 por defecto) y lanza DATA_CONVERSION ante esos
+// caracteres; `wstring` los transmite sin pérdida. En Java, wstring también
+// mapea a String, así que servant/adapter no cambian — solo se regeneran stubs.
+module footballmanager {
+  module news {
+
+    struct Noticia {
+      wstring id;
+      wstring titulo;
+      wstring contenido;
+      wstring autor;
+      wstring fechaPub;
+      wstring imagenUrl;
+    };
+
+    typedef sequence<Noticia> ListaNoticias;
+
+    struct EstadoServicio {
+      long totalNoticias;
+      long limiteMaximo;
+      wstring fechaUltimoReset;
+    };
+
+    exception NoticiaNoEncontrada {
+      wstring mensaje;
+    };
+
+    exception DatosInvalidos {
+      wstring mensaje;
+    };
+
+    exception LimiteInvalido {
+      wstring mensaje;
+    };
+
+    interface ServicioNoticias {
+      // --- Productor (admin) ---
+      wstring publicar(in Noticia noticia) raises (DatosInvalidos);
+
+      // --- Consumidores (usuarios registrados) ---
+      ListaNoticias listarTodas();
+      Noticia obtenerPorId(in wstring id) raises (NoticiaNoEncontrada);
+
+      // --- Admin: gestion y mantenimiento ---
+      void eliminar(in wstring id) raises (NoticiaNoEncontrada);
+      void resetear();
+      void setLimiteMaximo(in long nuevoLimite) raises (LimiteInvalido);
+      EstadoServicio obtenerEstado();
+    };
+
+  };
+};

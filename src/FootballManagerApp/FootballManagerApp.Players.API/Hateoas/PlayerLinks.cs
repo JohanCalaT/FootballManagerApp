@@ -1,0 +1,74 @@
+using FootballManagerApp.Shared.Responses;
+using Microsoft.AspNetCore.Mvc;
+
+namespace FootballManagerApp.Players.API.Hateoas;
+
+internal static class PlayerLinks
+{
+    /// <summary>
+    /// Per-item affordances for a player appearing in a list (GetAll, Search).
+    /// Minimal set: <c>self</c> always (so the frontend can navigate to the
+    /// detail) plus <c>update</c>/<c>delete</c> only when the caller is admin.
+    /// Kept lean to avoid blowing up the payload for paginated responses.
+    /// </summary>
+    public static Dictionary<string, HateoasLink> ForItem(
+        IUrlHelper url, Guid id, bool isAdmin)
+    {
+        var links = new Dictionary<string, HateoasLink>
+        {
+            ["self"] = new(url.Link("GetPlayerById", new { id })!, "self", "GET"),
+        };
+        if (isAdmin)
+        {
+            links["update"] = new(url.Link("UpdatePlayer", new { id })!, "update", "PUT");
+            links["delete"] = new(url.Link("DeletePlayer", new { id })!, "delete", "DELETE");
+        }
+        return links;
+    }
+
+    public static Dictionary<string, HateoasLink> ForDetail(
+        IUrlHelper url, Guid id, bool isAdmin)
+    {
+        // /api/comments/* viaja por el Gateway YARP en producción; usamos URL
+        // relativa para que el cliente la resuelva contra el host que ya conoce.
+        var links = new Dictionary<string, HateoasLink>
+        {
+            ["self"]       = new(url.Link("GetPlayerById", new { id })!, "self", "GET"),
+            ["collection"] = new(url.Link("GetAllPlayers", null)!, "collection", "GET"),
+            ["comments"]   = new($"/api/comments/player/{id}", "comments", "GET"),
+        };
+
+        if (isAdmin)
+        {
+            links["update"] = new(url.Link("UpdatePlayer", new { id })!, "update", "PUT");
+            links["delete"] = new(url.Link("DeletePlayer", new { id })!, "delete", "DELETE");
+        }
+        return links;
+    }
+
+    public static Dictionary<string, HateoasLink> ForList(
+        IUrlHelper url, int page, int limit, int total)
+    {
+        var pages = limit <= 0 ? 1 : (int)Math.Ceiling((double)total / limit);
+        pages = Math.Max(pages, 1);
+
+        var links = new Dictionary<string, HateoasLink>
+        {
+            ["self"]  = new(url.Link("GetAllPlayers",
+                new { page, limit })!, "self", "GET"),
+            ["first"] = new(url.Link("GetAllPlayers",
+                new { page = 1, limit })!, "first", "GET"),
+            ["last"]  = new(url.Link("GetAllPlayers",
+                new { page = pages, limit })!, "last", "GET"),
+        };
+
+        if (page > 1)
+            links["prev"] = new(url.Link("GetAllPlayers",
+                new { page = page - 1, limit })!, "prev", "GET");
+        if (page < pages)
+            links["next"] = new(url.Link("GetAllPlayers",
+                new { page = page + 1, limit })!, "next", "GET");
+
+        return links;
+    }
+}

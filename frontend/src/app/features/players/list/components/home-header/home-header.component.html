@@ -1,0 +1,121 @@
+<header class="home-header" data-testid="home-header">
+  <div class="home-header__brand" data-testid="home-logo">
+    <img
+      class="home-header__logo"
+      src="assets/img/logo-football-manager.png"
+      alt=""
+      width="36"
+      height="36" />
+    <span class="home-header__wordmark t-headline-sm">Football Manager</span>
+  </div>
+
+  <div class="home-header__actions">
+    @if (isAuthenticated()) {
+      <button
+        #avatarBtn
+        type="button"
+        class="home-header__avatar"
+        (click)="openMenu($event)"
+        [attr.aria-label]="'Abrir menú de ' + displayName()"
+        aria-haspopup="menu"
+        [attr.aria-expanded]="menuOpen()"
+        data-testid="home-user-menu-trigger">
+        <span class="home-header__avatar-initials" aria-hidden="true">
+          {{ initials() }}
+        </span>
+        @if (isAdmin()) {
+          <span class="home-header__avatar-pip" aria-hidden="true"></span>
+        }
+      </button>
+    } @else {
+      <button
+        #cogBtn
+        type="button"
+        class="home-header__icon-btn"
+        (click)="openMenu($event)"
+        aria-label="Ajustes"
+        aria-haspopup="menu"
+        [attr.aria-expanded]="menuOpen()"
+        data-testid="home-settings-trigger">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.05 7.05 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.5.42l-.38 2.65c-.61.25-1.17.57-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98L2.45 14.63a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .61.22l2.49-1c.52.41 1.08.73 1.69.98l.38 2.65A.5.5 0 0 0 10 22h4a.5.5 0 0 0 .5-.42l.38-2.65c.61-.25 1.17-.57 1.69-.98l2.49 1a.5.5 0 0 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.12-1.65ZM12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5Z" />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        class="home-header__cta"
+        (click)="onLogin()"
+        data-testid="home-login-button">
+        Entrar
+      </button>
+    }
+  </div>
+
+  <ion-popover
+    [isOpen]="menuOpen()"
+    [event]="menuEvent()"
+    [showBackdrop]="true"
+    side="bottom"
+    alignment="end"
+    (didDismiss)="closeMenu()"
+    class="home-header__popover">
+    <ng-template>
+      <div class="home-menu" role="menu" data-testid="home-user-menu">
+        @if (isAuthenticated()) {
+          <div class="home-menu__identity">
+            <p class="home-menu__name" data-testid="home-user-greeting">
+              {{ displayName() }}
+            </p>
+            @if (email(); as e) {
+              <p class="home-menu__email">{{ e }}</p>
+            }
+            @if (isAdmin()) {
+              <span class="home-menu__badge" data-testid="home-user-badge-admin">
+                Modo administrador
+              </span>
+            }
+          </div>
+          <div class="home-menu__divider" role="separator"></div>
+        }
+
+        <button
+          type="button"
+          class="home-menu__row"
+          (click)="onToggleBackend()"
+          role="menuitemradio"
+          data-testid="home-menu-backend-toggle">
+          <span class="home-menu__row-label">Backend</span>
+          <span class="home-menu__chip" [attr.data-active]="backend()">
+            <span [class.is-active]="backend() === 'dotnet'">.NET</span>
+            <span [class.is-active]="backend() === 'node'">Node</span>
+          </span>
+        </button>
+
+        @if (isAuthenticated()) {
+          <div class="home-menu__divider" role="separator"></div>
+          <button
+            type="button"
+            class="home-menu__row home-menu__row--danger"
+            (click)="onLogout()"
+            role="menuitem"
+            data-testid="home-logout-button">
+            Cerrar sesión
+          </button>
+        } @else {
+          <div class="home-menu__divider" role="separator"></div>
+          <button
+            type="button"
+            class="home-menu__row"
+            (click)="closeMenu(); onLogin()"
+            role="menuitem"
+            data-testid="home-menu-login-button">
+            Iniciar sesión
+          </button>
+        }
+      </div>
+    </ng-template>
+  </ion-popover>
+</header>

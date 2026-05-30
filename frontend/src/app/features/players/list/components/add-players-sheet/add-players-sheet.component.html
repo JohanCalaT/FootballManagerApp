@@ -1,0 +1,34 @@
+<div class="sheet">
+  <span class="sheet__grabber" aria-hidden="true"></span>
+
+  <header class="sheet__header">
+    <h2 class="sheet__title t-headline-md">Añadir jugadores</h2>
+    <p class="sheet__subtitle t-body-md">Elige cómo quieres incorporar un jugador</p>
+  </header>
+
+  <div class="sheet__options" role="group" aria-label="Opciones para añadir jugadores">
+    <button type="button" class="option option--manual" data-testid="add-player-manual" (click)="choose('insert')">
+      <span class="option__icon">
+        <ion-icon name="create-outline" aria-hidden="true"></ion-icon>
+      </span>
+      <span class="option__text">
+        <span class="option__label">Insertar manualmente</span>
+        <span class="option__desc">Añade un jugador rellenando sus datos</span>
+      </span>
+      <ion-icon class="option__chevron" name="chevron-forward-outline" aria-hidden="true"></ion-icon>
+    </button>
+
+    <button type="button" class="option option--import" data-testid="add-player-import" (click)="choose('import')">
+      <span class="option__icon">
+        <ion-icon name="download-outline" aria-hidden="true"></ion-icon>
+      </span>
+      <span class="option__text">
+        <span class="option__label">Importar de API-Football</span>
+        <span class="option__desc">Busca y trae datos automáticamente</span>
+      </span>
+      <ion-icon class="option__chevron" name="chevron-forward-outline" aria-hidden="true"></ion-icon>
+    </button>
+  </div>
+
+  <button type="button" class="sheet__cancel t-label-lg" (click)="cancel()">Cancelar</button>
+</div>

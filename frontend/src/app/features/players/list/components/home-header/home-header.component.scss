@@ -1,0 +1,263 @@
+:host {
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.home-header {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-3);
+  // Glass fills full-bleed behind the status bar (edge-to-edge); only the
+  // inner row is pushed below the inset so the logo/avatar never collide with
+  // the clock/battery. --ion-safe-area-top is device-aware (notch, punch-hole).
+  padding: var(--app-space-2) var(--app-space-4);
+  padding-top: calc(var(--app-space-2) + var(--ion-safe-area-top, 0px));
+  background: var(--app-glass-fill);
+  backdrop-filter: blur(var(--app-glass-blur));
+  -webkit-backdrop-filter: blur(var(--app-glass-blur));
+  border-bottom: 1px solid var(--app-outline-variant);
+  min-height: calc(56px + var(--ion-safe-area-top, 0px));
+}
+
+.home-header__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--app-space-2);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.home-header__logo {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(0, 228, 120, 0.35));
+}
+
+.home-header__wordmark {
+  color: var(--app-on-surface);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-header__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--app-space-2);
+  flex: 0 0 auto;
+}
+
+.home-header__cta {
+  appearance: none;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--app-radius-full);
+  background: var(--app-primary);
+  color: var(--app-on-primary);
+  border: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+
+  &:hover { box-shadow: var(--app-glow-primary); }
+  &:active { transform: translateY(1px); }
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--app-primary-glow-soft);
+  }
+}
+
+.home-header__icon-btn {
+  appearance: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--app-radius-full);
+  background: transparent;
+  border: 1px solid var(--app-outline-variant);
+  color: var(--app-on-surface-soft);
+  cursor: pointer;
+
+  svg { width: 18px; height: 18px; }
+
+  &:hover {
+    color: var(--app-primary);
+    border-color: var(--app-primary);
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--app-primary-glow-soft);
+  }
+}
+
+.home-header__avatar {
+  position: relative;
+  appearance: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--app-radius-full);
+  border: 1px solid var(--app-outline-variant);
+  background: linear-gradient(135deg, var(--app-primary), var(--app-secondary));
+  color: var(--app-on-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+
+  &:hover { box-shadow: var(--app-glow-primary); }
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--app-primary-glow-soft);
+  }
+}
+
+.home-header__avatar-pip {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--app-radius-full);
+  background: var(--app-secondary);
+  border: 2px solid var(--app-surface-floor);
+}
+
+// ---------------------------------------------------------------------------
+// Popover content
+// ---------------------------------------------------------------------------
+
+.home-header__popover {
+  --width: 260px;
+  --background: var(--app-surface-low);
+  --backdrop-opacity: 0.2;
+  --box-shadow: var(--app-glow-primary-soft);
+  --border-radius: var(--app-radius-md);
+  --border-color: var(--app-outline-variant);
+  --border-style: solid;
+  --border-width: 1px;
+}
+
+.home-menu {
+  display: flex;
+  flex-direction: column;
+  padding: var(--app-space-2);
+  color: var(--app-on-surface);
+}
+
+.home-menu__identity {
+  padding: var(--app-space-3) var(--app-space-3) var(--app-space-2);
+}
+
+.home-menu__name {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--app-on-surface);
+}
+
+.home-menu__email {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--app-on-surface-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-menu__badge {
+  display: inline-block;
+  margin-top: var(--app-space-2);
+  padding: 2px 8px;
+  border-radius: var(--app-radius-full);
+  background: rgba(255, 219, 60, 0.15);
+  border: 1px solid var(--app-secondary);
+  color: var(--app-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.home-menu__divider {
+  height: 1px;
+  background: var(--app-outline-variant);
+  margin: var(--app-space-1) 0;
+}
+
+.home-menu__row {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--app-space-3);
+  min-height: 44px;
+  padding: var(--app-space-2) var(--app-space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--app-radius);
+  color: var(--app-on-surface);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover { background: rgba(255, 255, 255, 0.04); }
+  &:focus-visible {
+    outline: none;
+    background: rgba(0, 228, 120, 0.08);
+  }
+}
+
+.home-menu__row--danger {
+  color: var(--app-error);
+
+  &:hover { background: rgba(255, 180, 171, 0.08); }
+}
+
+.home-menu__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border-radius: var(--app-radius-full);
+  background: var(--app-surface-floor);
+  border: 1px solid var(--app-outline-variant);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+
+  > span {
+    padding: 4px 10px;
+    border-radius: var(--app-radius-full);
+    color: var(--app-on-surface-soft);
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  > span.is-active {
+    background: var(--app-primary);
+    color: var(--app-on-primary);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mobile — hide wordmark to keep the bar single-row at 360px
+// ---------------------------------------------------------------------------
+
+@media (max-width: 480px) {
+  .home-header { padding-left: var(--app-space-3); padding-right: var(--app-space-3); }
+  .home-header__wordmark { display: none; }
+}

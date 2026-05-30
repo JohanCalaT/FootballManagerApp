@@ -1,0 +1,68 @@
+@if (emptyKind; as kind) {
+  <app-home-empty-state
+    [kind]="kind"
+    [query]="query()"
+    [canRegister]="canRegister()"
+    (retryRequested)="retryRequested.emit()"
+    (registerRequested)="registerRequested.emit()" />
+} @else if (isInitialLoad) {
+  <div class="home-grid" data-testid="home-grid-skeleton" aria-busy="true">
+    @for (slot of skeletonSlots; track $index) {
+      <div class="home-grid__skeleton" aria-hidden="true"></div>
+    }
+  </div>
+} @else {
+  <div class="home-grid" data-testid="home-grid">
+    @for (player of players(); track trackById($index, player)) {
+      <fma-player-card
+        [attr.player-id]="player.id"
+        [attr.name]="player.name"
+        [attr.team]="player.team"
+        [attr.league]="player.league"
+        [attr.position]="player.position"
+        [attr.image-url]="player.imageUrl"
+        [attr.rating]="player.rating"
+        [attr.is-manual]="player.apiFootballId === null ? 'true' : null"
+        (playerSelected)="onCardSelected(player)"
+        data-testid="player-card">
+        @if (canEdit(player)) {
+          <button
+            slot="actions"
+            type="button"
+            class="card-action card-action--edit"
+            (click)="onEdit($event, player)"
+            data-testid="player-card-edit-button">
+            ✎
+          </button>
+        }
+        @if (canDelete(player)) {
+          <button
+            slot="actions"
+            type="button"
+            class="card-action card-action--delete"
+            (click)="onDelete($event, player)"
+            data-testid="player-card-delete-button">
+            ✕
+          </button>
+        }
+      </fma-player-card>
+    }
+  </div>
+
+  @if (allLoaded() && players().length > 0) {
+    <p class="home-grid__end t-label-sm" data-testid="home-grid-end">
+      Has visto los {{ players().length }} jugadores registrados
+    </p>
+  }
+
+  <ion-infinite-scroll
+    threshold="200px"
+    [disabled]="allLoaded() || !!error()"
+    (ionInfinite)="onIonInfinite($event)"
+    data-testid="players-infinite-scroll">
+    <ion-infinite-scroll-content
+      loadingSpinner="circles"
+      loadingText="Cargando más jugadores…">
+    </ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+}

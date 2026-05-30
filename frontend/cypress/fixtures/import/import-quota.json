@@ -1,0 +1,6 @@
+{
+  "status": 503,
+  "message": "Daily quota exceeded",
+  "data": { "imported": [], "failed": [] },
+  "_links": {}
+}

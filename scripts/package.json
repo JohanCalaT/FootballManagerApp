@@ -1,0 +1,13 @@
+{
+  "name": "footballmanager-scripts",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "One-off operational scripts for the FootballManager project (admin promotion, etc.). Not deployed.",
+  "scripts": {
+    "grant-admin": "node grant-admin.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}

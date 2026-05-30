@@ -1,16 +1,22 @@
 /*
  * App Global CSS
- * ----------------------------------------------------------------------------
- * Put style rules here that you want to apply globally. These styles are for
- * the entire app and not just one component. Additionally, this file can be
- * used as an entry point to import other CSS/Sass files to be included in the
- * output CSS.
- * For more information on global stylesheets, visit the documentation:
- * https://ionicframework.com/docs/layout/global-stylesheets
+ * ---------------------------------------------------------------------------
+ * Global rules and Ionic CSS imports. The Gridiron Neon design tokens live
+ * in src/theme/variables.scss (mapped to Ionic vars there). See DESIGN.md at
+ * the repo root for the full system.
  */
+
+// Brand typography — Bebas Neue for impact, Inter for body / data.
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
 
 /* Core CSS required for Ionic components to work properly */
 @import "@ionic/angular/css/core.css";
+
+/* Leaflet base CSS — required for tile layout and controls to render at the
+ * right z-index inside the player-geolocation-picker. We load it globally
+ * (not inside the component's encapsulated styles) because Leaflet appends
+ * DOM nodes outside the component subtree (popups, attribution control). */
+@import "leaflet/dist/leaflet.css";
 
 /* Basic CSS for apps built with Ionic */
 @import "@ionic/angular/css/normalize.css";
@@ -31,7 +37,42 @@
  * For more info, please see:
  * https://ionicframework.com/docs/theming/dark-mode
  */
-
-/* @import "@ionic/angular/css/palettes/dark.always.css"; */
-/* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import '@ionic/angular/css/palettes/dark.system.css';
+
+// Body baseline — Inter, dark surface, comfortable line-height.
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--app-bg);
+  color: var(--app-on-surface);
+}
+
+// Gridiron Neon toast — shared by all global ion-toast notices (publish,
+// backend switch, form feedback, etc.).
+// Lives here because Ionic renders ion-toast in an overlay outside the component
+// tree, so a scoped style cannot reach the shadow root.
+.fma-toast {
+  --background: var(--app-surface-floor);
+  --color: var(--app-on-surface);
+  --border-color: var(--app-outline-variant);
+  --border-style: solid;
+  --border-width: 1px;
+  --border-radius: var(--app-radius);
+  --box-shadow: var(--app-glow-primary-soft);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+
+// "Añadir jugadores" bottom sheet (ModalController with sheet breakpoints).
+// Ionic renders the modal in an overlay outside the component tree, so the
+// modal-part background / radius / backdrop must be set globally; the content
+// styling lives in add-players-sheet.component.scss.
+.fma-add-sheet {
+  --background: var(--app-surface-low);
+  --border-radius: var(--app-radius-xl);
+  --backdrop-opacity: 0.6;
+
+  &::part(backdrop) {
+    backdrop-filter: blur(4px);
+  }
+}

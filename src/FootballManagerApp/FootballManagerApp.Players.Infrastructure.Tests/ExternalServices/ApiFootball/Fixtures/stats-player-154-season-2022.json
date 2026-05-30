@@ -1,0 +1,98 @@
+{
+  "get": "players",
+  "parameters": { "id": "154", "season": "2022" },
+  "errors": [],
+  "results": 1,
+  "paging": { "current": 1, "total": 1 },
+  "response": [
+    {
+      "player": {
+        "id": 154,
+        "name": "L. Messi",
+        "firstname": "Lionel Andrés",
+        "lastname": "Messi Cuccittini",
+        "age": 38,
+        "birth": {
+          "date": "1987-06-24",
+          "place": "Rosario",
+          "country": "Argentina"
+        },
+        "nationality": "Argentina",
+        "height": "170 cm",
+        "weight": "67 kg",
+        "injured": false,
+        "photo": "https://media.api-sports.io/football/players/154.png"
+      },
+      "statistics": [
+        {
+          "team": {
+            "id": 85,
+            "name": "Paris Saint Germain",
+            "logo": "https://media.api-sports.io/football/teams/85.png"
+          },
+          "league": {
+            "id": 61,
+            "name": "Ligue 1",
+            "country": "France",
+            "logo": "https://media.api-sports.io/football/leagues/61.png",
+            "flag": "https://media.api-sports.io/flags/fr.svg",
+            "season": 2022
+          },
+          "games": {
+            "appearences": 32,
+            "lineups": 32,
+            "minutes": 2842,
+            "number": null,
+            "position": "Attacker",
+            "rating": "8.103125",
+            "captain": false
+          },
+          "substitutes": { "in": 0, "out": 5, "bench": 0 },
+          "shots": { "total": 94, "on": 57 },
+          "goals": { "total": 16, "conceded": 0, "assists": 16, "saves": null },
+          "passes": { "total": 1931, "key": 95, "accuracy": 50 },
+          "tackles": { "total": 26, "blocks": null, "interceptions": 2 },
+          "duels": { "total": 338, "won": 165 },
+          "dribbles": { "attempts": 173, "success": 102, "past": null },
+          "fouls": { "drawn": 36, "committed": 8 },
+          "cards": { "yellow": 0, "yellowred": 0, "red": 0 },
+          "penalty": { "won": null, "commited": null, "scored": 0, "missed": 0, "saved": null }
+        },
+        {
+          "team": {
+            "id": 26,
+            "name": "Argentina",
+            "logo": "https://media.api-sports.io/football/teams/26.png"
+          },
+          "league": {
+            "id": 1,
+            "name": "World Cup",
+            "country": "World",
+            "logo": "https://media.api-sports.io/football/leagues/1.png",
+            "flag": null,
+            "season": 2022
+          },
+          "games": {
+            "appearences": 7,
+            "lineups": 7,
+            "minutes": 690,
+            "number": null,
+            "position": "Attacker",
+            "rating": "8.45",
+            "captain": true
+          },
+          "substitutes": { "in": 0, "out": 0, "bench": 0 },
+          "shots": { "total": 24, "on": 13 },
+          "goals": { "total": 7, "conceded": 0, "assists": 3, "saves": null },
+          "passes": { "total": null, "key": null, "accuracy": null },
+          "tackles": { "total": 4, "blocks": null, "interceptions": 1 },
+          "duels": { "total": null, "won": null },
+          "dribbles": { "attempts": 31, "success": 20, "past": null },
+          "fouls": { "drawn": null, "committed": null },
+          "cards": { "yellow": 2, "yellowred": 0, "red": 0 },
+          "penalty": { "won": null, "commited": null, "scored": 4, "missed": 1, "saved": null }
+        }
+      ]
+    }
+  ]
+}

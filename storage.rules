@@ -1,0 +1,33 @@
+rules_version = '2';
+
+// Firebase Storage rules for FootballManagerApp.
+//
+// Image upload model (see CLAUDE.md → Imágenes — Firebase Storage):
+//   - Authenticated users upload player photos under `players/{uid}/...`.
+//   - Any client (incl. anonymous visitors) can READ a player photo,
+//     since the public players home grid renders them.
+//   - We cap file size and MIME type at the rules layer so a misbehaving
+//     client can never push 50MB or arbitrary binaries into the bucket.
+//
+// The path convention is enforced by `firebase-storage.service.ts`. If you
+// add a new top-level prefix (e.g. user avatars), add another match block —
+// do NOT widen `players/**` to cover unrelated assets.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Player photos: <uid>-scoped writes, public reads.
+    match /players/{uid}/{allPaths=**} {
+      allow read: if true;
+
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Default deny — anything not explicitly matched above is rejected.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

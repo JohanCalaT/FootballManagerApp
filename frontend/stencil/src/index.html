@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FMA · Stencil component preview</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" />
+
+    <script type="module" src="/build/football-manager-stencil.esm.js"></script>
+
+    <style>
+      :root {
+        --app-bg:                  #131318;
+        --app-surface-floor:       #0e0e13;
+        --app-surface-low:         #1b1b20;
+        --app-surface:             #1f1f25;
+        --app-on-surface:          #e4e1e9;
+        --app-on-surface-soft:     rgba(228, 225, 233, 0.64);
+        --app-on-surface-faint:    rgba(228, 225, 233, 0.38);
+        --app-outline-variant:     #3b4b3d;
+        --app-primary:             #00e478;
+        --app-primary-bright:      #00ff87;
+        --app-primary-glow:        rgba(0, 228, 120, 0.45);
+        --app-primary-glow-soft:   rgba(0, 228, 120, 0.18);
+        --app-secondary:           #ffdb3c;
+        --app-radius:              0.5rem;
+        --app-radius-md:           0.75rem;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--app-bg);
+        color: var(--app-on-surface);
+        font-family: 'Inter', system-ui, sans-serif;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(circle at 18% 12%, rgba(0, 228, 120, 0.18) 0%, transparent 50%),
+          radial-gradient(circle at 82% 88%, rgba(0, 228, 120, 0.12) 0%, transparent 55%);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .shell {
+        position: relative;
+        z-index: 1;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 56px 24px 80px;
+      }
+
+      .eyebrow {
+        margin: 0;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--app-primary);
+      }
+
+      h1 {
+        margin: 6px 0 8px;
+        font-family: 'Bebas Neue', system-ui, sans-serif;
+        font-size: 42px;
+        font-weight: 400;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .lede {
+        margin: 0 0 36px;
+        color: var(--app-on-surface-soft);
+        font-size: 14px;
+        max-width: 56ch;
+      }
+
+      h2 {
+        font-family: 'Bebas Neue', system-ui, sans-serif;
+        font-size: 22px;
+        font-weight: 400;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--app-on-surface-soft);
+        margin: 40px 0 14px;
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+      }
+      h2::before {
+        content: '';
+        flex: 0 0 24px;
+        height: 1px;
+        background: var(--app-primary);
+      }
+
+      .grid {
+        display: grid;
+        /* 2 columns on mobile 360-420px, grows to 3-5 on tablet/desktop. */
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 14px;
+      }
+
+      /* Force 2-column rendering at the typical mobile breakpoint so the
+         preview matches what users will actually see on their phone. */
+      .preview-mobile {
+        max-width: 420px;
+        margin: 0 0 24px;
+      }
+
+      .selection-log {
+        margin-top: 48px;
+        padding: 14px 18px;
+        background: var(--app-surface-floor);
+        border: 1px dashed var(--app-outline-variant);
+        border-radius: var(--app-radius-md);
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 12px;
+        color: var(--app-on-surface-soft);
+        letter-spacing: 0.04em;
+      }
+      .selection-log strong {
+        color: var(--app-primary);
+        font-weight: 600;
+      }
+      .selection-log code {
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        font-size: 11px;
+        padding: 1px 6px;
+        background: var(--app-surface);
+        border-radius: 4px;
+        color: var(--app-on-surface);
+      }
+
+      .action-btn {
+        appearance: none;
+        border: 1px solid var(--app-outline-variant);
+        background: transparent;
+        color: var(--app-on-surface);
+        padding: 6px 12px;
+        border-radius: var(--app-radius);
+        font: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: border-color 0.15s ease, color 0.15s ease;
+      }
+      .action-btn:hover { border-color: var(--app-secondary); color: var(--app-secondary); }
+
+      .fut-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 18px;
+        align-items: start;
+      }
+      .fut-bar {
+        display: flex;
+        gap: 10px;
+        margin: 0 0 18px;
+        flex-wrap: wrap;
+      }
+      .phone {
+        max-width: 390px;
+        margin: 0 0 24px;
+        padding: 16px 14px;
+        border: 1px solid var(--app-outline-variant);
+        border-radius: 28px;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(0, 228, 120, 0.10) 0%, transparent 55%),
+          var(--app-surface-floor);
+      }
+      .compact-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        justify-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <p class="eyebrow">Football Manager · Stencil component preview</p>
+      <h1>&lt;fma-player-card&gt;</h1>
+      <p class="lede">
+        Player roster row used by the listings and search pages. Tier
+        signalled by ring color and orbital rating badge. Hex-grid backdrop
+        + radial tier glow give the surface a "stadium control room HUD"
+        depth. Hover and tab through the grid to see interactivity.
+      </p>
+
+      <h2>&lt;fma-fut-card&gt; — Equipo Ideal · toca para girar</h2>
+      <p class="lede">
+        Carta giratoria estilo Ultimate Team para el Equipo Ideal. Frente:
+        overall + posición + retrato + tira de 6 atributos. Toca (o Enter /
+        Espacio) para girar y ver los atributos como gauges y la justificación
+        de la IA. Tier por overall (0–99): bronze &lt;65, silver 65-74, gold
+        75-84, icon 85+.
+      </p>
+
+      <div class="fut-bar">
+        <button class="action-btn" id="flip-all">↻ Girar todas</button>
+      </div>
+
+      <div class="fut-grid">
+        <fma-fut-card
+          name="Lionel Messi" team="Inter Miami CF" position="RW"
+          nationality="Argentina"
+          image-url="https://media.api-sports.io/football/players/154.png"
+          overall="93" pac="80" sho="89" pas="90" dri="94" def="38" phy="64"
+          reason="Genio creativo en banda derecha: desequilibra en el uno contra uno y fabrica ocasiones constantes desde la media punta."></fma-fut-card>
+
+        <fma-fut-card
+          name="Robert Lewandowski" team="FC Barcelona" position="ST"
+          nationality="Polonia"
+          image-url="https://media.api-sports.io/football/players/521.png"
+          overall="88" pac="75" sho="91" pas="78" dri="84" def="44" phy="82"
+          reason="Killer del área: definición de élite y movimientos de ruptura que fijan a la última línea rival."></fma-fut-card>
+
+        <fma-fut-card
+          name="Pedri González" team="FC Barcelona" position="CM"
+          nationality="España"
+          image-url="https://media.api-sports.io/football/players/284324.png"
+          overall="82" pac="72" sho="70" pas="86" dri="88" def="64" phy="66"
+          reason="Cerebro del mediocampo: circulación rápida, llegada y criterio para sostener la posesión bajo presión."></fma-fut-card>
+
+        <fma-fut-card
+          name="Mikel Oyarzabal" team="Real Sociedad" position="LW"
+          nationality="España"
+          overall="72" pac="78" sho="76" pas="74" dri="79" def="48" phy="70"
+          reason="Polivalente de banda izquierda con buen disparo y sacrificio defensivo para ayudar al lateral."></fma-fut-card>
+
+        <fma-fut-card
+          name="Marc-André ter Stegen" team="FC Barcelona" position="GK"
+          nationality="Alemania"
+          overall="89" pac="86" sho="78" pas="91" dri="88" def="52" phy="82"
+          reason="Portero moderno: reflejos de top mundial y salida de balón con los pies que inicia el juego desde atrás."></fma-fut-card>
+
+        <fma-fut-card
+          name="Joel Domínguez" team="Real Sociedad B" position="CB"
+          nationality="España"
+          overall="61" pac="64" sho="35" pas="58" dri="55" def="66" phy="68"
+          reason="Central joven de la cantera: contundente en el corte, aún en proceso de pulir la salida limpia."></fma-fut-card>
+      </div>
+
+      <h2>Modo compacto — los 11 en una pantalla de móvil (390px)</h2>
+      <p class="lede">
+        Variante <code>compact</code> para la cancha del Equipo Ideal: solo
+        overall + posición + retrato + nombre corto, así caben los 11 en un
+        móvil. Toca cualquiera para girar y ver sus atributos. (La cancha real
+        con posicionamiento x/y vendrá en la siguiente fase.)
+      </p>
+      <div class="phone">
+        <div class="compact-grid">
+          <fma-fut-card compact name="Ter Stegen" position="GK" overall="89"
+            pac="86" sho="78" pas="91" dri="88" def="52" phy="82"></fma-fut-card>
+          <fma-fut-card compact name="Carvajal" position="RB" overall="84"
+            pac="83" sho="58" pas="78" dri="80" def="84" phy="79"></fma-fut-card>
+          <fma-fut-card compact name="Rüdiger" position="CB" overall="86"
+            pac="82" sho="42" pas="70" dri="68" def="87" phy="88"></fma-fut-card>
+          <fma-fut-card compact name="Laporte" position="CB" overall="83"
+            pac="74" sho="45" pas="79" dri="72" def="84" phy="83"></fma-fut-card>
+          <fma-fut-card compact name="Balde" position="LB" overall="79"
+            pac="90" sho="55" pas="74" dri="81" def="76" phy="74"></fma-fut-card>
+          <fma-fut-card compact name="Rodri" position="CDM" overall="91"
+            pac="66" sho="78" pas="86" dri="82" def="87" phy="85"></fma-fut-card>
+          <fma-fut-card compact name="Pedri" position="CM" overall="82"
+            pac="72" sho="70" pas="86" dri="88" def="64" phy="66"></fma-fut-card>
+          <fma-fut-card compact name="Bellingham" position="CAM" overall="90"
+            pac="80" sho="86" pas="83" dri="88" def="72" phy="84"></fma-fut-card>
+          <fma-fut-card compact name="Vinícius" position="LW" overall="89"
+            image-url="https://media.api-sports.io/football/players/2295.png"
+            pac="95" sho="83" pas="78" dri="92" def="34" phy="74"></fma-fut-card>
+          <fma-fut-card compact name="Lewandowski" position="ST" overall="88"
+            image-url="https://media.api-sports.io/football/players/521.png"
+            pac="75" sho="91" pas="78" dri="84" def="44" phy="82"></fma-fut-card>
+          <fma-fut-card compact name="Messi" position="RW" overall="93"
+            image-url="https://media.api-sports.io/football/players/154.png"
+            pac="80" sho="89" pas="90" dri="94" def="38" phy="64"></fma-fut-card>
+        </div>
+      </div>
+
+      <h2>Mobile viewport — 2 columns on a 420px container</h2>
+      <div class="grid preview-mobile">
+        <fma-player-card player-id="messi-m"
+          name="Lionel Messi" team="Inter Miami CF" league="MLS" position="Attacker"
+          image-url="https://media.api-sports.io/football/players/154.png" rating="9.1"></fma-player-card>
+        <fma-player-card player-id="pedri-m"
+          name="Pedri González" team="FC Barcelona" league="La Liga" position="Midfielder"
+          image-url="https://media.api-sports.io/football/players/284324.png" rating="8.21"></fma-player-card>
+        <fma-player-card player-id="oyarza-m"
+          name="Mikel Oyarzabal" team="Real Sociedad" league="La Liga" position="Attacker"
+          rating="7.92"></fma-player-card>
+        <fma-player-card player-id="llorente-m"
+          name="Diego Llorente" team="AS Roma" league="Serie A" position="Defender"
+          image-url="https://media.api-sports.io/football/players/2459.png" rating="7.05"></fma-player-card>
+      </div>
+
+      <h2>Desktop grid (auto-fill, scales 3-5 columns)</h2>
+      <div class="grid">
+        <fma-player-card
+          player-id="messi"
+          name="Lionel Messi"
+          team="Inter Miami CF"
+          league="Major League Soccer"
+          position="Attacker"
+          image-url="https://media.api-sports.io/football/players/154.png"
+          rating="9.1"></fma-player-card>
+
+        <fma-player-card
+          player-id="pedri"
+          name="Pedri González"
+          team="FC Barcelona"
+          league="La Liga"
+          position="Midfielder"
+          image-url="https://media.api-sports.io/football/players/284324.png"
+          rating="8.21"></fma-player-card>
+
+        <fma-player-card
+          player-id="oyarzabal"
+          name="Mikel Oyarzabal"
+          team="Real Sociedad"
+          league="La Liga"
+          position="Attacker"
+          rating="7.92"></fma-player-card>
+
+        <fma-player-card
+          player-id="llorente"
+          name="Diego Llorente"
+          team="AS Roma"
+          league="Serie A"
+          position="Defender"
+          image-url="https://media.api-sports.io/football/players/2459.png"
+          rating="7.05"></fma-player-card>
+
+        <fma-player-card
+          player-id="reserva"
+          name="Joel Domínguez"
+          team="Real Sociedad B"
+          league="Segunda Federación"
+          position="Goalkeeper"
+          rating="5.8"></fma-player-card>
+
+        <fma-player-card
+          player-id="lewa"
+          name="Robert Lewandowski"
+          team="FC Barcelona"
+          league="La Liga"
+          position="Attacker"
+          image-url="https://media.api-sports.io/football/players/521.png"
+          rating="8.65">
+          <button slot="actions" class="action-btn"
+                  onclick="event.stopPropagation(); alert('Editar — solo admin');">
+            Editar
+          </button>
+        </fma-player-card>
+      </div>
+
+      <h2>Casos límite</h2>
+      <div class="grid">
+        <fma-player-card
+          player-id="manual"
+          name="Nuevo Fichaje"
+          team="CD Almería"
+          league="La Liga 2"
+          position="Midfielder"></fma-player-card>
+
+        <fma-player-card
+          name="Display Only"
+          team="Demo FC"
+          league="Demo League"
+          position="Attacker"
+          rating="8.0"
+          interactive="false"></fma-player-card>
+
+        <fma-player-card
+          player-id="long"
+          name="Cristiano Ronaldo dos Santos Aveiro"
+          team="Al Nassr Football Club"
+          league="Saudi Pro League"
+          position="Attacker"
+          image-url="https://media.api-sports.io/football/players/874.png"
+          rating="8.45"></fma-player-card>
+      </div>
+
+      <div id="log" class="selection-log">
+        Click cualquier carta interactiva para ver el evento
+        <code>playerSelected</code>.
+      </div>
+    </main>
+
+    <script>
+      const log = document.getElementById('log');
+      document.addEventListener('playerSelected', (ev) => {
+        const { playerId, name } = ev.detail;
+        log.innerHTML =
+          '<strong>playerSelected</strong> · playerId=<code>' +
+          (playerId ?? '(none)') +
+          '</code> · name=<code>' + name +
+          '</code> · time=' + new Date().toLocaleTimeString();
+      });
+
+      document.addEventListener('flipChange', (ev) => {
+        const { name, flipped } = ev.detail;
+        log.innerHTML =
+          '<strong>flipChange</strong> · name=<code>' + name +
+          '</code> · flipped=<code>' + flipped +
+          '</code> · time=' + new Date().toLocaleTimeString();
+      });
+
+      // Drive every FUT card's `flipped` prop at once — mimics flipping the
+      // whole formation. Reading the current state off the first card.
+      document.getElementById('flip-all').addEventListener('click', () => {
+        const cards = [...document.querySelectorAll('fma-fut-card')];
+        const next = !cards[0]?.flipped;
+        cards.forEach((c) => { c.flipped = next; });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,157 @@
+// "Añadir jugadores" bottom sheet. Dark elevated surface, green/gold accents,
+// Bebas Neue title (via .t-* utility classes), generous radii — consistent with
+// the player cards and the rest of Gridiron Neon. Tokens come from
+// src/theme/variables.scss; no new colors invented here.
+:host {
+  display: block;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-4);
+  padding: var(--app-space-3) var(--app-space-4)
+    calc(env(safe-area-inset-bottom, 0px) + var(--app-space-4));
+  background: var(--app-surface-low);
+  border-top: 1px solid var(--app-outline-variant);
+  border-top-left-radius: var(--app-radius-xl);
+  border-top-right-radius: var(--app-radius-xl);
+}
+
+.sheet__grabber {
+  width: 40px;
+  height: 4px;
+  margin: 4px auto 0;
+  border-radius: var(--app-radius-full);
+  background: var(--app-on-surface-faint);
+}
+
+.sheet__header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sheet__title {
+  margin: 0;
+  color: var(--app-on-surface);
+}
+
+.sheet__subtitle {
+  margin: 0;
+  color: var(--app-on-surface-soft);
+}
+
+.sheet__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-3);
+}
+
+// Each option is a tall, full-width touch row.
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--app-space-3);
+  border: 1px solid var(--app-outline-variant);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-surface);
+  color: var(--app-on-surface);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease,
+    border-color 0.12s ease;
+
+  // Visible press feedback.
+  &:active {
+    transform: scale(0.98);
+    background: var(--app-surface-high);
+  }
+}
+
+.option__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--app-radius-md);
+
+  ion-icon {
+    font-size: 22px;
+  }
+}
+
+.option--manual {
+  .option__icon {
+    color: var(--app-primary);
+    background: var(--app-primary-glow-soft);
+    box-shadow: inset 0 0 0 1px var(--app-primary-glow-soft);
+  }
+
+  &:active {
+    border-color: var(--app-primary);
+  }
+}
+
+.option--import {
+  .option__icon {
+    color: var(--app-secondary);
+    background: rgba(255, 219, 60, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(255, 219, 60, 0.16);
+  }
+
+  &:active {
+    border-color: var(--app-secondary);
+  }
+}
+
+.option__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.option__label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--app-on-surface);
+}
+
+.option__desc {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 17px;
+  color: var(--app-on-surface-soft);
+}
+
+.option__chevron {
+  flex: 0 0 auto;
+  font-size: 18px;
+  color: var(--app-on-surface-faint);
+}
+
+// Cancel is a separate, clearly distinct full-width button — not another row.
+.sheet__cancel {
+  width: 100%;
+  min-height: 52px;
+  margin-top: var(--app-space-1);
+  border: 1px solid var(--app-outline-variant);
+  border-radius: var(--app-radius-lg);
+  background: transparent;
+  color: var(--app-on-surface-soft);
+  cursor: pointer;
+  transition: background 0.12s ease;
+
+  &:active {
+    background: var(--app-surface);
+  }
+}

@@ -1,0 +1,88 @@
+name: CI · Backend CORBA (Java 8 + Spring Boot)
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'backend-corba/**'
+      - '.github/workflows/ci-backend-corba.yml'
+  pull_request:
+    paths:
+      - 'backend-corba/**'
+      - '.github/workflows/ci-backend-corba.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-backend-corba-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend-corba
+
+jobs:
+  build-test-coverage:
+    name: Build · Test · JaCoCo (≥80%) · SpotBugs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Temurin 8 is required: the JDK ships idlj (IDL compiler) and orbd
+      # (Naming Service), removed in Java 11+. The CORBA news subsystem
+      # depends on both for build (idlj-stubs) and runtime (orbd).
+      - name: Setup JDK 8 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+          cache: maven
+
+      - name: Show toolchain
+        run: |
+          java -version
+          mvn --version
+          which idlj && idlj -version 2>&1 | head -1 || echo "idlj not on PATH"
+
+      - name: Build, test, JaCoCo check, SpotBugs
+        # `mvn verify` runs:
+        #  - idlj generation (idl-stubs)
+        #  - server tests (JUnit 4) + adapter tests (JUnit 5 + MockMvc)
+        #  - jacoco:report + jacoco:check (≥80% LINE coverage required)
+        #  - spotbugs:check (failOnError=false → warnings, not blockers)
+        # If JaCoCo threshold is not met, this step fails and the workflow
+        # goes red.
+        run: mvn -B verify
+
+      - name: Upload JaCoCo coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: corba-jacoco-reports
+          path: |
+            backend-corba/server/target/site/jacoco/**
+            backend-corba/adapter/target/site/jacoco/**
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload Surefire test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: corba-test-results
+          path: backend-corba/**/target/surefire-reports/**
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload SpotBugs reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: corba-spotbugs-reports
+          path: backend-corba/**/target/spotbugsXml.xml
+          retention-days: 14
+          if-no-files-found: ignore

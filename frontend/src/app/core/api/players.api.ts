@@ -1,0 +1,204 @@
+import { Injectable, Signal, inject } from '@angular/core';
+import { HttpClient, httpResource } from '@angular/common/http';
+import { Observable, firstValueFrom, map } from 'rxjs';
+import { GATEWAY_URL } from '../tokens/gateway-url.token';
+import { ApiResponse, PagedResponse } from '../models/api-response.model';
+import { ApiFootballProfile, ImportResult } from '../models/api-football.model';
+import {
+  CreatePlayerRequest,
+  ImportPlayerItem,
+  Player,
+  PlayerListItem,
+  PlayerSearchFilters,
+  UpdatePlayerRequest,
+} from '../models/player.model';
+
+@Injectable({ providedIn: 'root' })
+export class PlayersApi {
+  private readonly http = inject(HttpClient);
+  private readonly base = inject(GATEWAY_URL);
+
+  list(page: Signal<number>, limit: Signal<number>) {
+    return httpResource<PagedResponse<Player>>(
+      () => `${this.base}/api/players?page=${page()}&limit=${limit()}`,
+    );
+  }
+
+  byId(id: Signal<string | null>) {
+    return httpResource<ApiResponse<Player>>(() => {
+      const value = id();
+      return value ? `${this.base}/api/players/${value}` : undefined;
+    });
+  }
+
+  search(filters: Signal<PlayerSearchFilters>) {
+    return httpResource<PagedResponse<Player>>(() => {
+      const f = filters();
+      const params = new URLSearchParams();
+      if (f.name) params.set('name', f.name);
+      if (f.team) params.set('team', f.team);
+      if (f.league) params.set('league', f.league);
+      if (f.from) params.set('from', f.from);
+      if (f.to) params.set('to', f.to);
+      if (f.page != null) params.set('page', String(f.page));
+      if (f.limit != null) params.set('limit', String(f.limit));
+      return `${this.base}/api/players/search?${params.toString()}`;
+    });
+  }
+
+  searchExternal(query: Signal<string | null>) {
+    return httpResource<ApiResponse<ApiFootballProfile[]>>(() => {
+      const q = query();
+      return q ? `${this.base}/api/players/search-external?query=${encodeURIComponent(q)}` : undefined;
+    });
+  }
+
+  seasonsOf(apiFootballId: Signal<number | null>) {
+    return httpResource<ApiResponse<number[]>>(() => {
+      const id = apiFootballId();
+      return id != null ? `${this.base}/api/players/seasons/${id}` : undefined;
+    });
+  }
+
+  // Promise-shaped variants of the API-Football proxy endpoints, used by the
+  // import flow store which orchestrates manual selection + auto-resolution
+  // of the season per player and can't lean on httpResource's URL-driven
+  // recomputation.
+  async searchExternalOnce(
+    query: string,
+    page: number,
+    limit: number,
+  ): Promise<PagedResponse<ApiFootballProfile>> {
+    return firstValueFrom(
+      this.http.get<PagedResponse<ApiFootballProfile>>(
+        `${this.base}/api/players/search-external`,
+        { params: { query, page, limit } },
+      ),
+    );
+  }
+
+  async seasonsOfOnce(apiFootballId: number): Promise<ApiResponse<number[]>> {
+    return firstValueFrom(
+      this.http.get<ApiResponse<number[]>>(
+        `${this.base}/api/players/seasons/${apiFootballId}`,
+      ),
+    );
+  }
+
+  // Promise-shaped variants used by the home page paged store, which needs
+  // append-on-load semantics that httpResource (replace-on-URL-change) does
+  // not provide out of the box.
+  /**
+   * Promise-shaped GET by id — needed by the edit page which loads once
+   * inside an async lifecycle rather than reactively via `httpResource`.
+   */
+  async getByIdOnce(id: string): Promise<ApiResponse<Player>> {
+    return firstValueFrom(
+      this.http.get<ApiResponse<Player>>(`${this.base}/api/players/${id}`),
+    );
+  }
+
+  async listPage(page: number, limit: number): Promise<PagedResponse<PlayerListItem>> {
+    return firstValueFrom(
+      this.http.get<PagedResponse<PlayerListItem>>(`${this.base}/api/players`, {
+        params: { page, limit },
+      }),
+    );
+  }
+
+  async searchPage(
+    name: string,
+    page: number,
+    limit: number,
+  ): Promise<PagedResponse<PlayerListItem>> {
+    return firstValueFrom(
+      this.http.get<PagedResponse<PlayerListItem>>(`${this.base}/api/players/search`, {
+        params: { name, page, limit },
+      }),
+    );
+  }
+
+  /**
+   * Paged search across the full rubric filter set (name + team/league + alta
+   * date range). Only non-empty filters are sent so the backend treats the
+   * rest as "any". `from`/`to` go as ISO `YYYY-MM-DD`. Backs the home grid's
+   * filter sheet (append-on-load, like {@link listPage}).
+   */
+  async searchFilteredPage(
+    filters: PlayerSearchFilters,
+    page: number,
+    limit: number,
+  ): Promise<PagedResponse<PlayerListItem>> {
+    const params: Record<string, string | number> = { page, limit };
+    if (filters.name) params['name'] = filters.name;
+    if (filters.team) params['team'] = filters.team;
+    if (filters.league) params['league'] = filters.league;
+    if (filters.from) params['from'] = filters.from;
+    if (filters.to) params['to'] = filters.to;
+    return firstValueFrom(
+      this.http.get<PagedResponse<PlayerListItem>>(`${this.base}/api/players/search`, {
+        params,
+      }),
+    );
+  }
+
+  async create(payload: CreatePlayerRequest): Promise<ApiResponse<Player>> {
+    return firstValueFrom(
+      this.http.post<ApiResponse<Player>>(`${this.base}/api/players`, payload),
+    );
+  }
+
+  async import(items: ImportPlayerItem[]): Promise<ApiResponse<ImportResult>> {
+    return firstValueFrom(
+      this.http.post<ApiResponse<ImportResult>>(`${this.base}/api/players/import`, items),
+    );
+  }
+
+  async update(
+    id: string,
+    payload: UpdatePlayerRequest,
+    /**
+     * Optimistic concurrency token. Pass the `version` the GET returned;
+     * .NET will 412 if someone else mutated the player in between. Node
+     * ignores it (no version model there). Sent as the standard `If-Match`
+     * HTTP header per the backend contract.
+     */
+    ifMatchVersion?: number,
+  ): Promise<ApiResponse<Player>> {
+    const headers: Record<string, string> = {};
+    if (ifMatchVersion != null) {
+      headers['If-Match'] = `"${ifMatchVersion}"`;
+    }
+    return firstValueFrom(
+      this.http.put<ApiResponse<Player>>(
+        `${this.base}/api/players/${id}`,
+        payload,
+        { headers },
+      ),
+    );
+  }
+
+  async delete(id: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(`${this.base}/api/players/${id}`),
+    );
+  }
+
+  /**
+   * Soft-uniqueness lookup used by the manual create form to warn about an
+   * existing `Name + Team` pair before submit (the backend would otherwise
+   * reject with 409). Returns Observable<boolean> so it composes naturally
+   * inside the async Reactive Forms validator.
+   *
+   * Hits the existing search endpoint with `limit=1`; if at least one row
+   * comes back, we treat the pair as taken. Case-insensitive matching is
+   * already guaranteed server-side by the soft-uniqueness rule.
+   */
+  existsByNameAndTeam(name: string, team: string): Observable<boolean> {
+    return this.http
+      .get<PagedResponse<PlayerListItem>>(`${this.base}/api/players/search`, {
+        params: { name, team, page: 1, limit: 1 },
+      })
+      .pipe(map((res) => (res?.data?.length ?? 0) > 0));
+  }
+}

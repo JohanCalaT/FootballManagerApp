@@ -1,0 +1,324 @@
+name: Deploy · Azure
+
+# ─────────────────────────────────────────────────────────────
+# Workflow de deploy:
+#  - AUTO: cada push a `develop` (→ staging) o `main` (→ production)
+#    cuando se toquen `src/FootballManagerApp/**`, `frontend/**`,
+#    `backend-node/**`, `backend-corba/**`, `azure.yaml`, `infra/**`
+#    o este propio workflow.
+#  - MANUAL: desde Actions → "Deploy · Azure" → Run workflow, con
+#    inputs para elegir target y si saltar provision.
+#
+# Para pausar el auto-deploy (ahorrar costos Azure):
+# comentar el bloque `push:` dentro de `on:`.
+# ─────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Qué desplegar'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all              # provision (si toca) + deploy de todo
+          - dotnet-only      # solo Aspire AppHost (players-api, comments-api, gateway)
+          - frontend-only    # solo Ionic/Angular Container App
+          - node-only        # solo backend Express
+          - infra-only       # solo azd provision (Bicep / azure.yaml)
+      skip_provision:
+        description: '¿Saltar provision? (true si los recursos ya existen)'
+        required: true
+        default: 'true'
+        type: boolean
+
+  # === AUTO-DEPLOY ACTIVO ===
+  # Cada push a develop (→ staging) o main (→ production) que toque estos
+  # paths dispara el deploy automáticamente. Para volver a pausarlo (ahorrar
+  # costes Azure) comentar el bloque `push:` y usar solo "Run workflow".
+  push:
+    branches: [develop, main]
+    paths:
+      - 'src/FootballManagerApp/**'
+      - 'frontend/**'
+      - 'backend-node/**'
+      - 'backend-corba/**'
+      - 'azure.yaml'
+      - 'infra/**'
+      - '.github/workflows/deploy-azure.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ${{ github.event.inputs.target || 'all' }} → ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_ENV_NAME: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      # Parámetros Aspire no-secretos a nivel de job (los lee azd al provision).
+      AZURE_POSTGRES_USER: ${{ vars.AZURE_POSTGRES_USER }}
+      # Config web de Firebase: el AppHost la declara con AddParameter() SIN
+      # secret:true (el apiKey de Firebase es público por diseño — la seguridad
+      # viene de Authorized Domains + Security Rules + validación del JWT en el
+      # Gateway). Por eso van como GitHub Variables, no Secrets. azd las exige
+      # al `provision`; sin ellas falla con "7 required inputs missing".
+      AZURE_FIREBASE_API_KEY:             ${{ vars.AZURE_FIREBASE_API_KEY }}
+      AZURE_FIREBASE_AUTH_DOMAIN:         ${{ vars.AZURE_FIREBASE_AUTH_DOMAIN }}
+      AZURE_FIREBASE_PROJECT_ID:          ${{ vars.AZURE_FIREBASE_PROJECT_ID }}
+      AZURE_FIREBASE_STORAGE_BUCKET:      ${{ vars.AZURE_FIREBASE_STORAGE_BUCKET }}
+      AZURE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.AZURE_FIREBASE_MESSAGING_SENDER_ID }}
+      AZURE_FIREBASE_APP_ID:              ${{ vars.AZURE_FIREBASE_APP_ID }}
+      AZURE_FIREBASE_MEASUREMENT_ID:      ${{ vars.AZURE_FIREBASE_MEASUREMENT_ID }}
+      # Effective deploy inputs. workflow_dispatch los toma del UI;
+      # push events caen al default `all` / `true`.
+      TARGET: ${{ github.event.inputs.target || 'all' }}
+      SKIP_PROVISION: ${{ github.event.inputs.skip_provision || 'true' }}
+      # Habilita que Docker buildkit embeba metadata de caché en las
+      # imágenes que sube a ACR. Permite que el siguiente build
+      # reuse capas remotas via --cache-from.
+      DOCKER_BUILDKIT: 1
+      BUILDKIT_INLINE_CACHE: 1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show deploy plan
+        run: |
+          echo "════════════════════════════════════════"
+          echo "  Trigger:        ${{ github.event_name }}"
+          echo "  Target:         $TARGET"
+          echo "  Skip provision: $SKIP_PROVISION"
+          echo "  Environment:    $AZURE_ENV_NAME"
+          echo "  Ref:            ${{ github.ref }}"
+          echo "════════════════════════════════════════"
+
+      # Libera ~20 GB del runner antes de que azd construya y pushee
+      # los 7 contenedores. Resuelve el `pushing image: signal: killed`
+      # del ionic-app (OOM/disco) cuando azd hace deploy paralelo.
+      # IMPORTANTE: large-packages debe quedar en `false` porque entre
+      # esos "large packages" está azure-cli, y los pasos siguientes
+      # `azure/login@v2` y `az acr login` lo necesitan.
+      - name: Free disk space on runner
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false      # mantiene .NET/Node que usamos en pasos siguientes
+          android: true          # ~14 GB
+          dotnet: false          # NO borrar .NET, lo usamos
+          haskell: true          # ~6 GB
+          large-packages: false  # NO: borraría azure-cli y rompería azure/login
+          docker-images: false   # mantener Docker images (cachéamos pre-pulls)
+          swap-storage: true     # ~4 GB
+
+      # azd construye los 7 contenedores EN PARALELO (4× dotnet publish + node
+      # + 2× Java/CORBA) en un runner de ~7 GB de RAM → el kernel mata procesos
+      # con `signal: killed` (OOM). El paso anterior libera DISCO, no memoria.
+      # Un swapfile grande en /mnt (que tiene espacio de sobra tras el cleanup)
+      # da memoria virtual para absorber los picos: más lento, pero no OOM.
+      - name: Maximize swap (evita OOM en builds paralelos)
+        run: |
+          sudo swapoff -a || true
+          sudo rm -f /mnt/swapfile /swapfile || true
+          sudo fallocate -l 13G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          echo "── memoria disponible (RAM + swap) ──"
+          free -h
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.x
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+
+      - name: Azure login (federated)
+        run: |
+          azd auth login \
+            --client-id "$AZURE_CLIENT_ID" \
+            --federated-credential-provider "github" \
+            --tenant-id "$AZURE_TENANT_ID"
+
+      # ── DOCKER BUILDX + ACR CACHE WARMUP ─────────────────────
+      # Activa buildx (necesario para BUILDKIT_INLINE_CACHE) y
+      # pre-descarga las imágenes existentes de ACR para sembrar
+      # la caché Docker local del runner. Sin esto, cada deploy
+      # arranca con caché vacía y reconstruye todo desde cero.
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker         # usar el daemon local en vez de un contenedor builder, para que azd vea el caché
+
+      - name: Azure CLI login (para az acr login)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      # ── BOOTSTRAP AZD ENV ────────────────────────────────────
+      # The runner starts with no local .azure/ state, so `azd env get-value`
+      # would fail with "environment 'staging' does not exist" — leaking the
+      # error string into $GITHUB_OUTPUT and breaking the next step's output
+      # parsing.
+      #
+      # Create the env locally if missing (idempotent) and refresh it from
+      # Azure to pull deployment outputs like AZURE_CONTAINER_REGISTRY_ENDPOINT.
+      # If `azd env refresh` cannot find a remote backend (no prior deploy,
+      # remote state never enabled), we fall back to `az acr list` against the
+      # resource group that Aspire provisions (`rg-<env-name>`).
+      - name: Bootstrap azd environment
+        continue-on-error: true
+        run: |
+          azd env select "$AZURE_ENV_NAME" 2>/dev/null \
+            || azd env new "$AZURE_ENV_NAME" \
+                 --location "$AZURE_LOCATION" \
+                 --subscription "$AZURE_SUBSCRIPTION_ID" \
+                 --no-prompt
+          azd env refresh --no-prompt 2>/dev/null || true
+
+      - name: Discover ACR endpoint (si los recursos existen)
+        id: acr
+        continue-on-error: true
+        run: |
+          ENDPOINT=$(azd env get-value AZURE_CONTAINER_REGISTRY_ENDPOINT 2>/dev/null || echo "")
+
+          # Fallback: query Azure directly when azd env still has no value
+          # (first deploy, or refresh could not read remote state).
+          if [ -z "$ENDPOINT" ]; then
+            ENDPOINT=$(az acr list \
+              --resource-group "rg-$AZURE_ENV_NAME" \
+              --query "[0].loginServer" -o tsv 2>/dev/null || echo "")
+          fi
+
+          echo "endpoint=$ENDPOINT" >> "$GITHUB_OUTPUT"
+          if [ -n "$ENDPOINT" ]; then
+            REGISTRY_NAME=$(echo "$ENDPOINT" | cut -d'.' -f1)
+            echo "registry=$REGISTRY_NAME" >> "$GITHUB_OUTPUT"
+            echo "::notice title=ACR detectado::$ENDPOINT"
+          else
+            echo "::notice title=ACR no encontrado::Primer deploy o infra no provisionada — sin caché previa"
+          fi
+
+      - name: Login a ACR
+        if: steps.acr.outputs.registry != ''
+        run: az acr login --name ${{ steps.acr.outputs.registry }}
+
+      - name: Pre-pull imágenes anteriores (warm cache)
+        if: steps.acr.outputs.endpoint != ''
+        continue-on-error: true
+        run: |
+          # Si una imagen no existe (primer deploy), continuamos.
+          # Cuantas más imágenes podamos pre-pull, más layers reusará buildx.
+          for svc in players-api comments-api gateway ionic-app node-backend corba-server news-adapter; do
+            IMAGE="${{ steps.acr.outputs.endpoint }}/$svc:latest"
+            echo "→ Pulling $IMAGE para sembrar caché..."
+            docker pull "$IMAGE" 2>/dev/null \
+              && echo "  ✓ $svc en caché local" \
+              || echo "  ⚠ $svc no existe aún (primer deploy de este servicio)"
+          done
+
+      # ── PROVISION ────────────────────────────────────────────
+      # azd lee cada secreto Aspire (declarado en AppHost.cs con secret: true)
+      # de la env var con prefijo AZURE_ y nombre SNAKE_CASE. Es el patrón
+      # canónico que `azd pipeline config` deja preparado a nivel de repo
+      # secret. Sin estas env vars, azd falla con
+      # `ERROR: missing required inputs`.
+      - name: Provision infrastructure
+        if: ${{ env.SKIP_PROVISION == 'false' || env.TARGET == 'infra-only' || env.TARGET == 'all' }}
+        run: azd provision --no-prompt
+        env:
+          AZURE_API_FOOTBALL_KEY:  ${{ secrets.AZURE_API_FOOTBALL_KEY }}
+          AZURE_GEMINI_API_KEY:    ${{ secrets.AZURE_GEMINI_API_KEY }}
+          AZURE_MONGO_DB_URI:      ${{ secrets.AZURE_MONGO_DB_URI }}
+          AZURE_POSTGRES_PASSWORD: ${{ secrets.AZURE_POSTGRES_PASSWORD }}
+          AZURE_REDIS_PASSWORD:    ${{ secrets.AZURE_REDIS_PASSWORD }}
+
+      # ── DEPLOY ───────────────────────────────────────────────
+      # Aspire AppHost = 1 service "app" en azure.yaml → azd deploy
+      # despliega todos los contenedores (players-api, comments-api,
+      # gateway, ionic-app, node-backend, corba-server, news-adapter) y
+      # Docker layer cache hace builds incrementales en los que no
+      # cambiaron. Re-inyectamos los secretos también aquí por si azd
+      # vuelve a evaluar el manifest durante deploy.
+      - name: Deploy all (Aspire AppHost completo)
+        if: ${{ env.TARGET == 'all' }}
+        # Reintento ante fallos transitorios (p.ej. el token de ACR
+        # "unable to resolve an endpoint" bajo carga del runner). azd deploy es
+        # idempotente y los layers ya cacheados hacen el segundo intento rápido.
+        # `until` preserva el exit 1 real si agota los intentos.
+        run: |
+          n=0; max=2
+          until azd deploy --no-prompt; do
+            n=$((n+1))
+            if [ "$n" -ge "$max" ]; then
+              echo "::error title=Deploy::azd deploy falló tras $max intentos"
+              exit 1
+            fi
+            echo "::warning title=Deploy::intento $n/$max falló (transitorio); reintentando en 20s…"
+            sleep 20
+          done
+        env:
+          AZURE_API_FOOTBALL_KEY:  ${{ secrets.AZURE_API_FOOTBALL_KEY }}
+          AZURE_GEMINI_API_KEY:    ${{ secrets.AZURE_GEMINI_API_KEY }}
+          AZURE_MONGO_DB_URI:      ${{ secrets.AZURE_MONGO_DB_URI }}
+          AZURE_POSTGRES_PASSWORD: ${{ secrets.AZURE_POSTGRES_PASSWORD }}
+          AZURE_REDIS_PASSWORD:    ${{ secrets.AZURE_REDIS_PASSWORD }}
+
+      - name: Deploy .NET services only (players-api, comments-api, gateway)
+        if: ${{ env.TARGET == 'dotnet-only' }}
+        run: azd deploy app --no-prompt
+        env:
+          AZURE_API_FOOTBALL_KEY:  ${{ secrets.AZURE_API_FOOTBALL_KEY }}
+          AZURE_GEMINI_API_KEY:    ${{ secrets.AZURE_GEMINI_API_KEY }}
+          AZURE_MONGO_DB_URI:      ${{ secrets.AZURE_MONGO_DB_URI }}
+          AZURE_POSTGRES_PASSWORD: ${{ secrets.AZURE_POSTGRES_PASSWORD }}
+          AZURE_REDIS_PASSWORD:    ${{ secrets.AZURE_REDIS_PASSWORD }}
+
+      - name: Deploy frontend only (ionic-app)
+        if: ${{ env.TARGET == 'frontend-only' }}
+        # azd 1.x no permite filtrar sub-recursos de Aspire; deploy completo.
+        # La caché Docker de los demás contenedores hace que solo el
+        # frontend se reconstruya/empuje realmente.
+        run: azd deploy app --no-prompt
+        env:
+          AZURE_API_FOOTBALL_KEY:  ${{ secrets.AZURE_API_FOOTBALL_KEY }}
+          AZURE_GEMINI_API_KEY:    ${{ secrets.AZURE_GEMINI_API_KEY }}
+          AZURE_MONGO_DB_URI:      ${{ secrets.AZURE_MONGO_DB_URI }}
+          AZURE_POSTGRES_PASSWORD: ${{ secrets.AZURE_POSTGRES_PASSWORD }}
+          AZURE_REDIS_PASSWORD:    ${{ secrets.AZURE_REDIS_PASSWORD }}
+
+      - name: Deploy backend-node only
+        if: ${{ env.TARGET == 'node-only' }}
+        run: azd deploy app --no-prompt
+        env:
+          AZURE_API_FOOTBALL_KEY:  ${{ secrets.AZURE_API_FOOTBALL_KEY }}
+          AZURE_GEMINI_API_KEY:    ${{ secrets.AZURE_GEMINI_API_KEY }}
+          AZURE_MONGO_DB_URI:      ${{ secrets.AZURE_MONGO_DB_URI }}
+          AZURE_POSTGRES_PASSWORD: ${{ secrets.AZURE_POSTGRES_PASSWORD }}
+          AZURE_REDIS_PASSWORD:    ${{ secrets.AZURE_REDIS_PASSWORD }}
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "::notice title=Deploy finalizado::Target=$TARGET · Env=$AZURE_ENV_NAME"

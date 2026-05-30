@@ -1,0 +1,152 @@
+:host {
+  display: block;
+}
+
+.import-card {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 24px 44px 1fr;
+  align-items: center;
+  gap: var(--app-space-3);
+  padding: var(--app-space-3);
+  background: var(--app-surface-low);
+  border: 1px solid var(--app-outline-variant);
+  border-radius: var(--app-radius-md);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease,
+    box-shadow 0.15s ease, opacity 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: var(--app-primary);
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--app-primary-glow-soft);
+  }
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  &.is-selected {
+    border-color: var(--app-primary);
+    box-shadow: var(--app-glow-primary-soft);
+    background: rgba(0, 228, 120, 0.06);
+  }
+  &.is-unavailable {
+    border-color: var(--app-error);
+    opacity: 0.7;
+  }
+}
+
+.import-card__check {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--app-radius-sm);
+  border: 1.5px solid var(--app-outline);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--app-on-primary);
+  background: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  &.is-checked {
+    background: var(--app-primary);
+    border-color: var(--app-primary);
+  }
+  &.is-unavailable {
+    background: transparent;
+    border-color: var(--app-error);
+    color: var(--app-error);
+  }
+}
+
+.import-card__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--app-radius-full);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--app-surface-high), var(--app-surface-bright));
+  color: var(--app-on-surface);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.import-card__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.import-card__name {
+  color: var(--app-on-surface);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-card__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-2);
+  font-size: 12px;
+  color: var(--app-on-surface-soft);
+}
+
+.import-card__chip {
+  padding: 1px 8px;
+  border-radius: var(--app-radius-full);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--app-on-surface);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.import-card__nationality {
+  font-size: 11px;
+  color: var(--app-on-surface-faint);
+}
+
+.import-card__status {
+  margin-top: 2px;
+  font-size: 11px;
+  min-height: 14px;
+}
+
+.import-card__badge {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.import-card__badge--season {
+  color: var(--app-primary);
+}
+
+.import-card__badge--unavailable {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: var(--app-radius-full);
+  border: 1px solid var(--app-error);
+  color: var(--app-error);
+  background: rgba(255, 180, 171, 0.06);
+  font-size: 10px;
+  text-transform: uppercase;
+}
