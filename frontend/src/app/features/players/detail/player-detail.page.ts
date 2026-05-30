@@ -5,7 +5,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe, Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   IonBackButton,
@@ -66,8 +66,20 @@ import { CommentsSectionComponent } from './components/comments-section/comments
 export class PlayerDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly api = inject(PlayersApi);
   private readonly toastCtrl = inject(ToastController);
+
+  // True only on a real deep-link / fresh tab / refresh: there IS a router
+  // navigation in flight but it has no previous navigation beneath it, so the
+  // browser has no in-app history to go back to. Captured during construction
+  // because getCurrentNavigation() is only populated while navigating. In unit
+  // tests the component is created without a navigation, so this stays false
+  // and the history seeding is skipped.
+  private readonly isDeepLinkEntry = (() => {
+    const nav = this.router.getCurrentNavigation();
+    return !!nav && !nav.previousNavigation;
+  })();
 
   protected readonly isAdmin = isAdmin;
   protected readonly isLoading = signal(true);
@@ -97,6 +109,7 @@ export class PlayerDetailPage {
       return;
     }
     this.playerIdSignal.set(id);
+    this.seedBackHistoryIfDeepLinked();
     try {
       const response = await this.api.getByIdOnce(id);
       const data = response?.data ?? null;
@@ -112,6 +125,20 @@ export class PlayerDetailPage {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  /**
+   * On a deep-linked detail (pasted URL / fresh tab / refresh) the browser has
+   * no /players entry beneath this page, so the browser Back button would leave
+   * the app. Insert /players under the current detail URL via Angular's
+   * Location (keeps the Router in sync) so Back lands on the list instead.
+   * No-op when we navigated here from within the app.
+   */
+  private seedBackHistoryIfDeepLinked(): void {
+    if (!this.isDeepLinkEntry) return;
+    const here = this.location.path(true);
+    this.location.replaceState('/players');
+    this.location.go(here);
   }
 
   private async toast(message: string): Promise<void> {
