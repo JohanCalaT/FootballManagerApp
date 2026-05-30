@@ -73,9 +73,14 @@ function navigateToDetail(attempt = 0): void {
   // pointer-events:none the tabs shell carries during the post-login push).
   cy.get('ion-router-outlet').should('not.have.class', 'ion-transitioning');
   cy.get('[data-testid=player-card]', { timeout: 10000 }).first().click({ force: true });
+  // The late post-login auth churn can bounce us back to /players a beat AFTER
+  // the push lands, so let the transition settle and THEN check — a check right
+  // after the click can pass while a bounce is still pending, leaving us back on
+  // the list a moment later (which unmounts the form mid-test).
+  cy.wait(600);
+  cy.get('ion-router-outlet').should('not.have.class', 'ion-transitioning');
   cy.location('pathname').then((path) => {
     if (path !== DETAIL_URL && attempt < 6) {
-      cy.wait(500);
       navigateToDetail(attempt + 1);
     }
   });
@@ -85,10 +90,30 @@ function openDetail(): void {
   navigateToDetail();
   cy.location('pathname', { timeout: 10000 }).should('eq', DETAIL_URL);
   // Wait for the detail's own comment list GET to resolve: it only fires once
-  // the detail page is mounted and stays mounted, so reaching here means the
-  // post-login churn has fully settled and we are not mid-bounce.
+  // the detail page is mounted and stays mounted.
   cy.wait('@comments');
+  // Confirm the detail is STABLY mounted before any interaction: the comments
+  // section is present, the outlet has settled, and we are still on the detail
+  // (not mid-bounce). The form / signin-prompt render inside this section, so
+  // its stable presence means the post-login churn has fully settled.
+  cy.get('[data-testid=comments-section]', { timeout: 10000 }).should('exist');
+  cy.get('ion-router-outlet').should('not.have.class', 'ion-transitioning');
   cy.location('pathname').should('eq', DETAIL_URL);
+}
+
+// Fill the comment form robustly. Each field is RE-QUERIED for clear and for
+// type as separate commands — never chaining .clear().type() off one resolved
+// subject, since clearing triggers a re-render that detaches that subject and
+// the chained .type() then fails with "element detached from the DOM" (the
+// race that flaked this spec under load). Default type delay is kept so Ionic
+// propagates each keystroke to the reactive form control (delay:0 left the
+// form invalid → submit never fired the request).
+function fillCommentForm(rating: number, author: string, text: string): void {
+  cy.get(`[data-testid=star-${rating}]`).click({ force: true });
+  cy.get('[data-testid=comments-author]').find('input').clear({ force: true });
+  cy.get('[data-testid=comments-author]').find('input').type(author, { force: true });
+  cy.get('[data-testid=comments-text]').find('textarea').clear({ force: true });
+  cy.get('[data-testid=comments-text]').find('textarea').type(text, { force: true });
 }
 
 describe('Comments · CRUD', () => {
@@ -147,9 +172,7 @@ describe('Comments · CRUD', () => {
     // Ionic layout — the form's real handlers still run.
     cy.get('[data-testid=comments-form]', { timeout: 15000 }).should('exist');
 
-    cy.get('[data-testid=star-4]').click({ force: true });
-    cy.get('[data-testid=comments-author]').find('input').clear({ force: true }).type('Juan E2E', { force: true });
-    cy.get('[data-testid=comments-text]').find('textarea').clear({ force: true }).type('Crack absoluto, lo da todo.', { force: true });
+    fillCommentForm(4, 'Juan E2E', 'Crack absoluto, lo da todo.');
 
     cy.get('[data-testid=comments-submit]', { timeout: 15000 }).should('not.be.disabled').click({ force: true });
     cy.wait('@create');
@@ -173,15 +196,16 @@ describe('Comments · CRUD', () => {
     openDetail();
 
     cy.get('[data-testid=comments-form]', { timeout: 15000 }).should('exist');
-    cy.get('[data-testid=star-3]').click({ force: true });
-    cy.get('[data-testid=comments-author]').find('input').clear({ force: true }).type('Juan E2E', { force: true });
-    cy.get('[data-testid=comments-text]').find('textarea').clear({ force: true }).type('Comentario que el backend rechaza.', { force: true });
+    fillCommentForm(3, 'Juan E2E', 'Comentario que el backend rechaza.');
     cy.get('[data-testid=comments-submit]', { timeout: 15000 }).should('not.be.disabled').click({ force: true });
     cy.wait('@createError');
 
-    // Error toast surfaced (top-layer overlay) and the optimistic row rolled
-    // back to the empty state.
-    cy.contains('No se pudo publicar').should('be.visible');
+    // Error toast surfaced. Assert existence, NOT visibility: the toast
+    // auto-dismisses at 2.5s, so `be.visible` races the dismiss animation and
+    // the element detaches mid-assertion (flaky — Cypress pushSubject error).
+    // Same pattern the insert-player spec uses for its success toast.
+    cy.contains('No se pudo publicar').should('exist');
+    // The optimistic row rolled back to the empty state.
     cy.get('[data-testid=comments-empty]').should('exist');
   });
 

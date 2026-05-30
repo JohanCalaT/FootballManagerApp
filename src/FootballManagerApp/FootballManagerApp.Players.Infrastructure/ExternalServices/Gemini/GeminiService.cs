@@ -23,6 +23,7 @@ public sealed class GeminiService : IGeminiService
     private readonly Client _client;
     private readonly ILogger<GeminiService> _log;
     private readonly IReadOnlyList<string> _models;
+    private readonly TimeSpan _timeout;
 
     public GeminiService(IConfiguration config, ILogger<GeminiService> log)
     {
@@ -39,6 +40,13 @@ public sealed class GeminiService : IGeminiService
             : configured.Split(
                 ',',
                 StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        // gemini-2.5-pro/flash generating the full eleven (big JSON + reasoning)
+        // routinely takes >30s; the previous absence of a per-attempt timeout let
+        // a slow/hung call run until the SDK/HTTP default. Cap it (default 90s,
+        // under YARP's 100s proxy default) and fail fast to 503 if exceeded.
+        _timeout = TimeSpan.FromSeconds(
+            int.TryParse(config["Gemini:TimeoutSeconds"], out var s) && s > 0 ? s : 90);
     }
 
     public async Task<string> GenerateIdealTeamAsync(
@@ -56,8 +64,13 @@ public sealed class GeminiService : IGeminiService
             ct.ThrowIfCancellationRequested();
             try
             {
+                // Per-attempt deadline: cancel this model's call if it exceeds
+                // _timeout, while still honoring the caller's CancellationToken.
+                using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                attemptCts.CancelAfter(_timeout);
+
                 var response = await _client.Models.GenerateContentAsync(
-                    model, prompt, config, ct);
+                    model, prompt, config, attemptCts.Token);
 
                 // `Text` concatenates the text parts of the first candidate.
                 var text = response.Text;
@@ -71,9 +84,19 @@ public sealed class GeminiService : IGeminiService
 
                 return text;
             }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                // The caller (request) aborted — propagate, don't try more models.
+                throw;
+            }
             catch (OperationCanceledException)
             {
-                throw;
+                // Our per-attempt timeout fired. Don't burn another full timeout
+                // on the next model (would blow past the proxy budget) — fail fast.
+                lastError = $"timeout after {_timeout.TotalSeconds:0}s";
+                _log.LogWarning(
+                    "Gemini {Model} timed out after {Timeout}s", model, _timeout.TotalSeconds);
+                break;
             }
             catch (Exception ex)
             {

@@ -51,9 +51,9 @@ describe('Players · Import', () => {
     // Let the Ionic page transition finish before opening the modal so the late
     // auth churn cannot re-navigate /players and dismiss the modal mid-flow.
     cy.get('ion-router-outlet').should('not.have.class', 'ion-transitioning');
-    // Import now lives behind the add FAB → action sheet on the Jugadores tab.
+    // Import now lives behind the add FAB → bottom sheet on the Jugadores tab.
     cy.get('[data-testid=home-fab]').click();
-    cy.contains('Importar de API-Football').click();
+    cy.get('[data-testid=add-player-import]').should('be.visible').click();
     cy.get('[data-testid=import-modal]').should('be.visible');
   }
 

@@ -1,7 +1,6 @@
 package com.footballmanager.news.adapter.config;
 
 import footballmanager.news.ServicioNoticias;
-import footballmanager.news.ServicioNoticiasHelper;
 import org.omg.CORBA.ORB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,9 +11,12 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Properties;
 
 /**
- * Resuelve la referencia al servant CORBA al arrancar, via corbaloc.
- * Si el servidor no esta disponible la app arranca igualmente; cada request
- * recibira COMM_FAILURE que el GlobalExceptionHandler mapea a 503.
+ * Configura el cliente CORBA del adapter. Devuelve SIEMPRE un proxy perezoso
+ * ({@link LazyServicioNoticias}) que resuelve el servant en la primera llamada
+ * y se auto-recupera si el servidor CORBA se reinicia (re-resuelve ante
+ * OBJECT_NOT_EXIST / TRANSIENT / COMM_FAILURE). Antes se cacheaba una
+ * referencia concreta al arrancar: cuando el servidor reiniciaba quedaba
+ * obsoleta y todas las peticiones fallaban con OBJECT_NOT_EXIST de por vida.
  */
 @Configuration
 public class CorbaClientConfig {
@@ -41,21 +43,8 @@ public class CorbaClientConfig {
     @Bean
     public ServicioNoticias servicioNoticias(ORB orb) {
         String corbaloc = "corbaloc::" + namingHost + ":" + namingPort + "/NameService";
-        log.info("Resolviendo NameService via {}", corbaloc);
-        try {
-            org.omg.CORBA.Object ns = orb.string_to_object(corbaloc);
-            org.omg.CosNaming.NamingContextExt nc =
-                    org.omg.CosNaming.NamingContextExtHelper.narrow(ns);
-            org.omg.CORBA.Object ref = nc.resolve_str(servantName);
-            ServicioNoticias svc = ServicioNoticiasHelper.narrow(ref);
-            log.info("Servant '{}' resuelto OK.", servantName);
-            return svc;
-        } catch (Exception ex) {
-            log.warn("No se pudo resolver '{}' al arrancar ({}). " +
-                    "Las peticiones devolveran 503 hasta que el servidor responda.",
-                    servantName, ex.toString());
-            // Proxy perezoso: reintenta la resolucion en cada llamada.
-            return new LazyServicioNoticias(orb, corbaloc, servantName);
-        }
+        log.info("Cliente CORBA perezoso para '{}' via {} (resuelve en la 1a llamada y " +
+                "se auto-recupera ante reinicios del servidor).", servantName, corbaloc);
+        return new LazyServicioNoticias(orb, corbaloc, servantName);
     }
 }

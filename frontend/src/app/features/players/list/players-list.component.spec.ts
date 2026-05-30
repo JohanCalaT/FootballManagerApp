@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import {
-  ActionSheetController,
   AlertController,
   ModalController,
   ToastController,
@@ -72,10 +71,6 @@ describe('PlayersListComponent (home container)', () => {
         {
           provide: ModalController,
           useValue: jasmine.createSpyObj('ModalController', ['create', 'dismiss']),
-        },
-        {
-          provide: ActionSheetController,
-          useValue: jasmine.createSpyObj('ActionSheetController', ['create']),
         },
         {
           provide: ActivatedRoute,

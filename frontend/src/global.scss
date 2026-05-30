@@ -62,3 +62,17 @@ body {
   font-size: 14px;
   letter-spacing: 0.01em;
 }
+
+// "Añadir jugadores" bottom sheet (ModalController with sheet breakpoints).
+// Ionic renders the modal in an overlay outside the component tree, so the
+// modal-part background / radius / backdrop must be set globally; the content
+// styling lives in add-players-sheet.component.scss.
+.fma-add-sheet {
+  --background: var(--app-surface-low);
+  --border-radius: var(--app-radius-xl);
+  --backdrop-opacity: 0.6;
+
+  &::part(backdrop) {
+    backdrop-filter: blur(4px);
+  }
+}

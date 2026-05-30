@@ -130,6 +130,18 @@ var corbaServer = builder
     .WithEnvironment("NEWS_MAX_SIZE", "50")
     .WithEnvironment("CORBA_SERVER_HOST", "corba-server");
 
+// CORBA objects are transient and orbd keeps the naming state in memory, so the
+// server can't scale out or be restarted freely without invalidating the
+// references the adapter holds. Pin it to exactly one always-on replica (no
+// scale-to-zero): otherwise an idle scale-down kills the servant and the adapter
+// would have to re-resolve on the next call (it now can, but keeping it warm
+// avoids cold starts and OBJECT_NOT_EXIST windows).
+corbaServer.PublishAsAzureContainerApp((_, app) =>
+{
+    app.Template.Scale.MinReplicas = 1;
+    app.Template.Scale.MaxReplicas = 1;
+});
+
 var newsAdapter = builder
     .AddDockerfile("news-adapter", "../../../backend-corba", "adapter/Dockerfile")
     .WithHttpEndpoint(targetPort: 8080, name: "http")
@@ -138,6 +150,13 @@ var newsAdapter = builder
     .WithEnvironment("CORBA_SERVANT_NAME", "ServicioNoticias")
     .WithEnvironment("ADMIN_ENFORCE_AUTH", "false")
     .WaitFor(corbaServer);
+
+// Keep the adapter warm too (min 1): it caches the CORBA reference and a
+// scale-to-zero cold start would just add latency + a re-resolve on first call.
+newsAdapter.PublishAsAzureContainerApp((_, app) =>
+{
+    app.Template.Scale.MinReplicas = 1;
+});
 
 gateway.WithReference(newsAdapter.GetEndpoint("http"));
 

@@ -1,7 +1,6 @@
 import { Component, OnInit, computed, effect, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import {
-  ActionSheetController,
   AlertController,
   IonContent,
   IonFab,
@@ -22,6 +21,7 @@ import { backendChoice } from '../../../core/state/backend-choice.signal';
 import { playersListNeedsRefresh } from '../../../core/state/players-list.signal';
 
 import { ImportPlayersDialogComponent } from '../import/import-players-dialog.component';
+import { AddPlayersSheetComponent } from './components/add-players-sheet/add-players-sheet.component';
 import { HomeGridComponent } from './components/home-grid/home-grid.component';
 import { HomeHeaderComponent } from './components/home-header/home-header.component';
 import { HomeHeroComponent } from './components/home-hero/home-hero.component';
@@ -54,7 +54,6 @@ export class PlayersListComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly modalCtrl = inject(ModalController);
   private readonly alertCtrl = inject(AlertController);
-  private readonly actionSheetCtrl = inject(ActionSheetController);
   private readonly toastCtrl = inject(ToastController);
   private readonly api = inject(PlayersApi);
   protected readonly store = inject(PlayersPagedStore);
@@ -193,28 +192,22 @@ export class PlayersListComponent implements OnInit {
     void this.router.navigate(['/players/new']);
   }
 
-  /** FAB "+" → action sheet with the two create paths (manual / API-Football). */
+  /** FAB "+" → themed bottom sheet with the two create paths (manual / API-Football). */
   protected async openActions(): Promise<void> {
-    const sheet = await this.actionSheetCtrl.create({
-      header: 'Añadir jugadores',
-      cssClass: 'fma-action-sheet',
-      buttons: [
-        {
-          text: 'Insertar manualmente',
-          handler: () => {
-            this.onInsert();
-          },
-        },
-        {
-          text: 'Importar de API-Football',
-          handler: () => {
-            void this.onImport();
-          },
-        },
-        { text: 'Cancelar', role: 'cancel' },
-      ],
+    const modal = await this.modalCtrl.create({
+      component: AddPlayersSheetComponent,
+      cssClass: 'fma-add-sheet',
+      breakpoints: [0, 1],
+      initialBreakpoint: 1,
+      handle: false,
     });
-    await sheet.present();
+    await modal.present();
+    const { role } = await modal.onWillDismiss();
+    if (role === 'insert') {
+      this.onInsert();
+    } else if (role === 'import') {
+      await this.onImport();
+    }
   }
 
   protected onPlayerSelected(player: PlayerListItem): void {
