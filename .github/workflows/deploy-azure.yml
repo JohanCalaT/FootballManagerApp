@@ -123,6 +123,22 @@ jobs:
           docker-images: false   # mantener Docker images (cachéamos pre-pulls)
           swap-storage: true     # ~4 GB
 
+      # azd construye los 7 contenedores EN PARALELO (4× dotnet publish + node
+      # + 2× Java/CORBA) en un runner de ~7 GB de RAM → el kernel mata procesos
+      # con `signal: killed` (OOM). El paso anterior libera DISCO, no memoria.
+      # Un swapfile grande en /mnt (que tiene espacio de sobra tras el cleanup)
+      # da memoria virtual para absorber los picos: más lento, pero no OOM.
+      - name: Maximize swap (evita OOM en builds paralelos)
+        run: |
+          sudo swapoff -a || true
+          sudo rm -f /mnt/swapfile /swapfile || true
+          sudo fallocate -l 13G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          echo "── memoria disponible (RAM + swap) ──"
+          free -h
+
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
@@ -247,7 +263,21 @@ jobs:
       # vuelve a evaluar el manifest durante deploy.
       - name: Deploy all (Aspire AppHost completo)
         if: ${{ env.TARGET == 'all' }}
-        run: azd deploy --no-prompt
+        # Reintento ante fallos transitorios (p.ej. el token de ACR
+        # "unable to resolve an endpoint" bajo carga del runner). azd deploy es
+        # idempotente y los layers ya cacheados hacen el segundo intento rápido.
+        # `until` preserva el exit 1 real si agota los intentos.
+        run: |
+          n=0; max=2
+          until azd deploy --no-prompt; do
+            n=$((n+1))
+            if [ "$n" -ge "$max" ]; then
+              echo "::error title=Deploy::azd deploy falló tras $max intentos"
+              exit 1
+            fi
+            echo "::warning title=Deploy::intento $n/$max falló (transitorio); reintentando en 20s…"
+            sleep 20
+          done
         env:
           AZURE_API_FOOTBALL_KEY:  ${{ secrets.AZURE_API_FOOTBALL_KEY }}
           AZURE_GEMINI_API_KEY:    ${{ secrets.AZURE_GEMINI_API_KEY }}

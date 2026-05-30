@@ -4,7 +4,11 @@
 
 FROM node:20-alpine AS deps
 WORKDIR /app
-COPY package*.json ./
+# .npmrc carries `legacy-peer-deps=true`, needed because firebase-tools@^15
+# (Auth Emulator) conflicts with @angular/fire's peerOptional firebase-tools@^14.
+# Without copying it, `npm ci` inside the image runs strict and dies on ERESOLVE
+# — which is exactly why the host CI passes but the container build failed.
+COPY package*.json .npmrc ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --no-audit --no-fund --prefer-offline
 
