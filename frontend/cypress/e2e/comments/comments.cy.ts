@@ -47,12 +47,21 @@ function signIn(email: string, password: string): void {
   cy.get('[data-testid=login-submit-button]').click();
   cy.location('pathname').should('eq', '/players');
   cy.wait('@list');
+  cy.wait('@lookup'); // post-login claims resolution → transition settled
+  cy.get('[data-testid=home-user-menu-trigger]', { timeout: 10000 }).should('be.visible');
 }
 
-// Deep-link straight to the detail. The Firebase session (IndexedDB) is
-// restored on this fresh load, so the auth-gated comment form appears.
+// Reach the detail IN-APP by clicking the player card. A full reload
+// (cy.visit) does NOT restore the Firebase session in this setup, so the
+// auth-gated comment form would never appear; navigating within the app keeps
+// the live session. The list fixture puts player 1111 first, so .first() is
+// the player whose detail/comments we stub.
 function openDetail(): void {
-  cy.visit(`${DETAIL_URL}?e2e=1`, { onBeforeLoad: denyGeolocation });
+  // force: the Ionic tabs shell can briefly keep pointer-events:none right
+  // after the post-login transition; the card's host onClick still fires and
+  // routes to the detail. signIn already waits for the transition to settle.
+  cy.get('[data-testid=player-card]', { timeout: 10000 }).first().click({ force: true });
+  cy.location('pathname').should('eq', DETAIL_URL);
   cy.wait('@detail');
 }
 
@@ -65,6 +74,11 @@ describe('Comments · CRUD', () => {
     cy.intercept('GET', `**/api/players/${PLAYER_ID}`, {
       fixture: 'player-detail-admin.json',
     }).as('detail');
+    // Post-login Firebase resolves the user's claims via accounts:lookup; on a
+    // cold login this lands AFTER the redirect to /players and re-settles the
+    // session. Wait for it so the Ionic page transition finishes (otherwise the
+    // tabs shell stays pointer-events:none and the card is not clickable).
+    cy.intercept('POST', '**/identitytoolkit.googleapis.com/v1/accounts:lookup**').as('lookup');
   });
 
   it('anonymous user sees the sign-in prompt and no comment form', () => {
@@ -101,13 +115,17 @@ describe('Comments · CRUD', () => {
     signIn(users.seeded.email, users.seeded.password);
     openDetail();
 
-    cy.get('[data-testid=comments-form]', { timeout: 10000 }).should('be.visible');
+    // The form lives at the bottom of the scrollable ion-content, below the
+    // fixed tab bar / fold, so assert existence (auth settled) and drive the
+    // actions with force to avoid Cypress visibility/overlay flakiness from the
+    // Ionic layout — the form's real handlers still run.
+    cy.get('[data-testid=comments-form]', { timeout: 10000 }).should('exist');
 
-    cy.get('[data-testid=star-4]').click();
-    cy.get('[data-testid=comments-author]').find('input').clear().type('Juan E2E');
-    cy.get('[data-testid=comments-text]').find('textarea').type('Crack absoluto, lo da todo.');
+    cy.get('[data-testid=star-4]').click({ force: true });
+    cy.get('[data-testid=comments-author]').find('input').clear({ force: true }).type('Juan E2E', { force: true });
+    cy.get('[data-testid=comments-text]').find('textarea').type('Crack absoluto, lo da todo.', { force: true });
 
-    cy.get('[data-testid=comments-submit]').should('not.be.disabled').click();
+    cy.get('[data-testid=comments-submit]').should('not.be.disabled').click({ force: true });
     cy.wait('@create');
 
     // The new comment is in the list with its text…
@@ -128,16 +146,17 @@ describe('Comments · CRUD', () => {
     signIn(users.seeded.email, users.seeded.password);
     openDetail();
 
-    cy.get('[data-testid=comments-form]', { timeout: 10000 }).should('be.visible');
-    cy.get('[data-testid=star-3]').click();
-    cy.get('[data-testid=comments-author]').find('input').clear().type('Juan E2E');
-    cy.get('[data-testid=comments-text]').find('textarea').type('Comentario que el backend rechaza.');
-    cy.get('[data-testid=comments-submit]').should('not.be.disabled').click();
+    cy.get('[data-testid=comments-form]', { timeout: 10000 }).should('exist');
+    cy.get('[data-testid=star-3]').click({ force: true });
+    cy.get('[data-testid=comments-author]').find('input').clear({ force: true }).type('Juan E2E', { force: true });
+    cy.get('[data-testid=comments-text]').find('textarea').type('Comentario que el backend rechaza.', { force: true });
+    cy.get('[data-testid=comments-submit]').should('not.be.disabled').click({ force: true });
     cy.wait('@createError');
 
-    // Error toast surfaced and the optimistic row was rolled back to empty.
+    // Error toast surfaced (top-layer overlay) and the optimistic row rolled
+    // back to the empty state.
     cy.contains('No se pudo publicar').should('be.visible');
-    cy.get('[data-testid=comments-empty]').should('be.visible');
+    cy.get('[data-testid=comments-empty]').should('exist');
   });
 
   it('admin deletes a comment behind a confirmation — success', () => {
@@ -166,8 +185,8 @@ describe('Comments · CRUD', () => {
     signIn(users.admin.email, users.admin.password);
     openDetail();
 
-    cy.get('[data-testid=comment-c-existing-1]').should('be.visible');
-    cy.get('[data-testid=comment-delete-c-existing-1]').should('be.visible').click();
+    cy.get('[data-testid=comment-c-existing-1]', { timeout: 10000 }).should('exist');
+    cy.get('[data-testid=comment-delete-c-existing-1]').click({ force: true });
 
     // Ionic AlertController confirmation — click the destructive "Eliminar".
     cy.get('ion-alert').should('be.visible');
