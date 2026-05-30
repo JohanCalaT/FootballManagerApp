@@ -1,6 +1,5 @@
 using FootballManagerApp.Gateway.Extensions;
 using FootballManagerApp.Gateway.Middleware;
-using Yarp.ReverseProxy.Transforms;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,16 +7,14 @@ builder.AddServiceDefaults();
 
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
-    .AddServiceDiscoveryDestinationResolver()
-    .AddTransforms(context =>
-    {
-        // Preserve the Gateway's public Host header on the proxied request
-        // so downstream APIs generate absolute _links pointing to the
-        // Gateway, not to the internal cluster service name. Without this
-        // YARP rewrites Host to the destination ("players-api:8080" etc.)
-        // and Url.Link() in the downstream emits unreachable URLs.
-        context.AddOriginalHost(true);
-    });
+    .AddServiceDiscoveryDestinationResolver();
+// NOTE: we deliberately do NOT preserve the original Host (no AddOriginalHost).
+// Azure Container Apps' internal ingress routes by Host: forwarding the
+// Gateway's public FQDN to an internal app makes ACA reply "Container App is
+// stopped or does not exist" (404). YARP now sends the destination Host (so
+// ACA routes correctly) plus X-Forwarded-Host/Proto by default — the
+// downstream APIs honor those via UseForwardedHeaders so their absolute
+// _links still point at the Gateway.
 
 builder.Services.AddBackendStrategies();
 builder.Services.AddControllers();
