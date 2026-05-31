@@ -17,6 +17,9 @@
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <!-- Plain color (not @drawable/splash) so the unavoidable Android cold-start
+             splash blends into the app background; the branded splash is the Angular
+             SplashComponent instead. -->
+        <item name="android:background">@color/splash_background</item>
     </style>
 </resources>
