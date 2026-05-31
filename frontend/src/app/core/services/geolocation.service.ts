@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation as CapacitorGeolocation } from '@capacitor/geolocation';
 
 import { Geolocation } from '../models/geolocation.model';
 
@@ -18,20 +20,65 @@ export interface RequestPositionOptions {
 }
 
 /**
- * Wrapper over `navigator.geolocation` that returns the project's domain
- * `Geolocation` shape (with `city` / `country` left null for now — reverse
- * geocoding is intentionally NOT wired here to avoid pulling Nominatim into
- * the critical path of the form submit). The `clientGeolocation` field on
- * the player is enough with just `lat`/`lng`; backend can resolve city /
- * country later in a background job if/when we need it.
+ * Returns the project's domain `Geolocation` shape (`city`/`country` left null;
+ * reverse geocoding is intentionally NOT wired here to keep Nominatim out of
+ * the form-submit critical path — the backend can resolve them later).
  *
- * The geolocation prompt is browser-mediated and must happen *as a
- * consequence of a user gesture* (click on Save), otherwise some browsers
- * silently deny. Always call this from inside a click/submit handler.
+ * Two backends, picked at runtime:
+ *   - **Native (Android/iOS via Capacitor)** → `@capacitor/geolocation`. This
+ *     is what makes the APK work: it asks the OS for the runtime location
+ *     permission and reads GPS natively. The plain Web `navigator.geolocation`
+ *     inside the Android WebView never triggers that permission dialog, which
+ *     is why the installed APK silently got no location while the browser did.
+ *   - **Web (browser / Ionic serve)** → `navigator.geolocation`, handled by the
+ *     browser itself (its own permission prompt).
+ *
+ * The geolocation prompt must happen *as a consequence of a user gesture*
+ * (click on Save / "usar mi ubicación"), otherwise some platforms silently
+ * deny. Always call this from inside a click/submit handler.
  */
 @Injectable({ providedIn: 'root' })
 export class GeolocationService {
   async requestClientPosition(opts: RequestPositionOptions = {}): Promise<Geolocation | null> {
+    return Capacitor.isNativePlatform()
+      ? this.requestNativePosition(opts)
+      : this.requestWebPosition(opts);
+  }
+
+  /** Android/iOS: ask the OS permission, then read GPS through the plugin. */
+  private async requestNativePosition(
+    opts: RequestPositionOptions,
+  ): Promise<Geolocation | null> {
+    try {
+      const status = await CapacitorGeolocation.requestPermissions();
+      const granted =
+        status.location === 'granted' || status.coarseLocation === 'granted';
+      if (!granted) {
+        if (opts.silent) return null;
+        throw new Error('Permiso de ubicación denegado.');
+      }
+
+      const position = await CapacitorGeolocation.getCurrentPosition({
+        enableHighAccuracy: opts.enableHighAccuracy ?? false,
+        timeout: opts.timeout ?? 8000,
+        maximumAge: opts.maximumAge ?? 30000,
+      });
+      return {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        city: null,
+        country: null,
+      };
+    } catch (err) {
+      if (opts.silent) return null;
+      throw err;
+    }
+  }
+
+  /** Browser: the Web Geolocation API handles its own permission prompt. */
+  private async requestWebPosition(
+    opts: RequestPositionOptions,
+  ): Promise<Geolocation | null> {
     if (!('geolocation' in navigator)) {
       if (opts.silent) return null;
       throw new Error('Geolocalización no soportada por el navegador.');
