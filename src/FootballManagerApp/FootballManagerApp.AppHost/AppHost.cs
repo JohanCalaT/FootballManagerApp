@@ -40,7 +40,17 @@ var commentsDb = postgres.AddDatabase("commentsdb");
 // volumen persistente en local y como Container App en Azure, sin coste
 // de Azure Cache for Redis managed. Cache-aside lo usan Players.API,
 // Comments.API y backend-node vía el mismo Redis.
-var redis = builder.AddRedis("redis")
+// La contraseña se FIJA como parámetro (no autogenerada) para que el servidor
+// Redis y TODOS los clientes (Players.API, Comments.API, backend-node)
+// compartan SIEMPRE el mismo valor. La password autogenerada de AddRedis
+// derivaba entre revisiones de ACA: el contenedor Redis arrancaba con una
+// nueva mientras revisiones viejas de las APIs conservaban una cadena
+// ConnectionStrings__redis desfasada → NOAUTH (.NET, sin password) y WRONGPASS
+// (Node, password antigua). En local vale el default 'redis'; en Azure se lee
+// de AZURE_REDIS_PASSWORD (cableado en deploy-azure.yml).
+var redisPassword = builder.AddParameter("redis-password", "redis", secret: true);
+
+var redis = builder.AddRedis("redis", password: redisPassword)
     .WithDataVolume()
     .WithHostPort(6379);
 

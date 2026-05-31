@@ -21,6 +21,7 @@ tres contextos en los que se ejecuta:
 |---|---|---|---|---|---|
 | `postgres-user` | no | `postgres` | `AZURE_POSTGRES_USER` | Variable | fijo `postgres` |
 | `postgres-password` | **sí** | `postgres` | `AZURE_POSTGRES_PASSWORD` | **Secret** | tú lo eliges (prod ≠ `postgres`) |
+| `redis-password` | **sí** | `redis` | `AZURE_REDIS_PASSWORD` | **Secret** | tú lo eliges (prod ≠ `redis`) |
 | `ApiFootballKey` | **sí** | — | `AZURE_API_FOOTBALL_KEY` | **Secret** | dashboard de API-Football |
 | `GeminiApiKey` | **sí** | — | `AZURE_GEMINI_API_KEY` | **Secret** | Google AI Studio |
 | `MongoDbUri` | **sí** | — | `AZURE_MONGO_DB_URI` | **Secret** | MongoDB Atlas (URI completa) |
@@ -102,6 +103,7 @@ azd env set AZURE_GEMINI_API_KEY    "TU_GEMINI_KEY"
 azd env set AZURE_MONGO_DB_URI      "mongodb+srv://...."
 azd env set AZURE_POSTGRES_PASSWORD "UNA_PASSWORD_FUERTE"
 azd env set AZURE_POSTGRES_USER     "postgres"
+azd env set AZURE_REDIS_PASSWORD    "UNA_PASSWORD_FUERTE"
 
 # Firebase (los 7 que faltaban)
 azd env set AZURE_FIREBASE_API_KEY             "AIza..."
@@ -151,7 +153,7 @@ gh secret set AZURE_API_FOOTBALL_KEY  --body "TU_API_FOOTBALL_KEY"
 gh secret set AZURE_GEMINI_API_KEY    --body "TU_GEMINI_KEY"
 gh secret set AZURE_MONGO_DB_URI      --body "mongodb+srv://...."
 gh secret set AZURE_POSTGRES_PASSWORD --body "UNA_PASSWORD_FUERTE"
-gh secret set AZURE_REDIS_PASSWORD    --body "no-usado-actualmente"   # ver nota
+gh secret set AZURE_REDIS_PASSWORD    --body "UNA_PASSWORD_FUERTE"
 ```
 
 > **Variables vs Secrets por entorno.** El job corre con
@@ -181,11 +183,15 @@ gh workflow run "Deploy · Azure" -f target=all -f skip_provision=false
 
 ## Notas
 
-- **`AZURE_REDIS_PASSWORD`** que el workflow pasa a `provision`/`deploy` es un
-  *leftover*: hoy Redis corre como contenedor (`AddRedis`), no como Azure Cache,
-  así que **no hay parámetro `redis-password`** en el AppHost. azd ignora env
-  vars desconocidas, por lo que es inofensivo; puede borrarse del workflow en una
-  limpieza futura.
+- **`AZURE_REDIS_PASSWORD`** ahora **SÍ se usa**: el AppHost declara
+  `AddParameter("redis-password", secret: true)` y se lo pasa a
+  `AddRedis("redis", password: …)`, así el servidor Redis y todos los clientes
+  (Players.API, Comments.API, backend-node) comparten **la misma** contraseña.
+  Antes la password de `AddRedis` era **autogenerada** y derivaba entre
+  revisiones de ACA → `NOAUTH` (.NET, sin password) / `WRONGPASS` (Node, password
+  antigua). **Pon un valor real** en el Secret de GitHub (no lo dejes en
+  `no-usado-actualmente`) y, tras cambiarlo, ejecuta **`azd provision` +
+  `azd deploy`** (cambia la definición del recurso Redis, no basta `deploy`).
 - **Regla de oro:** si añades un `AddParameter("Nuevo")` al AppHost, actualiza
   (1) esta matriz, (2) el bloque `env:` de `deploy-azure.yml` y (3) crea la
   Variable/Secret en GitHub. Si no, `azd provision` volverá a fallar con
