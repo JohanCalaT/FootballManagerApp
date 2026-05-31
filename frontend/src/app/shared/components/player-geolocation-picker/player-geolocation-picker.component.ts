@@ -80,6 +80,7 @@ export class PlayerGeolocationPickerComponent implements AfterViewInit {
   private leaflet: LeafletNs | null = null;
   private map: LeafletMap | null = null;
   private marker: LeafletMarker | null = null;
+  private resizeObserver: ResizeObserver | null = null;
 
   constructor() {
     // Keep the marker in sync if the parent patches `initial` after mount —
@@ -96,7 +97,15 @@ export class PlayerGeolocationPickerComponent implements AfterViewInit {
 
   async ngAfterViewInit(): Promise<void> {
     if (!this.autoInit) return;
-    await this.bootMap();
+    try {
+      await this.bootMap();
+    } catch (err) {
+      // Surface boot failures instead of dying as an unhandled rejection
+      // (the map silently failing was indistinguishable from a black canvas).
+      // eslint-disable-next-line no-console
+      console.error('[GeoPicker] map boot failed', err);
+      this.error.set('No se pudo cargar el mapa.');
+    }
   }
 
   protected async onUseMyLocation(): Promise<void> {
@@ -150,10 +159,16 @@ export class PlayerGeolocationPickerComponent implements AfterViewInit {
       this.setMarker(lat, lng, { emit: true, pan: false });
     });
 
-    // Leaflet sometimes mounts before the surrounding collapsible has
-    // finished its open transition, leaving the canvas with stale tile
-    // sizes. invalidateSize() on the next frame fixes the gray-tile bug.
-    requestAnimationFrame(() => this.map?.invalidateSize());
+    // The map boots inside an @defer + collapsible-section that is still
+    // animating open, so the host is 0-sized at this point. The old single
+    // invalidateSize() on the next frame fired BEFORE layout settled in
+    // production, so Leaflet laid out tiles for a 0px viewport and the canvas
+    // stayed on its dark background (the "black map" only seen in deploy, not
+    // locally where the timing happened to work). A ResizeObserver invalidates
+    // the moment the host actually has a non-zero size and keeps it correct on
+    // later resizes (rotation, window). This is the canonical fix for a Leaflet
+    // map mounted in a hidden/animating container — no library swap needed.
+    this.observeResize();
   }
 
   private setMarker(
@@ -191,7 +206,29 @@ export class PlayerGeolocationPickerComponent implements AfterViewInit {
     this.changed.emit({ lat, lng, city: null, country: null });
   }
 
+  /**
+   * Keep the Leaflet canvas in sync with the host size. The map is created
+   * while its collapsible is still opening (size 0), so we invalidate as soon
+   * as the host has a real size and on every later resize. Falls back to a
+   * single rAF invalidate where ResizeObserver is unavailable (old webviews).
+   */
+  private observeResize(): void {
+    if (typeof ResizeObserver === 'undefined') {
+      requestAnimationFrame(() => this.map?.invalidateSize());
+      return;
+    }
+    this.resizeObserver = new ResizeObserver((entries) => {
+      const box = entries[0]?.contentRect;
+      if (box && box.width > 0 && box.height > 0) {
+        this.map?.invalidateSize();
+      }
+    });
+    this.resizeObserver.observe(this.mapHost().nativeElement);
+  }
+
   private disposeMap(): void {
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
     this.marker = null;
     if (this.map) {
       this.map.remove();
