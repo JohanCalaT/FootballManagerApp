@@ -32,4 +32,11 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Device geolocation for "usar mi ubicación" (DAH rubric). Required so the
+         @capacitor/geolocation plugin can request the OS runtime permission and
+         read GPS inside the WebView — navigator.geolocation alone never triggers
+         the Android permission dialog, which is why the APK got no location. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 </manifest>
