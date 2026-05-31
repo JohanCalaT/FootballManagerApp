@@ -19,7 +19,7 @@ describe('SplashComponent', () => {
     fixture.detectChanges(); // ngOnInit schedules the timeout
 
     expect(navigate).not.toHaveBeenCalled();
-    tick(3000);
+    tick(1500);
 
     expect(navigate).toHaveBeenCalledWith(['/players'], { replaceUrl: true });
   }));

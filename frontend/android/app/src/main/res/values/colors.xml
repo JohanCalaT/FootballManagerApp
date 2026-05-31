@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches the web app background (--app-bg in theme/variables.scss) so the
+         OS-level launch splash reads as a plain flash of the app color instead
+         of a second branded splash before the in-app Angular splash. -->
+    <color name="splash_background">#131318</color>
+</resources>

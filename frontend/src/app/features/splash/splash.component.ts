@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 
-const SPLASH_DURATION_MS = 3000;
+const SPLASH_DURATION_MS = 1500;
 
 @Component({
   selector: 'app-splash',
