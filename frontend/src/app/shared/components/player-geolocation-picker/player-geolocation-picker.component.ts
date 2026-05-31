@@ -114,8 +114,14 @@ export class PlayerGeolocationPickerComponent implements AfterViewInit {
   }
 
   private async bootMap(): Promise<void> {
-    // Dynamic import keeps Leaflet out of the eager bundle.
-    this.leaflet = await import('leaflet');
+    // Dynamic import keeps Leaflet out of the eager bundle. Leaflet is a
+    // CommonJS module: in the optimized production build `await import('leaflet')`
+    // resolves to a namespace whose API lives under `.default`, so
+    // `this.leaflet.map` was undefined ONLY in deploy (the dev build exposed it
+    // directly) → "this.leaflet.map is not a function" and a black map. Normalize
+    // to the real module object so it works in both dev and prod.
+    const mod = await import('leaflet');
+    this.leaflet = ((mod as { default?: LeafletNs }).default ?? mod) as LeafletNs;
 
     const initial = this.initial();
     const center = initial ?? FALLBACK_CENTER;
