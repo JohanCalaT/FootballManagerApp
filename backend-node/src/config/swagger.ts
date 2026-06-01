@@ -1,6 +1,19 @@
+import path from 'path';
 import swaggerJSDoc from 'swagger-jsdoc';
 
 const port = process.env.PORT ?? '3000';
+
+// El spec se construye escaneando los bloques JSDoc @swagger del filesystem.
+// En dev este archivo es .ts dentro de src/; en producción es .js dentro de
+// dist/ (el contenedor solo copia dist/, ver Dockerfile). Resolvemos las rutas
+// relativas a __dirname con la extensión real del módulo en ejecución para que
+// el glob acierte en ambos entornos (antes apuntaba fijo a ./src/**/*.ts y en
+// deploy no encontraba nada → paths vacío).
+const ext = path.extname(__filename); // '.ts' en dev, '.js' en prod
+
+// Origen que Swagger UI usa en "Try it out". Tras el Gateway YARP debe ser la
+// URL pública del gateway (SWAGGER_SERVER_URL); en local cae a localhost.
+const serverUrl = process.env.SWAGGER_SERVER_URL ?? `http://localhost:${port}`;
 
 const options = {
   definition: {
@@ -15,7 +28,7 @@ const options = {
         'Jest+Supertest, panel /status (matrícula).',
     },
     servers: [
-      { url: `http://localhost:${port}` },
+      { url: serverUrl },
     ],
     tags: [
       { name: 'Players',   description: 'CRUD jugadores + import API-Football' },
@@ -31,8 +44,8 @@ const options = {
     },
   },
   apis: [
-    './src/routes/*.ts',
-    './src/controllers/*.ts',
+    path.join(__dirname, `../routes/*${ext}`),
+    path.join(__dirname, `../controllers/*${ext}`),
   ],
 };
 
